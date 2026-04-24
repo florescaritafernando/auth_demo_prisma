@@ -18,10 +18,14 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
+  role          String    @default("cliente")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
-  accounts      Account[]
+  accounts     Account[]
+  carrito      Carrito[]
+  pedidos      Pedido[]
+  reclamos     Reclamo[]
 
   @@unique([email])
   @@map("user")
@@ -73,4 +77,112 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Producto {
+  id           String    @id @default(cuid())
+  nombre      String    @unique
+  categoria   String    @default("MANCHESTER SUITING")
+  descripcion String?
+  precio      Float
+  imagen     String?
+  proveedorId String?
+  activo     Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  carrito     Carrito[]
+  pedidoDetalle PedidoDetalle[]
+  stocks      ProductoStock[]
+
+  @@map("producto")
+}
+
+model Almacen {
+  id          String    @id @default(cuid())
+  nombre      String
+  direccion   String
+  telefono    String?
+  responsable String?
+  ciudad     String?
+  activo     Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  stocks     ProductoStock[]
+
+  @@map("almacen")
+}
+
+model ProductoStock {
+  id          String   @id @default(cuid())
+  productoId  String
+  almacenId   String
+  stock      Int      @default(0)
+  producto   Producto  @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  almacen   Almacen   @relation(fields: [almacenId], references: [id], onDelete: Cascade)
+
+  @@unique([productoId, almacenId])
+  @@map("producto_stock")
+}
+
+model Carrito {
+  id          String   @id @default(cuid())
+  userId      String
+  productoId  String
+  cantidad   Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  producto   Producto @relation(fields: [productoId], references: [id])
+
+  @@unique([userId, productoId])
+  @@index([userId])
+  @@map("carrito")
+}
+
+model Pedido {
+  id           String        @id @default(cuid())
+  userId        String
+  estado       String        @default("pendiente")
+  total        Float
+  direccion    String?
+  notas        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedidoDetalle PedidoDetalle[]
+  reclamos    Reclamo[]
+
+  @@index([userId])
+  @@map("pedido")
+}
+
+model PedidoDetalle {
+  id          String   @id @default(cuid())
+  pedidoId    String
+  productoId String
+  cantidad   Int
+  precio     Float
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto   Producto @relation(fields: [productoId], references: [id])
+
+  @@index([pedidoId])
+  @@map("pedido_detalle")
+}
+
+model Reclamo {
+  id         String   @id @default(cuid())
+  userId     String
+  pedidoId   String?
+  tipo      String
+  descripcion String
+  estado    String   @default("pendiente")
+  respuesta String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedido    Pedido?   @relation(fields: [pedidoId], references: [id])
+
+  @@index([userId])
+  @@index([pedidoId])
+  @@map("reclamo")
 }

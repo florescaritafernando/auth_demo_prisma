@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,15 +12,43 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { GalleryVerticalEndIcon } from "lucide-react"
-import { loginEmail } from "@/server/auth-actions"
+import { authClient } from "@/lib/auth-client"
+import { useRouter } from "next/navigation"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMsg("");
+
+    const { data, error } = await authClient.signIn.email({
+      email,
+      password,
+    });
+
+    if (error) {
+      setErrorMsg(error.message || "Error al iniciar sesión");
+      setIsLoading(false);
+      return;
+    }
+
+    // Redirect to dashboard explicitly 
+    router.push("/dashboard");
+    router.refresh();
+  };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <form action={loginEmail}>
+      <form onSubmit={handleLogin}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
             <a
@@ -37,26 +66,40 @@ export function LoginForm({
             </FieldDescription>
           </div>
 
+          {errorMsg && (
+            <div className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded-md">
+              {errorMsg}
+            </div>
+          )}
+
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input name="email"
+            <Input 
+              name="email"
               id="email"
               type="email"
               placeholder="m@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </Field>
           <Field>
             <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input name="password"
+            <Input 
+              name="password"
               id="password"
               type="password"
               placeholder="ingrese su clave"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </Field>
           <Field>
-            <Button type="submit">Login</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Iniciando..." : "Login"}
+            </Button>
           </Field>
           <div className="flex items-center justify-center">
             <a href="#">Forgot your password?</a>

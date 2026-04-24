@@ -26,13 +26,19 @@ export async function loginEmail(formdata: FormData) {
     const email = formdata.get("email") as string;
     const password = formdata.get("password") as string;
 
-    const result = await auth.api.signInEmail({
-        body: {
-            email,
-            password,
-        },
-        headers: await headers(),
-    });
+    try {
+        const result = await auth.api.signInEmail({
+            body: {
+                email,
+                password,
+            },
+            headers: await headers(),
+        });
+        console.log("Login result:", result);
+    } catch (error) {
+        console.error("Error en login:", error);
+        throw error;
+    }
 
     redirect('/dashboard');
 }
