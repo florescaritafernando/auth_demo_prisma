@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Download, Upload, FileSpreadsheet, Printer, FileDown, X, Check, AlertCircle, FileText, RotateCcw } from "lucide-react"
+import { Download, Upload, Printer, FileDown, X, Check, AlertCircle, FileText, RotateCcw } from "lucide-react"
 
 interface ParsedRow {
     data: Record<string, string>
@@ -323,11 +323,6 @@ export function BotonesImportExport() {
                 >
                     <FileDown className="h-4 w-4" />
                     Plantilla CSV
-                </button>
-
-                <button onClick={handleOpenModal} disabled={loading} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50">
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Importar Excel
                 </button>
 
                 <button onClick={handleOpenModal} disabled={loading} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50">

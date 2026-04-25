@@ -21,11 +21,19 @@ model User {
   role          String    @default("cliente")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  
+  // Datos de facturación persistentes
+  tipoDocumento String?   // "dni" | "ruc" | "ce"
+  numeroDoc  String?
+  direccion  String?
+  ciudad    String?
+  
   sessions      Session[]
   accounts     Account[]
   carrito      Carrito[]
   pedidos      Pedido[]
   reclamos     Reclamo[]
+  notificaciones Notificacion[]
 
   @@unique([email])
   @@map("user")
@@ -129,6 +137,7 @@ model Carrito {
   userId      String
   productoId  String
   cantidad   Int      @default(1)
+  tipo       String   @default("metros") // "metros" or "pieza"
   createdAt   DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -142,15 +151,39 @@ model Carrito {
 model Pedido {
   id           String        @id @default(cuid())
   userId        String
-  estado       String        @default("pendiente")
+  numeroOrden  String       @unique   // "ORD-2026-0001"
+  estado       String        @default("metraje_en_proceso")  
+  // Estados: metraje_en_proceso | metraje_confirmado | pendiente | confirmado | completado
   total        Float
-  direccion    String?
-  notas        String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Datos de facturación
+  tipoDocumento String?      // "dni" | "ruc" | "ce"
+  numeroDoc   String?
+  nombreFactura String?
+  direccion  String?
+  ciudad    String?
+  
+  // Método de envío
+  metodoEnvio  String?     // "retiro" | "agencia" | "otrapersona"
+  agencia    String?     // "shalom" | "flores" | "marvisur" | "otros"
+  agenciaOtro String?   // nombre de otra agencia
+  costoEnvio  Float       @default(0)
+  
+  // Datos de quien recibe (para otra persona)
+  dniRecibe   String?
+  nombreRecibe String?
+  celularRecibe String?
+  
+  // Pago
+  numeroOperacion String?
+  notas       String?
+  
+  createdAt   DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   pedidoDetalle PedidoDetalle[]
-  reclamos    Reclamo[]
+  reclamos  Reclamo[]
+  notificaciones Notificacion[]
 
   @@index([userId])
   @@map("pedido")
@@ -160,7 +193,9 @@ model PedidoDetalle {
   id          String   @id @default(cuid())
   pedidoId    String
   productoId String
-  cantidad   Int
+  cantidad   Int      // Cantidad original (piezas o metros)
+  tipo        String   @default("metros")  // "metros" | "pieza"
+  metraje    Float?   // Metraje exacto en metros (cuando admin_edita)
   precio     Float
   pedido     Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
   producto   Producto @relation(fields: [productoId], references: [id])
@@ -185,4 +220,21 @@ model Reclamo {
   @@index([userId])
   @@index([pedidoId])
   @@map("reclamo")
+}
+
+model Notificacion {
+  id         String   @id @default(cuid())
+  userId     String
+  tipo       String   // "metraje_confirmado" | "pedido_estado" | "sistema"
+  titulo     String
+  mensaje    String
+  pedidoId   String?
+  leida      Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedido     Pedido?  @relation(fields: [pedidoId], references: [id])
+
+  @@index([userId])
+  @@index([userId, leida])
+  @@map("notificacion")
 }

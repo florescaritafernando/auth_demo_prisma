@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { NotificationWrapper } from "@/components/notifications/NotificationWrapper"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     const session = await auth.api.getSession({
@@ -28,6 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                    )}
                 </div>
                 {children}
+                <NotificationWrapper />
             </main>
         </SidebarProvider>
     )

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Heart } from "lucide-react";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
+import { BotonAgregarCarrito } from "@/components/agregar-carrito-button";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function DashboardPage() {
     });
 
     if (!session) redirect("/login");
-    
+
     const role = (session.user as any)?.role || "cliente"
     const productos = await getProductos();
 
@@ -47,11 +48,7 @@ export default async function DashboardPage() {
                     </h1>
                     <p className="text-slate-500 mt-2 text-lg">
                         Bienvenido(a), <span className="font-semibold text-slate-700">{session?.user?.name || "Cliente"}</span>.
-                        Descubre los mejores tejidos seleccionados para ti.
                     </p>
-                    <div className="mt-3 inline-flex items-center px-4 py-1.5 rounded-full bg-blue-100 text-blue-800 text-sm font-bold uppercase tracking-widest shadow-sm">
-                        Rol asignado: {role}
-                    </div>
                 </div>
                 <div className="flex gap-3">
                     <Button variant="outline" className="border-slate-300 text-slate-700 font-semibold">Filtrar</Button>
@@ -80,10 +77,10 @@ export default async function DashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {productos.map((prod) => {
                             const totalStock = prod.stocks.reduce((sum, s) => sum + s.stock, 0);
-                            
+
                             return (
-                                <div key={prod.id} className="group relative overflow-hidden rounded-[2rem] bg-white border border-slate-200 p-5 transition-all hover:shadow-xl hover:shadow-slate-200 hover:-translate-y-1 duration-300 flex flex-col h-full">
-                                    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[1.5rem] bg-slate-100/50 mb-6 shrink-0 flex items-center justify-center group-hover:bg-slate-100 transition-colors">
+                                <div key={prod.id} className="group relative rounded-[2rem] bg-white border border-slate-200 p-5 transition-all hover:shadow-xl hover:shadow-slate-200 hover:-translate-y-1 duration-300 flex flex-col h-full">
+                                    <div className="relative aspect-[4/3] w-full rounded-[1.5rem] bg-slate-100/50 mb-6 shrink-0 flex items-center justify-center group-hover:bg-slate-100 transition-colors">
                                         <Badge className={`absolute top-4 left-4 z-10 border-none px-3 py-1 text-xs uppercase tracking-wider font-semibold shadow-sm
                                             ${totalStock > 10 ? 'bg-emerald-500 text-white' : totalStock > 0 ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'}`}>
                                             {totalStock > 10 ? "En stock" : totalStock > 0 ? `${totalStock} und` : "Agotado"}
@@ -109,10 +106,7 @@ export default async function DashboardPage() {
                                             <p className="text-sm text-slate-600 leading-relaxed line-clamp-2">{prod.descripcion || "Sin descripcion"}</p>
                                         </div>
                                         <div className="pt-6 mt-auto">
-                                            <Button className="w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all duration-300 h-12 shadow-md hover:shadow-lg flex items-center justify-center gap-2 font-semibold text-md">
-                                                <ShoppingCart className="h-5 w-5" />
-                                                Agregar
-                                            </Button>
+                                            <BotonAgregarCarrito producto={prod} />
                                         </div>
                                     </div>
                                 </div>

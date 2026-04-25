@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
     Sidebar,
@@ -15,6 +15,7 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Home, ShoppingBag, ShoppingCart, User, Package, BarChart3, AlertTriangle, Tag, Warehouse } from "lucide-react"
 import { SignOutButton } from "@/components/signout-button"
+import { NotificationBadge } from "@/components/notifications/NotificationBadge"
 
 const clienteItems = [
     { title: "Catalogo", url: "/dashboard", icon: Home },
@@ -67,6 +68,13 @@ export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}
+                            {role !== "admin" && (
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild tooltip="Notificaciones" className="h-10 text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-colors">
+                                        <NotificationBadge />
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
