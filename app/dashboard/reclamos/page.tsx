@@ -33,7 +33,9 @@ export default async function ReclamosPage() {
     if (!session) redirect("/login");
     
     const role = (session.user as any)?.role || "cliente"
-    if (role !== "admin") redirect("/dashboard");
+    if (!["admin", "empleado"].includes(role)) redirect("/dashboard");
+
+    const isAdmin = role === "admin"
 
     return (
         <div className="p-6 md:p-10 font-sans">

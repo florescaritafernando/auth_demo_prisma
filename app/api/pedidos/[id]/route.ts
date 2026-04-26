@@ -86,7 +86,7 @@ export async function PATCH(
             return NextResponse.json({ success: false, error: "Datos inválidos" }, { status: 400 })
         }
 
-        const { estado, metraje_items, numeroOperacion } = body
+        const { estado, metraje_items, numeroOperacion, motivoRechazo } = body
 
         const estadosValidos = ["metraje_en_proceso", "metraje_confirmado", "pendiente", "confirmado", "rechazado", "completado"]
         
@@ -100,25 +100,59 @@ export async function PATCH(
         
         const existingPedido = await prisma.pedido.findUnique({
             where: { id },
-            select: { userId: true, estado: true }
+            select: { userId: true, estado: true, delegadoId: true }
         })
         
         if (!existingPedido) {
             return NextResponse.json({ success: false, error: "Pedido no encontrado" }, { status: 404 })
         }
 
+const isAdmin = userRole === "admin"
+        const isEmpleado = userRole === "empleado"
+        const isDelegado = isEmpleado && existingPedido.delegadoId === session.user.id
         const isOwner = existingPedido.userId === session.user.id
-        const isMetrajeConfirmadoToConfirmado = existingPedido.estado === "metraje_confirmado" && estado === "confirmado"
-        
-        if (userRole !== "admin" && !(isOwner && isMetrajeConfirmadoToConfirmado)) {
-            if (metrajeItemsArray || (estado && estado !== existingPedido.estado)) {
-                return NextResponse.json({ success: false, error: "Solo administradores" }, { status: 403 })
+
+        // Validar permisos por rol
+        if (isAdmin) {
+            // Admin puede todo
+        } else if (isEmpleado) {
+            // Empleado solo puede si está delegado
+            if (!isDelegado) {
+                return NextResponse.json({ success: false, error: "No tienes este pedido asignado" }, { status: 403 })
             }
+            
+            // Empleado: puede actualizar metraje
+            if (metrajeItemsArray) {
+                // OK - puede agregar metraje
+            } else if (estado === "rechazado") {
+                if (!motivoRechazo || motivoRechazo.length < 5) {
+                    return NextResponse.json({ success: false, error: "Motivo de rechazo requerido (mín. 5 caracteres)" }, { status: 400 })
+                }
+                if (motivoRechazo.length > 100) {
+                    return NextResponse.json({ success: false, error: "Motivo máximo 100 caracteres" }, { status: 400 })
+                }
+            } else if (estado && !["metraje_confirmado", "pendiente"].includes(estado)) {
+                return NextResponse.json({ success: false, error: "No puedes cambiar a este estado" }, { status: 403 })
+            } else if (!estado && !metrajeItemsArray) {
+                return NextResponse.json({ success: false, error: "No hay cambios para realizar" }, { status: 400 })
+            }
+        } else if (isOwner) {
+            // Cliente puede agregar numeroOperacion para finalizar compra
+            if (numeroOperacion) {
+                // OK - puede agregar número de operación
+            } else if (estado && !["pendiente", "confirmado"].includes(estado)) {
+                return NextResponse.json({ success: false, error: "No puedes cambiar a este estado" }, { status: 403 })
+            } else if (!estado && !numeroOperacion) {
+                return NextResponse.json({ success: false, error: "No hay cambios para realizar" }, { status: 400 })
+            }
+        } else {
+            return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 })
         }
-        
+            
         const updateData: any = {}
         if (estado) updateData.estado = estado
         if (numeroOperacion) updateData.numeroOperacion = numeroOperacion
+        if (motivoRechazo && estado === "rechazado") updateData.motivoRechazo = motivoRechazo
         
         const pedido = await prisma.pedido.update({
             where: { id },

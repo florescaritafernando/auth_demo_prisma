@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag } from "lucide-react"
+import { RechazarPedidoModal } from "@/components/pedidos/RechazarPedidoModal"
 
 const ESTADOS_DISPONIBLES = [
     { value: "metraje_en_proceso", label: "Metraje en proceso", color: "bg-yellow-100 text-yellow-800" },
@@ -29,6 +30,7 @@ interface Pedido {
     numeroOrden: string
     estado: string
     numeroOperacion: string | null
+    motivoRechazo: string | null
     pedidoDetalle: DetalleItem[]
 }
 
@@ -45,6 +47,7 @@ interface MetrajeRegistro {
 export function AdminPedidoActions({ pedido }: Props) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
+    const [showRechazarModal, setShowRechazarModal] = useState(false)
     const [metrajeData, setMetrajeData] = useState<Record<string, MetrajeRegistro[]>>(() => {
         const initial: Record<string, MetrajeRegistro[]> = {}
         pedido.pedidoDetalle
@@ -63,6 +66,11 @@ export function AdminPedidoActions({ pedido }: Props) {
     const tienePiezas = piezaDetails.length > 0
 
     const cambiarEstado = async (nuevoEstado: string) => {
+        if (nuevoEstado === "rechazado") {
+            setShowRechazarModal(true)
+            return
+        }
+        
         setLoading(true)
         try {
             const res = await fetch(`/api/pedidos/${pedido.id}`, {
@@ -79,6 +87,29 @@ export function AdminPedidoActions({ pedido }: Props) {
             }
         } catch (e) {
             alert("Error de conexión")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const rechazarPedido = async (motivo: string) => {
+        setLoading(true)
+        try {
+            const res = await fetch(`/api/pedidos/${pedido.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ estado: "rechazado", motivoRechazo: motivo }),
+                credentials: "include"
+            })
+            const json = await res.json()
+            if (json.success) {
+                setShowRechazarModal(false)
+                router.refresh()
+            } else {
+                throw new Error(json.error || "Error al rechazar")
+            }
+        } catch (e: any) {
+            throw e
         } finally {
             setLoading(false)
         }
@@ -405,4 +436,13 @@ export function AdminPedidoActions({ pedido }: Props) {
             )}
         </div>
     )
+    
+    {showRechazarModal && (
+        <RechazarPedidoModal
+            pedidoId={pedido.id}
+            numeroOrden={pedido.numeroOrden}
+            onClose={() => setShowRechazarModal(false)}
+            onReject={rechazarPedido}
+        />
+    )}
 }

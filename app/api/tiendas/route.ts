@@ -8,14 +8,9 @@ export async function GET() {
         const headersList = await headers()
         const session = await auth.api.getSession({ headers: headersList })
         
+        // Anyone can see tiendas (for checkout), but must be logged in
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
-        }
-
-        const userRole = (session.user as any)?.role || "cliente"
-        
-        if (userRole !== "admin" && userRole !== "empleado") {
-            return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 })
         }
 
         const tiendas = await prisma.tienda.findMany({

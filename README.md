@@ -44,3 +44,19 @@ npx prisma generate
 npx prisma db push
 npx prisma migrate dev
 npm run dev
+
+
+notas
+
+si aparece esto
+error: Turbopack is not supported on this platform (darwin/arm64) because native bindings are not available. Only WebAssembly (WASM) bindings were loaded, and Turbopack requires native bindings.
+
+To use Next.js on this platform, use Webpack instead:
+  next dev --webpack
+
+For more information, see: https://nextjs.org/docs/app/api-reference/turbopack#supported-platforms
+
+
+EJECUTAR en terminal
+
+npm install

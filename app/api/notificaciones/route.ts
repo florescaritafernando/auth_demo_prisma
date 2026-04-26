@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     try {
         const headersList = await headers()
         const session = await auth.api.getSession({ headers: headersList })
-        
+
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
         }
@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest) {
     try {
         const headersList = new Headers(request.headers)
         const session = await auth.api.getSession({ headers: headersList })
-        
+
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
         }

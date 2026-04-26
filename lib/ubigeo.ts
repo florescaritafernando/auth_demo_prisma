@@ -107,8 +107,7 @@ export const UBIGEO_DATA = {
         "Ica": ["Ica", "Los Aquijes", "Ocucaje", "Palpa", "Parcona", "Pueblos", "Salas", "San Juan Bautista", "Santiago", "Subtanjalla", "Tate", "Yauca"],
         "Chincha": ["Chincha Alta", "Alto Grande", "Buena Vista", "Cajac", "Carhuac", "Cerro Azul", "Chavín", "Chincha", "Chincha Alta", "El Ingenio", "Grocio Prado", "Ica", "La Tingujia", "L对我们", "Pimentel", "Pueblo Nuevo", "Quilca", "San Andrés", "San Juan de K", "San Luís", "Santa Rosa"],
         "Nazca": ["Nazca", "Caita", "Chacarat", "Chojr", "El Ingerte", "Ica", "Marcona", "Nasca", "Otoca", "Río Grande", "San K", "San Pablo", "Santiago", "Vista Alegre"],
-        "Pisco": ["Pisco", "Cajá", "Cano", "Cerro Azul", "Guadalupe", "Humay", "Ica", "Incahuasi", "Kul", "Pachacutec", "Paracas", "Pisco", "San Antonio", "San Clemente", "San Juan de K", "Santa Rosa", "Tambo Grande", "Yauca"],
-        "Chincha": ["Chincha Alta", "Alto Grande", "Buena Vista", "Cajac", "Carhuac", "Cerro Azul", "Chavín", "Chincha", "Chincha Alta", "El Ingenio", "Grocio Prado", "Ica", "La Tingüi", "Las Palmeras", "Los Aquijes", "Ocucaje", "Pimentel", "Pueblo Nuevo", "Quilca", "San Andrés", "San Juan de K", "San Lui", "Santa Rosa", "Subtanjalla", "T板", "Yauca"]
+        "Pisco": ["Pisco", "Cajá", "Cano", "Cerro Azul", "Guadalupe", "Humay", "Ica", "Incahuasi", "Kul", "Pachacutec", "Paracas", "Pisco", "San Antonio", "San Clemente", "San Juan de K", "Santa Rosa", "Tambo Grande", "Yauca"]
     },
     "Junín": {
         "Huancayo": ["Huancayo", "Chacrapón", "Chipras", "El Tambo", "Huamancaca", "Huancayo", "Huanca", "Huancayo", "Ingenio", "It隔离", "Micaela Bastidas", "Oriental", "Perú", "Pilcomayo", "Pucará", "Quilcas", "San Agustín", "San Juan de I", "San Lorenzo de Q", "Sank", "Sapallanga", "Yanacoto"],
@@ -118,7 +117,6 @@ export const UBIGEO_DATA = {
         "Concepción": ["Concepción", "Aco", "Andamayo", "Calicanto", "Chambara", "Coviría", "El Tambo", "Heroínas U", "Huancayo", "Jauja", "Leonor Ordóñez", "Manzanares", "Mariscal Castilla", "Matahuasi", "Micaela Bastidas", "Naranville", "Oriental", "Palca", "Parco", "San Juan de I", "Santa rosa de K", "Saño", "Tapo"],
         "Junín": ["Junín", "Bahuaire", "Carhuamaca", "Condembamba", "Huancayo", "Junín", "Kanki", "Maray", "Ond", "Perú", "Pucará", "Ques", "Rag", "San Juan", "San Lorenzo", "Sank", "Yauyos"],
         "Chanchamayo": ["Chanchamayo", "Campamento", "La Merced", "Narz", "Palca", "Panki", "Perú", "San Luis de Sh", "San Ramón", "Santa Rosa", "Ventanilla"],
-        "Tarma": ["Tarma", "Acobamba", "Acos", "Huata", "Huasía", "La Merced", "Palcamá", "San Pedro de T", "Tarma", "Yauli"]
     },
     "La Libertad": {
         "Trujillo": ["Trujillo", "Alto de Trujillo", "Buenos Aires", "El Porvenir", "Esperanza", "Florencia de Mora", "Huancanil", "La Esperanza", "La Merced", "Laredo", "Moche", "Porvenir", "Salaverry", "San Andrés", "Trujillo", "Victor Larrea"],
@@ -128,8 +126,8 @@ export const UBIGEO_DATA = {
         "Gran Chimu": ["Gran Chimu", "Casagrande", "Chimu", "Chiquidama", "Chor蓉", "Faccho", "Guadalongo", "Iden", "La Gloria", "Molin Real", "San Benito", "Santa Rosa", "Sinsicapa", "Sore", "Valdehuevos"],
         "Julcán": ["Julcán", "Cachicad", "Huancanil", "Julcán", "Mangomalca", "Paranday", "Sausal"],
         "Otuzco": ["Otuzco", "Agallpampa", "Buldibuyco", "Charat", "Cohorro", "Huaranchal", "Molin Real", "Otuzco", "Poroto", "Salpo", "Sinsicapa", "TinECO"],
-        "Pataz": ["Pataz", "Awcam", "Buldibuyco", "Crisnejas", "El Pias", "Huancanil", "Jazanga", "Llamo", "Luguni", "Marisol", "Naranjop", "Pataz", "Pimentel", "Recta", "Riag", "San José", "Santiago", "Tayab", "Yu",
-        " Sanchez Carrión": ["Sanchez Carrión", "Cajab", "Chugama", "Granada", "Hierbas", "Huacata", "Jaguay", "Molin real", "Naranjop", "Pimentel", "Riag", "Sa José", "Sanch", "Sar", "Sausalito", "Sayapo", "Tinct"],
+        "Pataz": ["Pataz", "Awcam", "Buldibuyco", "Crisnejas", "El Pias", "Huancanil", "Jazanga", "Llamo", "Luguni", "Marisol", "Naranjop", "Pataz", "Pimentel", "Recta", "Riag", "San José", "Santiago", "Tayab", "Yu"],
+        "Sanchez Carrión": ["Sanchez Carrión", "Cajab", "Chugama", "Granada", "Hierbas", "Huacata", "Jaguay", "Molin real", "Naranjop", "Pimentel", "Riag", "Sa José", "Sanch", "Sar", "Sausalito", "Sayapo", "Tinct"],
         "Santiago de Chuco": ["Santiago de Chuco", "Angas", "Camara", "El Porongo", "Granada", "Guinea", "L延期", "Molin Real", "Naranjop", "Otuzco", "Pimentel", "Pueblo Nuevo", "Quinuab", "Recta", "Riag", "San Antonio", "Santiago de Chuco", "Shirac", "Sinsicapa", "Urija"],
         "La Zarza": ["La Zarza", "Buldibuyco", "Cajab", "Cox", "El Valle", "Guipiep", "La Z", "Molin Real", "NARANJ", "Patap", "Quinuaba", "Riag", "San Antonio", "Sank", "Sausal", "Sayapo"]
     },
@@ -137,8 +135,8 @@ export const UBIGEO_DATA = {
         "Chiclayo": ["Chiclayo", "Chiclayo", "Chongoyape", "Eten", "José Leonardo Ortiz", "La Victoria", "Lagunas", "Monsefú", "Nueva Arica", "Oyotún", "Pimentel", "Pto", "Reque", "Santa Rosa", "Saña", "Tiaca"],
         "Lambayeque": ["Lambayeque", "Choch", "Eten", "Lambayeque", "Mórrope", "Moxica", "Oyotún", "Pimentel", "Pto Eten", "San José", "Santa Rosa", "Sicsa", "Tucume"],
         "Ferreñafe": ["Ferreñafe", "Cañete", "Ferreñafe", "Incahuasi", "Manú", "Morcopon", "Pimentel", "Pto", "Pueblo Nuevo"],
-        "Batán Grande": ["Batán Grande", "Bañ","Canaris","Choch","Eten","Ferreñafe","I","K密集","Lambayeque","Moran","Mórrope","Pacora","Pit","Pto","San","Santa Rosa","Sicsa","Tac","Túcume"],
-        "Manú": ["Manú","Chongoyap","Eten","Ferreñafe","Incahuasi","La Victoria","Lambayeque","Mórrope","Moxica","Oyotún","Pacora","Pimentel","Pto","San José","Santa Rosa","Tiaca"]
+        "Batán Grande": ["Batán Grande", "Bañ", "Canaris", "Choch", "Eten", "Ferreñafe", "I", "K密集", "Lambayeque", "Moran", "Mórrope", "Pacora", "Pit", "Pto", "San", "Santa Rosa", "Sicsa", "Tac", "Túcume"],
+        "Manú": ["Manú", "Chongoyap", "Eten", "Ferreñafe", "Incahuasi", "La Victoria", "Lambayeque", "Mórrope", "Moxica", "Oyotún", "Pacora", "Pimentel", "Pto", "San José", "Santa Rosa", "Tiaca"]
     },
     "Lima": {
         "Lima": ["Lima", "Ancón", "Ate", "Barranco", "Breña", "Carabayllo", "Chaclacayo", "Chorrillos", "Cieneguilla", "Comas", "El Agustino", "Independencia", "Jesús María", "La Molina", "La Victoria", "Lince", "Los Olivos", "Lurigancho", "Lurín", "Magdalena del Mar", "Miraflores", "Pachacámac", "Pucusana", "Pueblo Libre", "Puente Piedra", "Rímac", "San Bartolo", "San Juan de Lurigancho", "San Juan de Miraflores", "San Luis", "San Martín de Porres", "San Miguel", "Santa Anita", "Santa María del Mar", "Santa Rosa", "Santiago de Surco", "Surquillo", "Villa El Salvador", "Villa María del Triunfo"],
@@ -214,7 +212,7 @@ export const UBIGEO_DATA = {
         "Zarumilla": ["Zarumilla", "Acapulco", "Garita", "La", "Matapalo", "Papayal", "Pimentel", "Zarumilla"]
     },
     "Ucayali": {
-        "Callaria": ["Callaria", "Calleria", "Campoverde", "Iparia", "Manantay", "Pucallpa", "Y'],
+        "Callaria": ["Callaria", "Calleria", "Campoverde", "Iparia", "Manantay", "Pucallpa", "Y"],
         "Atalaya": ["Atalaya", "Atalaya", "Daimur", "Raymondi", "Sepahua", "Tahuania"],
         "Padre Abad": ["Padre Abad", "Alexander", "Bambamarca", "Contamana", "Padre Abad", "San Alejandro", "Shet"],
         "Coronel Portillo": ["Coronel Portillo", "Bambamarca", "Campo Verde", "Iparia", "Manantay", "Matapalo", "Pucallpa", "Y"]

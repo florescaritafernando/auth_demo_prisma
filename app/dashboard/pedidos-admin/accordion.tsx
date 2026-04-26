@@ -27,14 +27,20 @@ interface Pedido {
     direccion: string | null
     ciudad: string | null
     metodoEnvio: string | null
+    tiendaId: string | null
+    tienda: { id: string; nombre: string; direccion: string } | null
     agencia: string | null
     agenciaOtro: string | null
+    delivery: string | null
+    deliveryOtro: string | null
     dniRecibe: string | null
     nombreRecibe: string | null
     celularRecibe: string | null
     numeroOperacion: string | null
+    motivoRechazo: string | null
     createdAt: Date
     user: { id: string; name: string | null; email: string | null } | null
+    delegado: { id: string; name: string | null } | null
     pedidoDetalle: DetalleItem[]
 }
 
@@ -51,6 +57,12 @@ const AGENCIA_LABELS: Record<string, string> = {
     shalom: "SHALOM",
     flores: "FLORES",
     marvisur: "MARVISUR",
+    otros: "OTROS"
+}
+
+const DELIVERY_LABELS: Record<string, string> = {
+    olva: "OLVA",
+    safexpress: "SAF EXPRESS",
     otros: "OTROS"
 }
 
@@ -102,6 +114,7 @@ export function PedidoAccordion({ pedidos }: Props) {
                 {paginatedPedidos.map((pedido) => {
                     const config = ESTADO_CONFIG[pedido.estado] || ESTADO_CONFIG.pendiente
                     const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
+                    const deliveryLabel = pedido.delivery ? (DELIVERY_LABELS[pedido.delivery] || pedido.deliveryOtro) : null
                     const tienePiezas = pedido.pedidoDetalle.some(d => d.tipo === "pieza")
                     const ocultarPrecio = pedido.estado === "metraje_en_proceso"
                     const isExpanded = expandedId === pedido.id
@@ -225,11 +238,24 @@ export function PedidoAccordion({ pedidos }: Props) {
                                                 <div className="flex justify-between">
                                                     <span className="text-slate-600">Método:</span>
                                                     <span className="font-bold text-slate-900">
-                                                        {pedido.metodoEnvio === "retiro" ? "Retiro en persona" :
-                                                         pedido.metodoEnvio === "agencia" ? `Agencia: ${agenciaLabel || pedido.agenciaOtro}` :
-                                                         "Recoge otra persona"}
+                                                        {pedido.metodoEnvio === "tienda" ? "Retiro en Tienda" :
+                                                         pedido.metodoEnvio === "agencia" ? `Agencia: ${agenciaLabel || pedido.agenciaOtro || pedido.agencia}` :
+                                                         pedido.metodoEnvio === "delivery" ? `Delivery: ${deliveryLabel || pedido.deliveryOtro || pedido.delivery}` :
+                                                         "-"}
                                                     </span>
                                                 </div>
+                                                {pedido.metodoEnvio === "tienda" && pedido.tienda && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-600">Tienda:</span>
+                                                        <span className="font-medium text-slate-900">{pedido.tienda.nombre}</span>
+                                                    </div>
+                                                )}
+                                                {pedido.metodoEnvio === "tienda" && pedido.tienda && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-600">Dirección:</span>
+                                                        <span className="font-medium text-slate-900">{pedido.tienda.direccion}</span>
+                                                    </div>
+                                                )}
                                                 {pedido.direccion && (
                                                     <div className="flex justify-between">
                                                         <span className="text-slate-600">Dirección:</span>

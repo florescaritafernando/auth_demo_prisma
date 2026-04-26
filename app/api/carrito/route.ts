@@ -268,9 +268,17 @@ const metrosPorPieza = 50
                     return sum + (precioUnit * item.cantidad)
                 }, 0)
 
+                const ultimoPedido = await prisma.pedido.findFirst({
+                    orderBy: { createdAt: "desc" }
+                })
+                const year = new Date().getFullYear()
+                const numSeq = ultimoPedido ? parseInt(ultimoPedido.numeroOrden?.split("-").pop() || "0") + 1 : 1
+                const numeroOrden = `ORD-${year}-${String(numSeq).padStart(4, "0")}`
+
                 const pedido = await prisma.pedido.create({
                     data: {
                         userId: session.user.id,
+                        numeroOrden,
                         direccion: direccion || "",
                         notas: notas || "",
                         total,
@@ -288,6 +296,18 @@ const metrosPorPieza = 50
 
                 await prisma.carrito.deleteMany({
                     where: { userId: session.user.id }
+                })
+
+                const staff = await prisma.user.findMany({
+                    where: { role: { in: ["admin", "empleado"] } }
+                })
+                await prisma.notificacion.createMany({
+                    data: staff.map(user => ({
+                        userId: user.id,
+                        titulo: "Nueva orden",
+                        mensaje: `Nueva orden ${numeroOrden} por ${session.user.name || session.user.email}`,
+                        tipo: "pedido"
+                    }))
                 })
 
                 return NextResponse.json({ success: true, pedidoId: pedido.id })

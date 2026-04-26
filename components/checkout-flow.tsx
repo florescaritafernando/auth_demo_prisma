@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X } from "lucide-react"
+import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface CarritoItem {
@@ -192,6 +192,7 @@ export default function CheckoutPage() {
     const [error, setError] = useState("")
     const [items, setItems] = useState<CarritoItem[]>([])
     const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [tiendas, setTiendas] = useState<{id: string, nombre: string, direccion: string}[]>([])
     const [data, setData] = useState<CheckoutData>({
         tipoDocumento: "",
         numeroDoc: "",
@@ -217,6 +218,7 @@ export default function CheckoutPage() {
     const [editTipo, setEditTipo] = useState("metros")
     const [pedidoCreado, setPedidoCreado] = useState<any>(null)
     const [showMetrajePopup, setShowMetrajePopup] = useState(false)
+    const [showPaymentModal, setShowPaymentModal] = useState(false)
     const [pedidoId, setPedidoId] = useState<string | null>(null)
     const [continuarPedido, setContinuarPedido] = useState<any>(null)
 
@@ -231,6 +233,7 @@ export default function CheckoutPage() {
         } else {
             setStep(1)
             fetchCarrito()
+            fetchTiendas()
         }
     }, [])
 
@@ -250,7 +253,9 @@ export default function CheckoutPage() {
                     numeroDoc: pedido.numeroDoc || "",
                     nombreFactura: pedido.nombreFactura || "",
                     direccion: pedido.direccion || "",
-                    ciudad: pedido.ciudad || "",
+                    departamento: pedido.departamento || "",
+                    provincia: pedido.provincia || "",
+                    distrito: pedido.distrito || "",
                     metodoEnvio: pedido.metodoEnvio || "",
                     agencia: pedido.agencia || "",
                     agenciaOtro: pedido.agenciaOtro || "",
@@ -314,6 +319,22 @@ export default function CheckoutPage() {
             }
         } catch (e) {
             console.error("Error fetching cart:", e)
+        }
+    }
+
+    const fetchTiendas = async () => {
+        try {
+            console.log("Fetching tiendas...")
+            const res = await fetch("/api/tiendas", { credentials: "include" })
+            const json = await res.json()
+            console.log("Tiendas response:", json)
+            if (json.success && json.tiendas) {
+                const tiendasActivas = json.tiendas.filter((t: any) => t.activo)
+                console.log("Tiendas activas:", tiendasActivas)
+                setTiendas(tiendasActivas)
+            }
+        } catch (e) {
+            console.error("Error fetching tiendas:", e)
         }
     }
 
@@ -422,22 +443,43 @@ export default function CheckoutPage() {
     }
 
     const handleInputChange = (field: keyof CheckoutData, value: string) => {
-        setData(prev => ({ ...prev, [field]: value }))
-        if (field === "metodoEnvio" && value !== prev.metodoEnvio) {
-            setData(prev => ({ ...prev, metodoEnvio: value, tiendaId: "", tipoEnvio: "", agencia: "", agenciaOtro: "", delivery: "", deliveryOtro: "", dniRecibe: "", nombreRecibe: "", celularRecibe: "" }))
-        }
+        setData(prev => {
+            const newData = { ...prev, [field]: value }
+            if (field === "metodoEnvio" && value !== prev.metodoEnvio) {
+                return { 
+                    ...newData, 
+                    metodoEnvio: value, 
+                    tiendaId: "", 
+                    tipoEnvio: "", 
+                    agencia: "", 
+                    agenciaOtro: "", 
+                    delivery: "", 
+                    deliveryOtro: "", 
+                    dniRecibe: "", 
+                    nombreRecibe: "", 
+                    celularRecibe: "" 
+                }
+            }
+            return newData
+        })
     }
 
     const tienePiezas = useMemo(() => {
         return items && items.length > 0 ? items.some((item: any) => item.tipo === "pieza") : false
     }, [items])
 
+    const metrajeConfirmado = continuarPedido?.estado === "metraje_confirmado"
+    const tienePiezasPendientes = (continuarPedido?.estado === "metraje_en_proceso") || (tienePiezas && !metrajeConfirmado)
+    const mostrarResumenSolo = tienePiezasPendientes || (continuarPedido?.estado === "metraje_en_proceso")
+
     const validarPaso = useCallback((paso: number): boolean => {
         switch (paso) {
             case 1:
                 return items.length > 0
             case 2:
-                return data.tipoDocumento && data.numeroDoc && data.nombreFactura && data.direccion
+                const docLen = data.numeroDoc?.length || 0
+                const requiredLen = data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 1
+                return data.tipoDocumento && docLen >= requiredLen && data.nombreFactura && data.direccion
             case 3:
                 if (!data.metodoEnvio) return false
                 if (data.metodoEnvio === "tienda" && !data.tiendaId) return false
@@ -450,7 +492,8 @@ export default function CheckoutPage() {
                 }
                 return true
             case 4:
-                if (continuarPedido) return data.numeroOperacion && data.numeroOperacion.length > 0
+                if (continuarPedido && !metrajeConfirmado) return true
+                if (continuarPedido && metrajeConfirmado) return data.numeroOperacion && data.numeroOperacion.length > 0
                 if (tienePiezas) return true
                 return data.numeroOperacion && data.numeroOperacion.length > 0
             default:
@@ -459,10 +502,6 @@ export default function CheckoutPage() {
     }, [items, data])
 
     const crearPedido = async () => {
-        if (tienePiezas) {
-            setShowMetrajePopup(true)
-            return
-        }
         setLoading(true)
         setError("")
 
@@ -490,6 +529,7 @@ export default function CheckoutPage() {
                     tipoEnvio: data.metodoEnvio !== "tienda" ? data.tipoEnvio : null,
                     agencia: data.metodoEnvio === "agencia" ? (data.agencia === "otros" ? data.agenciaOtro : data.agencia) : null,
                     delivery: data.metodoEnvio === "delivery" ? (data.delivery === "otros" ? data.deliveryOtro : data.delivery) : null,
+                    deliveryOtro: data.metodoEnvio === "delivery" && data.delivery === "otros" ? data.deliveryOtro : null,
                     dniRecibe: data.dniRecibe || null,
                     nombreRecibe: data.nombreRecibe || null,
                     celularRecibe: data.celularRecibe || null,
@@ -499,7 +539,21 @@ export default function CheckoutPage() {
                 credentials: "include"
             })
 
-            const json = await res.json()
+            const text = await res.text()
+            if (!text) {
+                setError("El servidor no respondió correctamente")
+                setLoading(false)
+                return
+            }
+            
+            let json
+            try {
+                json = JSON.parse(text)
+            } catch (parseError) {
+                setError("Error al procesar la respuesta del servidor")
+                setLoading(false)
+                return
+            }
 
             if (json.success) {
                 setPedidoCreado(json.pedido)
@@ -572,7 +626,7 @@ export default function CheckoutPage() {
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Check className="h-10 w-10 text-green-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                <h2 className="text-2xl font-bold text-black mb-2">
                     ¡Felicidades!
                 </h2>
                 <p className="text-slate-600 mb-4">
@@ -589,7 +643,7 @@ export default function CheckoutPage() {
         if (!continuarPedido) return
 
         if (continuarPedido.estado === "metraje_confirmado" && !data.numeroOperacion) {
-            setError("Por favor ingresa tu número de operación de pago")
+            setShowPaymentModal(true)
             return
         }
 
@@ -614,6 +668,89 @@ export default function CheckoutPage() {
                 setStep(5)
             } else {
                 setError(json.error || "Error al finalizar pedido")
+            }
+        } catch (e: any) {
+            setError(e.message || "Error de conexión")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const confirmarPago = async () => {
+        if (!data.numeroOperacion) {
+            setError("Por favor ingresa tu número de operación")
+            return
+        }
+        
+        setShowPaymentModal(false)
+        setLoading(true)
+        setError("")
+
+        try {
+            if (continuarPedido?.id) {
+                // Update existing pedido
+                const res = await fetch(`/api/pedidos/${continuarPedido.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        estado: "confirmado",
+                        numeroOperacion: data.numeroOperacion
+                    }),
+                    credentials: "include"
+                })
+
+                const json = await res.json()
+
+                if (json.success) {
+                    setPedidoCreado(continuarPedido)
+                    setStep(5)
+                } else {
+                    setError(json.error || "Error al confirmar pago")
+                }
+            } else {
+                // Create new pedido for new checkout
+                const itemsParaApi = items.map(item => ({
+                    productoId: item.producto.id,
+                    cantidad: item.cantidad,
+                    tipo: item.tipo,
+                    precio: item.producto.precio
+                }))
+
+                const res = await fetch("/api/pedidos", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        tipoDocumento: data.tipoDocumento,
+                        numeroDoc: data.numeroDoc,
+                        nombreFactura: data.nombreFactura,
+                        direccion: data.direccion,
+                        departamento: data.departamento,
+                        provincia: data.provincia,
+                        distrito: data.distrito,
+                        metodoEnvio: data.metodoEnvio,
+                        tiendaId: data.metodoEnvio === "tienda" ? data.tiendaId : null,
+                        tipoEnvio: data.metodoEnvio !== "tienda" ? data.tipoEnvio : null,
+                        agencia: data.metodoEnvio === "agencia" ? (data.agencia === "otros" ? data.agenciaOtro : data.agencia) : null,
+                        delivery: data.metodoEnvio === "delivery" ? (data.delivery === "otros" ? data.deliveryOtro : data.delivery) : null,
+                        deliveryOtro: data.metodoEnvio === "delivery" && data.delivery === "otros" ? data.deliveryOtro : null,
+                        dniRecibe: data.dniRecibe || null,
+                        nombreRecibe: data.nombreRecibe || null,
+                        celularRecibe: data.celularRecibe || null,
+                        numeroOperacion: data.numeroOperacion,
+                        estado: "confirmado",
+                        items: itemsParaApi
+                    }),
+                    credentials: "include"
+                })
+
+                const json = await res.json()
+
+                if (json.success) {
+                    setPedidoCreado(json.pedido)
+                    setStep(5)
+                } else {
+                    setError(json.error || "Error al crear pedido")
+                }
             }
         } catch (e: any) {
             setError(e.message || "Error de conexión")
@@ -666,7 +803,7 @@ export default function CheckoutPage() {
                                                 }`}>
                                                 {step > p.num ? <Check className="h-6 w-6" /> : p.num}
                                             </div>
-                                            <span className="text-xs mt-1 font-medium text-slate-900">
+                                            <span className="text-xs mt-1 font-medium text-black">
                                                 {p.titulo}
                                             </span>
                                         </div>
@@ -683,7 +820,7 @@ export default function CheckoutPage() {
                 <div className="bg-white rounded-xl border border-slate-200 p-6">
                     {step === 1 && (
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">Tu Carrito</h2>
+                            <h2 className="text-xl font-bold text-black mb-4">Tu Carrito</h2>
                             {items.length === 0 ? (
                                 <div className="text-center py-12">
                                     <ShoppingCart className="h-16 w-16 text-slate-300 mx-auto mb-4" />
@@ -721,16 +858,19 @@ export default function CheckoutPage() {
                                                     )}
 
                                                     <div className="flex-1">
-                                                        <h3 className="font-bold text-slate-900 text-lg">{item.producto.nombre}</h3>
+                                                        <h3 className="font-bold text-black text-lg">{item.producto.nombre}</h3>
                                                         <p className="text-sm text-slate-600 font-medium">{item.producto.categoria}</p>
                                                         <p className="text-sm text-blue-700 font-medium">{item.tipoLabel}</p>
                                                         <p className="text-sm text-slate-600 font-medium">Precio del artículo por metro: S/ {precioUnitario.toFixed(2)}</p>
                                                     </div>
 
                                                     <div className="text-right">
-                                                        <p className="font-bold text-slate-900 text-lg">S/ {precioTotal.toFixed(2)}</p>
+                                                        <p className="font-bold text-black text-lg">S/ {precioTotal.toFixed(2)}</p>
                                                         {item.tipo === "pieza" && (
-                                                            <p className="text-xs text-amber-600 font-medium">(Metraje de pieza por verificar)</p>
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
+                                                                <Clock className="h-3 w-3" />
+                                                                Metraje en revisión
+                                                            </span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -755,7 +895,7 @@ export default function CheckoutPage() {
                                                                 const minVal = item.tipo === "pieza" ? 1 : 0.01
                                                                 if (value >= minVal) actualizarCantidad(item.id, value)
                                                             }}
-                                                            className="w-20 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900"
+                                                            className="w-20 text-center border-2 border-black rounded px-2 py-1 font-bold text-black"
                                                         />
                                                         <button
                                                             onClick={() => actualizarCantidad(item.id, item.tipo === "pieza" ? item.cantidad + 1 : item.cantidad + 0.01)}
@@ -779,7 +919,7 @@ export default function CheckoutPage() {
                                         <div className="flex justify-between items-center">
                                             <span className="text-slate-600 font-medium">Subtotal:</span>
                                             <div className="text-right">
-                                                <span className="font-medium text-slate-900 text-lg">S/ {calcularSubtotal().toFixed(2)}</span>
+                                                <span className="font-medium text-black text-lg">S/ {calcularSubtotal().toFixed(2)}</span>
 
                                             </div>
                                         </div>
@@ -805,14 +945,17 @@ export default function CheckoutPage() {
 
                     {step === 2 && (
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">Datos de Facturación</h2>
+                            <h2 className="text-xl font-bold text-black mb-4">Datos de Facturación</h2>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Documento *</label>
+                                    <label className="block text-sm font-medium text-black mb-1">
+                                        Tipo de Documento
+                                        <span className="text-red-500 ml-1">*</span>
+                                    </label>
                                     <select
                                         value={data.tipoDocumento}
                                         onChange={e => handleInputChange("tipoDocumento", e.target.value)}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                        className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
                                     >
                                         <option value="">Seleccionar</option>
                                         <option value="dni">DNI</option>
@@ -821,8 +964,9 @@ export default function CheckoutPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    <label className="block text-sm font-medium text-black mb-1">
                                         {data.tipoDocumento === "ruc" ? "Nro. de RUC *" : data.tipoDocumento === "ce" ? "Nro. de documento *" : "Nro. de documento *"}
+                                        <span className="text-red-500 ml-1">*</span>
                                     </label>
                                     <input
                                         type="text"
@@ -833,13 +977,16 @@ export default function CheckoutPage() {
                                             handleInputChange("numeroDoc", filtered)
                                         }}
                                         maxLength={data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                        className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
                                         placeholder={data.tipoDocumento === "ruc" ? "11 dígitos" : data.tipoDocumento === "dni" ? "8 dígitos" : "15 dígitos"}
                                     />
                                 </div>
                                 {data.tipoDocumento !== "ruc" && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Nombres y apellidos *</label>
+                                        <label className="block text-sm font-medium text-black mb-1">
+                                            Nombres y apellidos *
+                                            <span className="text-red-500 ml-1">*</span>
+                                        </label>
                                         <input
                                             type="text"
                                             value={data.nombreFactura}
@@ -848,14 +995,17 @@ export default function CheckoutPage() {
                                                 handleInputChange("nombreFactura", filtered)
                                             }}
                                             maxLength={50}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
-                                            placeholder="Solo letras, máximo 50 caracteres"
+                                            className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                            placeholder="Nombre completo"
                                         />
                                     </div>
                                 )}
                                 {data.tipoDocumento === "ruc" && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Razón Social *</label>
+                                        <label className="block text-sm font-medium text-black mb-1">
+                                            Razón Social *
+                                            <span className="text-red-500 ml-1">*</span>
+                                        </label>
                                         <input
                                             type="text"
                                             value={data.nombreFactura}
@@ -864,13 +1014,16 @@ export default function CheckoutPage() {
                                                 handleInputChange("nombreFactura", filtered)
                                             }}
                                             maxLength={80}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
-                                            placeholder="Razón social, máximo 80 caracteres"
+                                            className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                            placeholder="Razón social"
                                         />
                                     </div>
                                 )}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Dirección *</label>
+                                    <label className="block text-sm font-medium text-black mb-1">
+                                        Dirección *
+                                        <span className="text-red-500 ml-1">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         value={data.direccion}
@@ -879,12 +1032,12 @@ export default function CheckoutPage() {
                                             handleInputChange("direccion", filtered)
                                         }}
                                         maxLength={80}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
-                                        placeholder="Dirección, máximo 80 caracteres"
+                                        className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                        placeholder="Dirección de facturación"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Departamento (opcional)</label>
+                                    <label className="block text-sm font-medium text-black mb-1">Departamento (opcional)</label>
                                     <select
                                         value={data.departamento}
                                         onChange={e => {
@@ -892,7 +1045,7 @@ export default function CheckoutPage() {
                                             handleInputChange("provincia", "")
                                             handleInputChange("distrito", "")
                                         }}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                        className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
                                     >
                                         <option value="">Seleccionar</option>
                                         {Object.keys(UBIGEO).map(dep => (
@@ -902,14 +1055,14 @@ export default function CheckoutPage() {
                                 </div>
 {data.departamento && UBIGEO[data.departamento] && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Provincia (opcional)</label>
+                                        <label className="block text-sm font-medium text-black mb-1">Provincia (opcional)</label>
                                         <select
                                             value={data.provincia}
                                             onChange={e => {
                                                 handleInputChange("provincia", e.target.value)
                                                 handleInputChange("distrito", "")
                                             }}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                            className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
                                         >
                                             <option value="">Seleccionar</option>
                                             {Object.keys(UBIGEO[data.departamento] || {}).map(prov => (
@@ -920,11 +1073,11 @@ export default function CheckoutPage() {
                                 )}
                                         {data.departamento && data.provincia && UBIGEO[data.departamento]?.[data.provincia] && (
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-1">Distrito (opcional)</label>
+                                                <label className="block text-sm font-medium text-black mb-1">Distrito (opcional)</label>
                                                 <select
                                                     value={data.distrito}
                                                     onChange={e => handleInputChange("distrito", e.target.value)}
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                                    className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
                                                 >
                                                     <option value="">Seleccionar</option>
                                                     {(UBIGEO[data.departamento]?.[data.provincia] || []).map(dist => (
@@ -935,7 +1088,7 @@ export default function CheckoutPage() {
                                         )}
                                 <div className="flex gap-4 mt-6">
                                     <Button onClick={() => setStep(1)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
-                                    <Button onClick={() => setStep(3)} className="flex-1 bg-green-600 text-white">Continuar</Button>
+                                    <Button onClick={() => setStep(3)} disabled={!validarPaso(2)} className="flex-1 bg-green-600 text-white">Continuar</Button>
                                 </div>
                             </div>
                         </div>
@@ -943,7 +1096,7 @@ export default function CheckoutPage() {
 
                     {step === 3 && (
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">Método de Entrega</h2>
+                            <h2 className="text-xl font-bold text-black mb-4">Método de Entrega</h2>
                             <div className="space-y-4">
                                 <button
                                     onClick={() => data.metodoEnvio !== "tienda" && handleInputChange("metodoEnvio", "tienda")}
@@ -963,9 +1116,11 @@ export default function CheckoutPage() {
                                             className="w-full p-3 border rounded-lg text-black"
                                         >
                                             <option value="">Seleccionar tienda...</option>
-                                            <option value="tienda1">Tienda Centro - Jr. de la Unión 456</option>
-                                            <option value="tienda2">Tienda Norte - Av. Alfredo Benavides 1234</option>
-                                            <option value="tienda3">Tienda Este - Av. Javier Prado 2500</option>
+                                            {tiendas.map((tienda) => (
+                                                <option key={tienda.id} value={tienda.id}>
+                                                    {tienda.nombre} - {tienda.direccion}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                 )}
@@ -1036,7 +1191,7 @@ export default function CheckoutPage() {
                                                 />
                                                 <input
                                                     type="text"
-                                                    placeholder="Celular (9 dígitos)"
+                                                    placeholder="Celular (opcional)"
                                                     value={data.celularRecibe || ""}
                                                     onChange={(e) => handleInputChange("celularRecibe", e.target.value.replace(/\D/g, "").slice(0, 9))}
                                                     className="w-full p-3 border rounded-lg text-black"
@@ -1110,7 +1265,7 @@ export default function CheckoutPage() {
                                                 />
                                                 <input
                                                     type="text"
-                                                    placeholder="Celular (9 dígitos)"
+                                                    placeholder="Celular (opcional)"
                                                     value={data.celularRecibe || ""}
                                                     onChange={(e) => handleInputChange("celularRecibe", e.target.value.replace(/\D/g, "").slice(0, 9))}
                                                     className="w-full p-3 border rounded-lg text-black"
@@ -1129,18 +1284,201 @@ export default function CheckoutPage() {
                         </div>
                     )}
 
-                    {step === 4 && (
+{step === 4 && (
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">Resumen y Pago</h2>
-                            <div className="bg-slate-50 p-4 rounded-lg mb-4">
-                                <p className="font-bold mb-2">Total: S/ {calcularTotal().toFixed(2)}</p>
-                            </div>
-                            <div className="flex gap-4 mt-4">
-                                <Button onClick={() => setStep(3)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
-                                <Button onClick={crearPedido} disabled={loading} className="flex-1 bg-green-600 text-white">
-                                    {loading ? "Procesando..." : "Confirmar Pedido"}
-                                </Button>
-                            </div>
+                            <h2 className="text-xl font-bold text-black mb-4">Resumen y Pago</h2>
+                            
+                            {metrajeConfirmado && continuarPedido ? (
+                                <div className="mb-4">
+                                    <div className="bg-green-50 border-2 border-green-400 p-4 rounded-lg mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <Check className="h-5 w-5 text-green-600" />
+                                            <p className="font-bold text-green-800">¡Metraje Confirmado!</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="border-2 border-black rounded-lg p-4">
+                                        <p className="font-bold text-black mb-3">Artículos:</p>
+                                        <div className="space-y-2">
+                                            {continuarPedido.pedidoDetalle?.map((detalle: any, idx: number) => {
+                                                const subtotal = detalle.metraje ? detalle.metraje * detalle.precio : detalle.cantidad * detalle.precio
+                                                return (
+                                                    <div key={idx} className="flex justify-between text-sm">
+                                                        <div className="text-black">
+                                                            <p className="font-medium">{detalle.producto?.nombre || `Producto ${idx + 1}`}</p>
+                                                            <p className="text-xs text-gray-600">
+                                                                {detalle.metraje 
+                                                                    ? `${detalle.metraje}m × S/ ${Number(detalle.precio).toFixed(2)}/m`
+                                                                    : `${detalle.cantidad} ${detalle.tipo === "pieza" ? "pieza(s)" : "m"} × S/ ${Number(detalle.precio).toFixed(2)}/m`
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                        <span className="text-black font-medium">S/ {subtotal.toFixed(2)}</span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded-lg mt-4 text-sm">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-black">Subtotal:</span>
+                                            <span className="text-black">S/ {Number(continuarPedido.subtotal || 0).toFixed(2)}</span>
+                                        </div>
+                                        {continuarPedido.metodoEnvio && continuarPedido.metodoEnvio !== "retiro" && (
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-black">Costo de envío:</span>
+                                                <span className="text-black">S/ {Number(continuarPedido.costoEnvio || 0).toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        {(!continuarPedido.metodoEnvio || continuarPedido.metodoEnvio === "retiro") && (
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-black">Recojo en tienda:</span>
+                                                <span className="text-green-600 font-medium">Gratis</span>
+                                            </div>
+                                        )}
+                                        <div className="border-t border-slate-300 mt-2 pt-2">
+                                            <p className="font-bold mb-2 text-black">Total: S/ {Number(continuarPedido.total || 0).toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-6">
+                                        <Button 
+                                            onClick={() => setShowPaymentModal(true)}
+                                            disabled={loading} 
+                                            className="w-full bg-green-600 text-white font-bold"
+                                        >
+                                            {loading ? "Procesando..." : "Finalizar Compra"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : tienePiezasPendientes ? (
+                                <div className="mb-4">
+                                    <div className="bg-amber-50 border-2 border-amber-400 p-4 rounded-lg mb-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Clock className="h-5 w-5 text-amber-600" />
+                                            <p className="font-bold text-amber-800">Tu pedido contiene piezas que requieren metraje exacto</p>
+                                        </div>
+                                        <p className="text-sm text-amber-700">Haz click en 'Agendar pedido' para agendar revisión de piezas</p>
+                                    </div>
+                                    
+                                    <div className="border-2 border-black rounded-lg p-4">
+                                        <p className="font-bold text-black mb-3">Artículos:</p>
+                                        <div className="space-y-2">
+                                            {continuarPedido?.pedidoDetalle?.length ? (
+                                                continuarPedido.pedidoDetalle.map((detalle: any, idx: number) => (
+                                                    <div key={idx} className="flex justify-between text-sm">
+                                                        <span className="text-black">{detalle.producto?.nombre || `Producto ${idx + 1}`}</span>
+                                                        <span className="text-black font-medium">
+                                                            {detalle.metraje ? `${detalle.metraje}m` : `${detalle.cantidad} ${detalle.tipo === "pieza" ? "pieza(s)" : "m"}`}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                items.map((item: any, idx: number) => (
+                                                    <div key={idx} className="flex justify-between text-sm">
+                                                        <span className="text-black">{item.producto.nombre}</span>
+                                                        <span className="text-black font-medium">
+                                                            {item.cantidad} {item.tipo === "pieza" ? "pieza(s)" : "m"}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex gap-4 mt-6">
+                                        <Button 
+                                            onClick={() => setStep(3)} 
+                                            variant="outline"
+                                            className="flex-1 border-slate-500 text-black font-bold"
+                                        >
+                                            Atrás
+                                        </Button>
+                                        <Button 
+                                            onClick={() => router.push("/dashboard")} 
+                                            variant="outline"
+                                            className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
+                                        >
+                                            Cancelar Compra
+                                        </Button>
+                                        <Button onClick={crearPedidoConMetrajeTemporal} disabled={loading} className="flex-1 bg-yellow-600 text-black font-bold">
+                                            {loading ? "Procesando..." : "Agendar Pedido"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="border-2 border-black rounded-lg p-4 mb-4">
+                                        <p className="font-bold text-black mb-3">Artículos:</p>
+                                        <div className="space-y-2">
+                                            {items.map((item: any, idx: number) => {
+                                                const subtotal = item.metraje ? item.metraje * item.producto.precio : item.cantidad * item.producto.precio
+                                                return (
+                                                    <div key={idx} className="flex justify-between text-sm">
+                                                        <div className="text-black">
+                                                            <p className="font-medium">{item.producto.nombre}</p>
+                                                            <p className="text-xs text-gray-600">
+                                                                {item.metraje 
+                                                                    ? `${item.metraje}m × S/ ${Number(item.producto.precio).toFixed(2)}/m`
+                                                                    : `${item.cantidad} ${item.tipo === "pieza" ? "pieza(s)" : "m"} × S/ ${Number(item.producto.precio).toFixed(2)}/m`
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                        <span className="text-black font-medium">S/ {subtotal.toFixed(2)}</span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded-lg mb-4 text-sm">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-black">Subtotal:</span>
+                                            <span className="text-black">S/ {calcularSubtotal().toFixed(2)}</span>
+                                        </div>
+                                        {data.metodoEnvio && data.metodoEnvio !== "retiro" && (
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-black">Costo de envío:</span>
+                                                <span className="text-black">S/ {calcularCostoEnvio().toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        {data.metodoEnvio === "retiro" && (
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-black">Recojo en tienda:</span>
+                                                <span className="text-green-600 font-medium">Gratis</span>
+                                            </div>
+                                        )}
+                                        <div className="border-t border-slate-300 mt-2 pt-2">
+                                            <p className="font-bold mb-2 text-black">Total: S/ {calcularTotal().toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex gap-4 mt-4">
+                                        <Button 
+                                            onClick={() => setStep(3)} 
+                                            variant="outline"
+                                            className="flex-1 border-slate-500 text-black font-bold"
+                                        >
+                                            Volver atrás
+                                        </Button>
+                                        <Button 
+                                            onClick={() => router.push("/dashboard")} 
+                                            variant="outline"
+                                            className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button 
+                                            onClick={() => setShowPaymentModal(true)}
+                                            disabled={loading} 
+                                            className="flex-1 bg-green-600 text-white font-bold"
+                                        >
+                                            Finalizar Compra
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -1150,7 +1488,7 @@ export default function CheckoutPage() {
             {deletingId && items.find(i => i.id === deletingId) && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
-                        <p className="text-lg font-bold text-slate-900 mb-4">¿Eliminar {items.find(i => i.id === deletingId)?.producto.nombre}?</p>
+                        <p className="text-lg font-bold text-black mb-4">¿Eliminar {items.find(i => i.id === deletingId)?.producto.nombre}?</p>
                         <div className="flex gap-3">
                             <Button onClick={cancelarEliminar} variant="outline" className="flex-1">Cancelar</Button>
                             <Button onClick={confirmarEliminar} className="flex-1 bg-red-600">Sí, eliminar</Button>
@@ -1160,41 +1498,62 @@ export default function CheckoutPage() {
                 </div>
             )}
 
-            {step === 4 && continuarPedido && (
-                <div className="mt-8 flex gap-4">
-                    <Button
-                        variant="outline"
-                        onClick={() => router.push("/dashboard/pedidos")}
-                        className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
-                    >
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={finalizarPedidoExistente}
-                        disabled={loading || !validarPaso(step)}
-                        className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
-                    >
-                        {loading ? "Procesando..." : "Confirmar y Finalizar"}
-                    </Button>
-                </div>
-            )}
-
-            {step === 4 && !continuarPedido && (
-                <div className="mt-8 flex gap-4">
-                    <Button
-                        variant="outline"
-                        onClick={() => router.push("/dashboard")}
-                        className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
-                    >
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={crearPedido}
-                        disabled={loading || !validarPaso(step)}
-                        className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
-                    >
-                        {loading ? "Procesando..." : "Finalizar Compra"}
-                    </Button>
+            {showPaymentModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl">
+                        <h2 className="text-xl font-bold text-black mb-4">Métodos de Pago</h2>
+                        
+                        <div className="bg-slate-50 p-4 rounded-lg mb-4">
+                            <p className="font-bold text-lg text-black">Total: S/ {continuarPedido?.total ? Number(continuarPedido.total).toFixed(2) : calcularTotal().toFixed(2)}</p>
+                        </div>
+                        
+                        <div className="space-y-3 mb-4">
+                            <div className="border rounded-lg p-3">
+                                <p className="font-bold text-sm text-black mb-2">🏦 Transferencia Bancaria</p>
+                                <div className="text-sm text-slate-700 space-y-1">
+                                    <p>BBVA: 0011-0184-0202841851</p>
+                                    <p>BCP: 215-2858489001</p>
+                                    <p>Interbank: 620-3004489521</p>
+                                </div>
+                            </div>
+                            
+                            <div className="border rounded-lg p-3">
+                                <p className="font-bold text-sm text-black mb-2">📱 Yape / Plin</p>
+                                <div className="text-sm text-slate-700">
+                                    <p>Cel: +51 978 543 210</p>
+                                    <p>EMPRESA SAC</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium mb-1 text-black">Número de operación:</label>
+                            <input
+                                type="text"
+                                value={data.numeroOperacion}
+                                onChange={(e) => setData({ ...data, numeroOperacion: e.target.value })}
+                                className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
+                                placeholder="Ingresa el número de operación"
+                            />
+                        </div>
+                        
+                        <div className="flex gap-3">
+                            <Button 
+                                onClick={() => setShowPaymentModal(false)}
+                                variant="outline"
+                                className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button 
+                                onClick={confirmarPago}
+                                disabled={loading || !data.numeroOperacion}
+                                className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
+                            >
+                                {loading ? "Procesando..." : "Confirmar Pedido"}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -1206,7 +1565,7 @@ export default function CheckoutPage() {
                                 <AlertTriangle className="h-6 w-6 text-yellow-600" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-slate-900">⚠️ Tu pedido incluye piezas</h2>
+                                <h2 className="text-xl font-bold text-black">⚠️ Tu pedido incluye piezas</h2>
                                 <p className="text-sm text-slate-500">El metraje exacto está siendo procesado.</p>
                             </div>
                         </div>
@@ -1256,7 +1615,7 @@ export default function CheckoutPage() {
                     <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
                         <div className="text-center mb-4">
                             <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                            <p className="text-lg font-bold text-slate-900">¿Estás seguro de eliminar?</p>
+                            <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
                             <p className="text-slate-600 mt-2">
                                 El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
                             </p>
@@ -1285,7 +1644,7 @@ export default function CheckoutPage() {
                     <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
                         <div className="text-center mb-4">
                             <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                            <p className="text-lg font-bold text-slate-900">¿Estás seguro de eliminar?</p>
+                            <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
                             <p className="text-slate-600 mt-2">
                                 El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
                             </p>

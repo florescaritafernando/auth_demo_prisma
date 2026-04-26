@@ -8,18 +8,34 @@ export function BotonNuevoAlmacen() {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
+    const [empleados, setEmpleados] = useState<{id: string, name: string, email: string}[]>([])
     const [form, setForm] = useState({
         nombre: "",
         direccion: "",
         telefono: "",
-        responsable: "",
+        responsableId: "",
         ciudad: "",
     })
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
         setMounted(true)
-    }, [])
+        if (open) {
+            fetchEmpleados()
+        }
+    }, [open])
+
+    const fetchEmpleados = async () => {
+        try {
+            const res = await fetch("/api/usuarios?role=empleado", { credentials: "include" })
+            const data = await res.json()
+            if (data.success) {
+                setEmpleados(data.usuarios || [])
+            }
+        } catch (e) {
+            console.error("Error fetching empleados:", e)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -38,8 +54,11 @@ export function BotonNuevoAlmacen() {
             if (data.success) {
                 setOpen(false)
                 setForm({
-                    nombre: "", direccion: "", telefono: "",
-                    responsable: "", ciudad: "",
+                    nombre: "",
+                    direccion: "",
+                    telefono: "",
+                    responsableId: "",
+                    ciudad: "",
                 })
                 router.refresh()
             } else {
@@ -77,15 +96,15 @@ export function BotonNuevoAlmacen() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
                 <div className="flex justify-between items-center p-4 border-b border-slate-200">
-                    <h2 className="text-lg font-bold text-slate-900">Nuevo Almacen</h2>
-                    <button onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 rounded text-slate-600">
+                    <h2 className="text-lg font-bold text-black">Nuevo Almacen</h2>
+                    <button onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 rounded text-black">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M18 6 6 18M6 6l12 12"/>
                         </svg>
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-4 space-y-4 text-slate-900">
+                <form onSubmit={handleSubmit} className="p-4 space-y-4 text-black">
                     {error && (
                         <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
                             {error}
@@ -93,11 +112,11 @@ export function BotonNuevoAlmacen() {
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-700">Nombre *</label>
+                        <label className="block text-sm font-medium mb-1 text-black">Nombre *</label>
                         <input
                             type="text"
                             required
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900"
+                            className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
                             value={form.nombre}
                             onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                             placeholder="Almacen Principal"
@@ -105,10 +124,10 @@ export function BotonNuevoAlmacen() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-700">Direccion *</label>
+                        <label className="block text-sm font-medium mb-1 text-black">Direccion *</label>
                         <textarea
                             required
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900"
+                            className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
                             rows={2}
                             value={form.direccion}
                             onChange={(e) => setForm({ ...form, direccion: e.target.value })}
@@ -117,10 +136,10 @@ export function BotonNuevoAlmacen() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-700">Telefono</label>
+                        <label className="block text-sm font-medium mb-1 text-black">Telefono</label>
                         <input
                             type="text"
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900"
+                            className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
                             value={form.telefono}
                             onChange={(e) => setForm({ ...form, telefono: e.target.value })}
                             placeholder="+51 987 654 321"
@@ -128,21 +147,27 @@ export function BotonNuevoAlmacen() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-700">Responsable</label>
-                        <input
-                            type="text"
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900"
-                            value={form.responsable}
-                            onChange={(e) => setForm({ ...form, responsable: e.target.value })}
-                            placeholder="Juan Perez"
-                        />
+                        <label className="block text-sm font-medium mb-1 text-black">Responsable *</label>
+                        <select
+                            required
+                            className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
+                            value={form.responsableId}
+                            onChange={(e) => setForm({ ...form, responsableId: e.target.value })}
+                        >
+                            <option value="">Seleccionar responsable...</option>
+                            {empleados.map((emp) => (
+                                <option key={emp.id} value={emp.id}>
+                                    {emp.name} ({emp.email})
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-700">Ciudad *</label>
+                        <label className="block text-sm font-medium mb-1 text-black">Ciudad *</label>
                         <select
                             required
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900"
+                            className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
                             value={form.ciudad}
                             onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
                         >
@@ -158,14 +183,14 @@ export function BotonNuevoAlmacen() {
                         <button
                             type="button"
                             onClick={() => setOpen(false)}
-                            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-700"
+                            className="flex-1 px-4 py-2 border border-black rounded-lg hover:bg-slate-50 text-black"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50"
+                            className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-slate-800 disabled:opacity-50"
                         >
                             {loading ? "Guardando..." : "Guardar"}
                         </button>

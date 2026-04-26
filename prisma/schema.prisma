@@ -26,7 +26,6 @@ model User {
   tipoDocumento String?   // "dni" | "ruc" | "ce"
   numeroDoc  String?
   direccion  String?
-  ciudad    String?
   celular   String?   // Teléfono de uso general
   
   sessions      Session[]
@@ -34,9 +33,11 @@ model User {
   carrito      Carrito[]
   pedidos      Pedido[]
   reclamos     Reclamo[]
-  notificaciones Notificacion[]
+notificaciones Notificacion[]
   tiendas      Tienda[]
-
+  almacenes    Almacen[]
+  pedidosDelegados Pedido[]    @relation("PedidoDelegado")
+ 
   @@unique([email])
   @@map("user")
 }
@@ -72,7 +73,7 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
-
+  
   @@index([userId])
   @@map("account")
 }
@@ -112,13 +113,15 @@ model Almacen {
   nombre      String
   direccion   String
   telefono    String?
-  responsable String?
+  responsableId String?
   ciudad     String?
   activo     Boolean   @default(true)
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedAt   DateTime  @default(now())
+  responsable User?    @relation(fields: [responsableId], references: [id])
   stocks     ProductoStock[]
 
+  @@index([responsableId])
   @@map("almacen")
 }
 
@@ -163,15 +166,19 @@ model Pedido {
   numeroDoc   String?
   nombreFactura String?
   direccion  String?
-  ciudad    String?
   
   // Método de envío
   metodoEnvio  String?     // "tienda" | "agencia" | "delivery"
   tiendaId   String?
+  tienda    Tienda?    @relation(fields: [tiendaId], references: [id])
   tipoEnvio  String?     // "mismapersona" | "otropersona" (para agencia/delivery)
   agencia    String?     // "shalom" | "flores" | "marvisur" | "otros"
+  agenciaOtro String?
   delivery   String?     // "olva" | "safexpress" | "otros"
   deliveryOtro String?
+  departamento String?
+  provincia    String?
+  distrito     String?
   costoEnvio  Float       @default(0)
   
   // Datos de quien recibe (para otra persona)
@@ -182,6 +189,11 @@ model Pedido {
   // Pago
   numeroOperacion String?
   notas       String?
+  
+  // Delegación y seguimiento
+  delegadoId    String?    // ID del empleado asignado
+  delegado    User?     @relation("PedidoDelegado", fields: [delegadoId], references: [id])
+  motivoRechazo String?   // Motivo cuando se rechaza
   
   createdAt   DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
@@ -264,8 +276,10 @@ model Tienda {
   encargadoId String
   activo     Boolean  @default(true)
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
   
   encargado   User     @relation(fields: [encargadoId], references: [id])
+  pedidos     Pedido[]
   
   @@index([encargadoId])
   @@map("tienda")

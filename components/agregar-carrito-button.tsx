@@ -50,7 +50,7 @@ export function BotonAgregarCarrito({ producto }: Props) {
 
             const res = await fetch("/api/carrito", {
                 method: "POST",
-                headers: { 
+                headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
@@ -71,7 +71,7 @@ export function BotonAgregarCarrito({ producto }: Props) {
                 console.error("JSON parse error:", text)
                 throw new Error("Respuesta inválida del servidor")
             }
-            
+
             if (!res.ok) {
                 throw new Error(data.error || "Error del servidor")
             }
@@ -105,7 +105,7 @@ export function BotonAgregarCarrito({ producto }: Props) {
     }
 
     const modalContent = showModal ? (
-        <div 
+        <div
             className="fixed inset-0 z-[9999] flex items-center justify-center"
             onClick={(e) => {
                 if (e.target === e.currentTarget) closeModal()
@@ -131,22 +131,20 @@ export function BotonAgregarCarrito({ producto }: Props) {
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setTipoPedido("metros")}
-                                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-colors ${
-                                    tipoPedido === "metros" 
-                                        ? "bg-blue-50 border-blue-500 text-blue-700" 
+                                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-colors ${tipoPedido === "metros"
+                                        ? "bg-blue-50 border-blue-500 text-blue-700"
                                         : "border-slate-300 text-slate-600 hover:bg-slate-50"
-                                }`}
+                                    }`}
                             >
                                 <Ruler className="h-4 w-4" />
                                 <span className="text-sm font-medium">Metros</span>
                             </button>
                             <button
                                 onClick={() => setTipoPedido("pieza")}
-                                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-colors ${
-                                    tipoPedido === "pieza" 
-                                        ? "bg-blue-50 border-blue-500 text-blue-700" 
+                                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-colors ${tipoPedido === "pieza"
+                                        ? "bg-blue-50 border-blue-500 text-blue-700"
                                         : "border-slate-300 text-slate-600 hover:bg-slate-50"
-                                }`}
+                                    }`}
                             >
                                 <Package className="h-4 w-4" />
                                 <span className="text-sm font-medium">Pieza</span>
@@ -166,15 +164,15 @@ export function BotonAgregarCarrito({ producto }: Props) {
                         </label>
                         <input
                             type="number"
-                            step={tipoPedido === "pieza" ? "1" : "0.01"}
-                            min={tipoPedido === "pieza" ? "1" : "0.01"}
+                            step={tipoPedido === "pieza" ? "1" : ""}
+                            min={tipoPedido === "pieza" ? "1" : ""}
                             value={cantidad}
                             onChange={(e) => {
                                 const val = parseFloat(e.target.value)
                                 if (tipoPedido === "pieza") {
                                     setCantidad(Math.max(1, Math.floor(val) || 1))
                                 } else {
-                                    setCantidad(Math.max(0.01, val || 0.01))
+                                    setCantidad(Math.max(0, val || 0.1))
                                 }
                             }}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"

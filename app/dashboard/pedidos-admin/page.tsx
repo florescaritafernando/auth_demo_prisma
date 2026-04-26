@@ -33,7 +33,9 @@ async function getPedidos() {
                         producto: { select: { id: true, nombre: true, categoria: true } },
                         etiquetas: { orderBy: { createdAt: "asc" } }
                     }
-                }
+                },
+                tienda: { select: { id: true, nombre: true, direccion: true } },
+                delegado: { select: { id: true, name: true } }
             },
             orderBy: { createdAt: "desc" }
         })
@@ -51,7 +53,7 @@ export default async function PedidosAdminPage() {
     if (!session) redirect("/login")
 
     const role = (session.user as any)?.role || "cliente"
-    if (role !== "admin") redirect("/dashboard")
+    if (!["admin", "empleado"].includes(role)) redirect("/dashboard")
 
     const pedidos = await getPedidos()
 
