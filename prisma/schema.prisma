@@ -136,14 +136,14 @@ model Carrito {
   id          String   @id @default(cuid())
   userId      String
   productoId  String
-  cantidad   Int      @default(1)
+  cantidad   Float    @default(1)
   tipo       String   @default("metros") // "metros" or "pieza"
   createdAt   DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   producto   Producto @relation(fields: [productoId], references: [id])
 
-  @@unique([userId, productoId])
+  @@unique([userId, productoId, tipo])
   @@index([userId])
   @@map("carrito")
 }
@@ -193,7 +193,7 @@ model PedidoDetalle {
   id          String   @id @default(cuid())
   pedidoId    String
   productoId String
-  cantidad   Int      // Cantidad original (piezas o metros)
+  cantidad   Float    // Cantidad original (piezas o metros)
   tipo        String   @default("metros")  // "metros" | "pieza"
   metraje    Float?   // Metraje exacto en metros (cuando admin_edita)
   precio     Float

@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString = process.env.DATABASE_URL!.includes("sslmode") 
     ? process.env.DATABASE_URL!
-    : process.env.DATABASE_URL! + (process.env.DATABASE_URL!.includes("?") ? "&" : "?") + "sslmode=require";
+    : process.env.DATABASE_URL! + (process.env.DATABASE_URL!.includes("?") ? "&" : "?") + "sslmode=verify-full";
 
 const adapter = new PrismaPg({
     connectionString,

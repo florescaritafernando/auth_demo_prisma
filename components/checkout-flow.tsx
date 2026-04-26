@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store } from "lucide-react"
+import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface CarritoItem {
@@ -28,7 +28,9 @@ interface CheckoutData {
     numeroDoc: string
     nombreFactura: string
     direccion: string
-    ciudad: string
+    departamento: string
+    provincia: string
+    distrito: string
     metodoEnvio: string
     agencia: string
     agenciaOtro: string
@@ -45,18 +47,89 @@ const PASOS = [
     { num: 4, titulo: "Pago", desc: "Resumen y operación" }
 ]
 
+const UBIGEO: Record<string, Record<string, string[]>> = {
+    "Amazonas": {
+        "Chachapoyas": ["Chachapoyas", "Asunción", "Bagama", "Bélden", "Cheto", "Chuquibamba", "Corosha", "Cuisces", "El Tingo", "Granada", "Huancas", "La Jalca", "Leimebamba", "Levanto", "Luya", "Magdalena", "Mara", "Mariscal Castilla", "Mendoza", "Ocalli", "Piruro", "San Francisco", "San Juan de Lopecancha", "Santa Rosa", "Solano", "Sonche", "Utcubamba"],
+        "Bagua": ["Bagua", "Churuja", "Corosha", "El Milegro", "Jazan", "Leimebamba", "Lonya Grande", "Yamaluc"],
+        "Condorcanqui": ["Namballe", "San Ignacio", "Santa Rosa de la Yunga"],
+        "Utcubamba": ["Bagua Chica", "Cajaruro", "Cumba", "El Tingo", "Granada", "Huancas", "Luya", "Omia", "San Antonio", "Santa Catalina", "Santo Domingo", "Tingo"]
+    },
+    "Ancash": {
+        "Huaraz": ["Huaraz", "Cochabamba", "Colcabamba", "Huanchay", "Jangas", "La Libertad", "Pira", "Shapas", "Tangshan"],
+        "Aija": ["Aija", "Coris", "Huacllan", "La Merced", "Succha"],
+        "Bolognesi": ["Chiquian", "Abra", "Cajacay", "Canis", "Chuquicón", "Huallanca", "Huasta", "Huayllapón", "Mancas", "Pacllón", "San Antonio", "San Pedrillo", "Tauca"],
+        "Carhuaz": ["Carhuaz", "Aco", "Marco", "San Miguel", "Shupluy"],
+        "Casma": ["Casma", "Buenavista Alta", "Comandante", "Yaután"],
+        "Corongo": ["Corongo", "Cabanas", "Carhua", "Coyllurqui", "Curasco", "Huatan", "Jacas", "Manú"],
+        "Huaylas": ["Pativilca", "Huallanca", "Huayán", "Moro", "Pampas"],
+        "Huarmey": ["Huarmey", "Cochapeti", "Cunya", "Malvas", "Quillo"],
+        "Mariscal Luzuriaga": ["Piscobamba", "Cascan", "Chavin", "Llamellin", "Lucma", "Musga"],
+        "Ocros": ["Ocros", "Acas", "Cajamarquilla", "Carhua", "Cocha", "Huata", "Huangra", "Mira", "Rag", "San Mateo", "San Miguel"],
+        "Pallasca": ["Cabana", "Buldibuyco", "Conchucos", "Huacas", "Huandoval", "Lacabamba", "Llapo", "Manú", "Pampas", "Santa Rosa", "Tauca"],
+        "Pomabamba": ["Pomabamba", "Huayllapón", "Pampas", "Parobamba", "Quinuabon"],
+        "Recuay": ["Recuay", "Catac", "Coyal", "Huarac", "Huayllapón", "Llamac", "Marka", "Pampas", "Shap"],
+        "Santa": ["Chimbote", "Cáceres", "Coishco", "Macate", "Moro", "Nepeña", "Samanco", "Santa", "Sauce"],
+        "Sihuas": ["Sihuas", "Acobamba", "Cashapampa", "Chingal", "Cucara", "Huandoval", "Pampas", "Quichuas", "Rag"],
+        "Yungay": ["Yungay", "Cascapara", "Mancos", "Matac", "Quillo", "Ranrahirca", "Shapra", "Uco"]
+    },
+    "Apurimac": {
+        "Abancay": ["Abancay", "Circa", "Curahuasi", "Huanipaca", "Kurimarca", "Lambrama", "Micaela", "Pichirhua", "San Antonio", "Sayhuite", "Tintay", "Tumay"],
+        "Andahuaylas": ["Andahuaylas", "Andarapa", "Chiara", "Huancarama", "Huancaray", "Huanca", "Kishuara", "Manthara", "Marmeta", "OrCCPana CCPabancón", "Pampachiri", "Pichirhua", "Rosaspata", "San Antonio de Cachi", "San Jerónimo", "San Miguel", "Santa María", "Talavera"],
+        "Antabamba": ["Antabamba", "El Oro", "Huaquirca", "Juan", "Oropesa", "Pachaconas", "Sabaino"],
+        "Aymaraes": ["Chalhuanca", "Capaya", "Caraybamba", "Colca", "Curasco", "Huaytiri", "Justo", "Luray", "Ocaña", "Pampachiri", "SaÑana", "Sank", "Santiago", "Santo Tomas", "Tiaparo"],
+        "Cotabambas": ["Cotabambas", "Ccochaccasa", "Chuicbamba", "Cotabambas", "Huayllaga", "Marmeta", "Matalaca", "Rag", "Tantara"],
+        "Chincheros": ["Chincheros", "Anco-Huallo", "Chincheros", "CochARAs", "Huamanguiri", "Los", "Mana"],
+        "Grau": ["Grau", "Anta", "C禧y", "Gamarra", "Huaiquit", "Mariscal Gamarra", "Pichi", "Progreso", "San Antonio", "Santa Clara", "Tapao"]
+    },
+    "Arequipa": {
+        "Arequipa": ["Arequipa", "Cayma", "Cerro Colorado", "Characato", "Chiguata", "La Joya", "Mollebaya", "Paucarpata", "Puesto", "Sachaca", "Sabandía", "San Juan de Siguas", "Santa Isabel", "Santa Rita", "Siguas", "Tiabaya", "Uchumayo", "Vitor"],
+        "Camaná": ["Camaná", "Camilaca", "Coata", "Huancapi", "La Trinidad", "Lima", "Quinista", "San Juan de Tarucani", "Santo Domingo", "Seda"],
+        "Caravelí": ["Caravelí", "Acarí", "Atiquipa", "Bella Union", "CAVAs", "Chala", "Huanuhuanú", "Jaqui", "Jequetepeque", "La Higuera", "Lomas", "Mollebamba", "Quicacha", "Yauca"],
+        "Castilla": ["Aplao", "Andamios", "Ayo", "Chaca", "Chilca", "Chivay", "Coporaque", "Huambo", "Huanca", "Ichupampa", "Lari", "Lluta", "Madrigal", "Mina", "Mora", "Pichucuma", "Puno", "Quality", "Salamanca", "Salcca", "Sank", "Sora", "Tapay", "Tata", "Taya", "Tomente", "Uyun", "Yana", "YP"],
+        "Caylloma": ["Chivay", "AchOCALata", "Boros", "Cabanaconde", "Caylloma", "Condo", "Huambo", "Huanca", "Iltico", "KechUapa", "Lari", "Llut", "Madrigal", "Mina", "Mollebamba", "San Antonio", "San Juan de Siguas", "Santa Cruz", "Sibs", "Tapay", "Tuti", "Yanque"],
+        "Islay": ["Mollendo", "Cano", "Cocachacra", "Huall", "La Curva", "Pueblo Nuevo", "Quequeña", "Tambo"],
+        "La Unión": ["Cotahuasi", "Alca", "Charcana", "Huaynate", "Pampas", "Poque", "Quechu", "Sayla", "Taurisma", "Tomepampa", "Toro", "Uu"]
+    },
+    "Ayacucho": {
+        "Huamanga": ["Ayacucho", "Acocro", "Acos Vinchos", "Carmen Alto", "Chiara", "Cusco", "Jesús Nazareno", "Ocros", "Pacancha", "Quinua", "San Antonio de Cachi", "San José de Ticllas", "San Juan de la Virgen", "Santiago de Pischa", "Socos", "Tambillo", "Vinchos"],
+        "Cangallo": ["Cangallo", "Chuschi", "Los Morochucos", "María Parado de Bellido", "ParCCía", "Pucacolpa", "Quichuas", "San Juan de la Frontera", "San Pedro de la Gloria", "Sank", "Totorma", "Vilcanchos"],
+        "Huanca Sancos": ["Ccarhuana", "Concepción", "Chupamba", "Huancarane", "Indepandancia", "Los Sauces", "Pampas", "Quvincho", "San Antonio de Cachi", "Sank", "Soras", "Tucsic", "Villa Vista"],
+        "Huanta": ["Huanta", "Ayahuanco", "Canayre", "CCarpish", "Chaccrampa", "Clas", "Huamanguilla", "Huanta", "Iguan", "L-lo", "Luricocha", "Pichcacha", "Quinoa", "Raff", "San Antonio", "San Clemente", "Santa Rosa"],
+        "La Mar": ["San Miguel", "Anchihuay", "Chilcas", "Chon", "Cusco", "El Porvenir", "La Mar", "Lomas", "Luricocha", "Matalaca", "OcaLLAn", "Sank", "Santa Rosa", "Tintay", "To大了", "Villa Mercedes"],
+        "Lucanas": ["Puquio", "Auca", "Banda", "Cachuete", "Carmen Salcedo", "Chaviña", "Chopes", "Cocuk", "Cusco", "Getudo", "Humaya", "Llauta", " Nacmye", "Ninacnie", "OCros", "Pueblo Nuevo", "Pukare", "Quiñ-onez", "Rio Grande", "Salcabamba", "SConcord", "Sank", "Santa Cruz", "Santa Filomena", "Santiago de Pukara", "Santo Domingo de Pilpila", "Sivia", "Tucle", "Ukhuana", "Uran", "Wilca"],
+        "Parinacochas": ["Parinacochas", "Chumpi", "Coracora", "Coro", "Cuznago", "Huamanquicha", "Huaynama", "Julcampa", "Kcruela", "Pampa Grande", "Pukasy", "Quere", "Sank", "Tinkik", "Tomine", "Yana"]
+    },
+    "Lima": {
+        "Lima": ["Lima", "Ancón", "Ate", "Barranco", "Breña", "Carabayllo", "Chaclacayo", "Chorrillos", "Cieneguilla", "Comas", "El Agustino", "Independencia", "Jesús María", "La Molina", "La Victoria", "Lince", "Los Olivos", "Lurigancho", "Lurín", "Magdalena del Mar", "Miraflores", "Pachacámac", "Pucusana", "Pueblo Libre", "Puente Piedra", "Rímac", "San Bartolo", "San Juan de Lurigancho", "San Juan de Miraflores", "San Luis", "San Martín de Porres", "San Miguel", "Santa Anita", "Santa María del Mar", "Santa Rosa", "Santiago de Surco", "Surquillo", "Villa El Salvador", "Villa María del Triunfo"],
+        "Barranca": ["Barranca", "Barranca", "Paramonga", "Supe", "Supe Puerto"],
+        "Cajat": ["Cajat", "Cajat", "San Juan de Lurigancho"],
+        "Canta": ["Canta", "Arahuay", "Canta", "Huamantanga", "Huaros", "Lachaqui", "Quintay", "San Buenaventura", "Santa Rosa de Quives"],
+        "Cañete": ["San Vicente de Cañete", "Calango", "Cerro Azul", "Chilca", "Coayllo", "Imperial", "Lunahuaná", "Mala", "Nieve", "Pacarán", "Quilmaná", "San Luis", "San Vicente", "Santa Cruz de Andama", "Unas"],
+        "Huaral": ["Huaral", "Acos", "Atavilia Bajo", "Buena Vista Alta", "Cajat", "Cerro de Pas", "Chancay", "Iguain", "La Trinidad", "Las Libertadores", "Pucara", "San José", "San Juan de Mas", "Santa Ines", "Sayán"],
+        "Huarochirí": ["Matucana", "Antioquía", "Callahuanca", "Huarochirí", "Langa", "Laraos", "Leonor Ordóñez", "Mariatana", "Matucana", "Morococha", "Olaya", "Pacaraos", "Pedro Escobedo", "Quinches", "Río Blanco", "San Andrés de Tupico", "San Antonio", "San Bartolomé", "San Juan de Iris", "San Juan de Tantaranche", "Santa María de Chicma", "Santiago de Tantaranche", "Santo Domingo de los Olleros"],
+        "Huaura": ["Huacho", "Ampur", "Calango", "Carquín", "Chancayllo", "Don Martin", "El Carrión", "Huaca", "Huaman", "Huaura", "Ica", "Launi", "Leonor Ordóñez", "Limpe", "Paccho", "Pampan", "Quinches", "Sayán", "Supe", "Supe Puerto"],
+        "Oyon": ["Oyon", "Ambar", "Caujul", "Cochamarca", "Colpas", "Huancapon", "Minahuan", "OY", "Pachangara", "Quinches", "Rag", "Shilca", "Yurac"],
+        "Yauyos": ["Yauyos", "Alis", "Ate", "Awton", "Cata", "Chocos", "Cusco", "Huantan", "Huayaringa", "Langa", "Laraos", "Leonor Ordóñez", "Lincha", "Made", "Mariatana", "Miraflores", "Omas", "Putin", "Quinches", "San Juan de Iris", "Santa Cruz de Alpomarca", "Santiago de Tantaranche", "Santo Domingo de los Olleros", "Tupe", "Viñac", "Yauyos"]
+    }
+}
+
+const defaultDepartamentos = Object.keys(UBIGEO)
+
 export default function CheckoutPage() {
     const router = useRouter()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [items, setItems] = useState<CarritoItem[]>([])
+    const [deletingId, setDeletingId] = useState<string | null>(null)
     const [data, setData] = useState<CheckoutData>({
         tipoDocumento: "",
         numeroDoc: "",
         nombreFactura: "",
         direccion: "",
-        ciudad: "",
+        departamento: "",
+        provincia: "",
+        distrito: "",
         metodoEnvio: "",
         agencia: "",
         agenciaOtro: "",
@@ -97,7 +170,7 @@ export default function CheckoutPage() {
                 const pedido = json.pedido
                 setContinuarPedido(pedido)
                 console.log("Pedido data:", JSON.stringify(pedido, null, 2))
-                
+
                 setData({
                     tipoDocumento: pedido.tipoDocumento || "",
                     numeroDoc: pedido.numeroDoc || "",
@@ -126,8 +199,8 @@ export default function CheckoutPage() {
                     cantidadMetros: detalle.tipo === "pieza" ? (detalle.metraje || 50) : detalle.cantidad,
                     tipoLabel: detalle.tipo,
                     metrosPorPieza: 50,
-                    precioUnitario: detalle.tipo === "pieza" ? Number(detalle.precio) * (detalle.metraje || 50) : Number(detalle.precio),
-                    precioTotal: detalle.tipo === "pieza" ? Number(detalle.precio) * (detalle.metraje || 50) * detalle.cantidad : Number(detalle.precio) * detalle.cantidad
+                    precioUnitario: Number(detalle.producto.precio),
+                    precioTotal: Number(detalle.producto.precio) * (detalle.tipo === "pieza" ? (detalle.metraje || 50) : detalle.cantidad)
                 }))
                 console.log("Items from pedido:", itemsFromPedido)
                 setItems(itemsFromPedido)
@@ -146,12 +219,23 @@ export default function CheckoutPage() {
             const res = await fetch("/api/carrito", { credentials: "include" })
             const json = await res.json()
             if (json.success) {
-                const itemsConPrecio = (json.items || []).map((item: any) => ({
-                    ...item,
-                    cantidadMetros: item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad,
-                    precioUnitario: item.tipo === "pieza" ? Number(item.producto.precio) * metrosPorPieza : Number(item.producto.precio),
-                    precioTotal: item.tipo === "pieza" ? Number(item.producto.precio) * metrosPorPieza * item.cantidad : Number(item.producto.precio) * item.cantidad
-                }))
+                const itemsConPrecio = (json.items || []).map((item: any) => {
+                    const precioUnitario = Number(item.producto.precio)
+                    const cantidadMetros = item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad
+                    const precioTotal = item.tipo === "pieza"
+                        ? precioUnitario * cantidadMetros
+                        : precioUnitario * item.cantidad
+                    const precioTotalXPieza = item.tipo === "pieza"
+                        ? precioUnitario * item.cantidad
+                        : 0
+                    return {
+                        ...item,
+                        cantidadMetros,
+                        precioUnitario,
+                        precioTotal,
+                        precioTotalXPieza
+                    }
+                })
                 setItems(itemsConPrecio)
             }
         } catch (e) {
@@ -176,21 +260,62 @@ export default function CheckoutPage() {
         return calcularSubtotal() + calcularCostoEnvio()
     }, [calcularSubtotal, calcularCostoEnvio])
 
-    const eliminarItem = async (itemId: string) => {
+    const actualizarCantidad = async (itemId: string, nuevaCantidad: number) => {
+        if (nuevaCantidad < 1) return
         try {
             const res = await fetch("/api/carrito", {
-                method: "POST",
+                method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "eliminar", carritoId: itemId }),
+                body: JSON.stringify({ itemId, cantidad: nuevaCantidad }),
                 credentials: "include"
             })
             const json = await res.json()
             if (json.success) {
-                setItems(items.filter(i => i.id !== itemId))
+                const itemsConPrecio = (json.items || []).map((item: any) => ({
+                    ...item,
+                    cantidadMetros: item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad,
+                    precioUnitario: Number(item.producto.precio),
+                    precioTotal: item.tipo === "pieza" ? Number(item.producto.precio) * (item.cantidad * metrosPorPieza) : Number(item.producto.precio) * item.cantidad
+                }))
+                setItems(itemsConPrecio)
+            }
+        } catch (e) {
+            console.error("Error updating:", e)
+        }
+    }
+
+    const eliminarItem = async (itemId: string) => {
+        setDeletingId(itemId)
+    }
+
+    const confirmarEliminar = async () => {
+        if (!deletingId) return
+        try {
+            const res = await fetch("/api/carrito", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "eliminar", carritoId: deletingId }),
+                credentials: "include"
+            })
+            const json = await res.json()
+            if (json.success) {
+                const itemsConPrecio = (json.items || []).map((item: any) => ({
+                    ...item,
+                    cantidadMetros: item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad,
+                    precioUnitario: Number(item.producto.precio),
+                    precioTotal: item.tipo === "pieza" ? Number(item.producto.precio) * (item.cantidad * metrosPorPieza) : Number(item.producto.precio) * item.cantidad
+                }))
+                setItems(itemsConPrecio)
             }
         } catch (e) {
             console.error("Error deleting:", e)
+        } finally {
+            setDeletingId(null)
         }
+    }
+
+    const cancelarEliminar = () => {
+        setDeletingId(null)
     }
 
     const guardarEdicion = async (itemId: string) => {
@@ -198,11 +323,11 @@ export default function CheckoutPage() {
             const res = await fetch("/api/carrito", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    action: "actualizar", 
-                    carritoId: itemId, 
+                body: JSON.stringify({
+                    action: "actualizar",
+                    carritoId: itemId,
                     cantidad: editCantidad,
-                    tipo: editTipo 
+                    tipo: editTipo
                 }),
                 credentials: "include"
             })
@@ -263,7 +388,7 @@ export default function CheckoutPage() {
         }
         setLoading(true)
         setError("")
-        
+
         try {
             const itemsParaApi = items.map(item => ({
                 productoId: item.producto.id,
@@ -280,7 +405,9 @@ export default function CheckoutPage() {
                     numeroDoc: data.numeroDoc,
                     nombreFactura: data.nombreFactura,
                     direccion: data.direccion,
-                    ciudad: data.ciudad,
+                    departamento: data.departamento,
+                    provincia: data.provincia,
+                    distrito: data.distrito,
                     metodoEnvio: data.metodoEnvio,
                     agencia: data.agencia,
                     agenciaOtro: data.agenciaOtro,
@@ -294,7 +421,7 @@ export default function CheckoutPage() {
             })
 
             const json = await res.json()
-            
+
             if (json.success) {
                 setPedidoCreado(json.pedido)
                 setStep(5)
@@ -311,7 +438,7 @@ export default function CheckoutPage() {
     const crearPedidoConMetrajeTemporal = async () => {
         setLoading(true)
         setError("")
-        
+
         try {
             const itemsParaApi = items.map(item => ({
                 productoId: item.producto.id,
@@ -328,7 +455,9 @@ export default function CheckoutPage() {
                     numeroDoc: data.numeroDoc,
                     nombreFactura: data.nombreFactura,
                     direccion: data.direccion,
-                    ciudad: data.ciudad,
+                    departamento: data.departamento,
+                    provincia: data.provincia,
+                    distrito: data.distrito,
                     metodoEnvio: data.metodoEnvio,
                     agencia: data.agencia,
                     agenciaOtro: data.agenciaOtro,
@@ -342,7 +471,7 @@ export default function CheckoutPage() {
             })
 
             const json = await res.json()
-            
+
             if (json.success) {
                 alert(json.mensaje || "Orden de compra creada correctamente. Pendiente de recibir metraje de piezas.")
                 router.push("/dashboard/pedidos")
@@ -377,15 +506,15 @@ export default function CheckoutPage() {
 
     const finalizarPedidoExistente = async () => {
         if (!continuarPedido) return
-        
+
         if (continuarPedido.estado === "metraje_confirmado" && !data.numeroOperacion) {
             setError("Por favor ingresa tu número de operación de pago")
             return
         }
-        
+
         setLoading(true)
         setError("")
-        
+
         try {
             const res = await fetch(`/api/pedidos/${continuarPedido.id}`, {
                 method: "PATCH",
@@ -396,9 +525,9 @@ export default function CheckoutPage() {
                 }),
                 credentials: "include"
             })
-            
+
             const json = await res.json()
-            
+
             if (json.success) {
                 setPedidoCreado(continuarPedido)
                 setStep(5)
@@ -413,437 +542,305 @@ export default function CheckoutPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
-            {error && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-                    <AlertCircle className="h-5 w-5" />
-                    {error}
-                </div>
-            )}
-
-            {step < 5 && (
-                <div className="mb-8">
-                    {continuarPedido && (
-                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                                <Check className="h-5 w-5 text-green-600" />
-                            </div>
-                            <div>
-                                <p className="font-bold text-green-800">¡Metraje Confirmado!</p>
-                                <p className="text-sm text-green-700">
-                                    Orden {continuarPedido.numeroOrden} - Ahora puedes completar el pago
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {continuarPedido ? (
-                        <div className="bg-slate-100 rounded-xl p-4 text-center">
-                            <p className="font-bold text-slate-700 text-lg">Paso 4: Resumen y Pago</p>
-                            <p className="text-sm text-slate-500">Revisa el resumen y completa el pago</p>
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-between mb-2">
-                            {PASOS.map((p, idx) => (
-                                <div key={p.num} className="flex items-center flex-1">
-                                    <div className={`flex flex-col items-center ${idx > 0 ? 'flex-1' : ''}`}>
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
-                                            step === p.num 
-                                                ? "bg-slate-900 text-white ring-4 ring-yellow-400" 
-                                                : step > p.num 
-                                                    ? "bg-green-600 text-white" 
-                                                    : "bg-slate-200 text-slate-500"
-                                        }`}>
-                                            {step > p.num ? <Check className="h-6 w-6" /> : p.num}
-                                        </div>
-                                        <span className={`text-xs mt-1 font-medium ${step === p.num ? 'text-slate-900' : 'text-slate-500'}`}>
-                                            {p.titulo}
-                                        </span>
-                                    </div>
-                                    {idx < PASOS.length - 1 && (
-                                        <div className={`h-1 flex-1 mx-2 rounded ${step > p.num ? 'bg-green-600' : 'bg-slate-200'}`} />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {step === 1 && (
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900 mb-4">Tu Carrito</h2>
-                    
-                    {items.length === 0 ? (
-                        <div className="text-center py-12">
-                            <ShoppingCart className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                            <p className="text-slate-500 mb-4">Tu carrito está vacío</p>
-                            <Button onClick={() => router.push("/dashboard")}>
-                                Ver Productos
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {items.map(item => (
-                                <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4 flex gap-4">
-                                    <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                                        <ShoppingCart className="h-8 w-8 text-slate-400" />
-                                    </div>
-                                    
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-slate-900">{item.producto.nombre}</h3>
-                                        <p className="text-sm text-slate-500">{item.producto.categoria}</p>
-                                        
-                                        {editandoItem === item.id ? (
-                                            <div className="mt-2 flex gap-2 items-center">
-                                                <select 
-                                                    value={editTipo} 
-                                                    onChange={e => setEditTipo(e.target.value)}
-                                                    className="border rounded px-2 py-1 text-sm"
-                                                >
-                                                    <option value="metros">Metros</option>
-                                                    <option value="pieza">Piezas</option>
-                                                </select>
-                                                <input 
-                                                    type="number" 
-                                                    min="1" 
-                                                    value={editCantidad}
-                                                    onChange={e => setEditCantidad(Number(e.target.value))}
-                                                    className="border rounded px-2 py-1 w-16 text-sm"
-                                                />
-                                                <Button size="sm" onClick={() => guardarEdicion(item.id)}>
-                                                    Guardar
-                                                </Button>
-                                                <Button size="sm" variant="outline" onClick={() => setEditandoItem(null)}>
-                                                    Cancelar
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <div className="mt-1">
-                                                <p className="text-sm text-blue-600">
-                                                    {item.cantidad} {item.tipo === "metros" ? "metros" : `piezas (~${item.cantidadMetros}m)`}
-                                                </p>
-                                                <p className="font-bold text-slate-900">S/ {item.precioTotal.toFixed(2)}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="flex flex-col gap-2">
-                                        {editandoItem !== item.id && (
-                                            <>
-                                                <button 
-                                                    onClick={() => iniciarEdicion(item)}
-                                                    className="text-sm text-blue-600 hover:underline"
-                                                >
-                                                    Editar
-                                                </button>
-                                                <button 
-                                                    onClick={() => eliminarItem(item.id)}
-                                                    className="text-sm text-red-500 hover:underline flex items-center gap-1"
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                    Eliminar
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                            
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 flex justify-between items-center">
-                                <div>
-                                    <span className="font-bold text-slate-700">Subtotal</span>
-                                    <p className="text-xs text-slate-500 mt-1">* Los precios de piezas se calculan por metro (1 pieza = 50 metros)</p>
-                                </div>
-                                <span className="font-bold text-xl text-slate-900">S/ {calcularSubtotal().toFixed(2)}</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {step === 2 && (
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900 mb-4">Datos de Facturación</h2>
-                    
-                    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Tipo de Documento *
-                            </label>
-                            <select 
-                                value={data.tipoDocumento}
-                                onChange={e => handleInputChange("tipoDocumento", e.target.value)}
-                                className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                            >
-                                <option value="">Seleccionar</option>
-                                <option value="dni">DNI</option>
-                                <option value="ruc">RUC</option>
-                                <option value="ce">Carnet de Extranjería</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                {data.tipoDocumento === "ruc" ? "RUC" : "DNI"} *
-                            </label>
-                            <input 
-                                type="text"
-                                value={data.numeroDoc}
-                                onChange={e => handleInputChange("numeroDoc", e.target.value)}
-                                className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Nombre o Razón Social *
-                            </label>
-                            <input 
-                                type="text"
-                                value={data.nombreFactura}
-                                onChange={e => handleInputChange("nombreFactura", e.target.value)}
-                                className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Dirección *
-                            </label>
-                            <input 
-                                type="text"
-                                value={data.direccion}
-                                onChange={e => handleInputChange("direccion", e.target.value)}
-                                className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Ciudad/Provincia/Departamento
-                            </label>
-                            <input 
-                                type="text"
-                                value={data.ciudad}
-                                onChange={e => handleInputChange("ciudad", e.target.value)}
-                                className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                            />
-                        </div>
+        <>
+            <div className="max-w-4xl mx-auto">
+                {error && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                        <AlertCircle className="h-5 w-5" />
+                        {error}
                     </div>
-                </div>
-            )}
+                )}
 
-            {step === 3 && (
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900 mb-4">Método de Envío</h2>
-                    
-                    <div className="space-y-4">
-                        <button 
-                            onClick={() => { handleInputChange("metodoEnvio", "retiro"); handleInputChange("agencia", ""); handleInputChange("agenciaOtro", "") }}
-                            className={`w-full bg-white rounded-xl border-2 p-4 flex items-center gap-4 text-left ${
-                                data.metodoEnvio === "retiro" ? "border-green-600 bg-green-50" : "border-slate-200"
-                            }`}
-                        >
-                            <Store className="h-8 w-8 text-green-600" />
-                            <div>
-                                <p className="font-bold text-lg">Retiro en Persona</p>
-                                <p className="text-sm text-slate-500">Recoger en nuestro almacén</p>
-                            </div>
-                            <span className="ml-auto font-bold text-green-600 text-xl">S/ 0.00</span>
-                        </button>
-                        
-                        <button 
-                            onClick={() => handleInputChange("metodoEnvio", "agencia")}
-                            className={`w-full bg-white rounded-xl border-2 p-4 flex items-center gap-4 text-left ${
-                                data.metodoEnvio === "agencia" ? "border-yellow-500 bg-yellow-50" : "border-slate-200"
-                            }`}
-                        >
-                            <Truck className="h-8 w-8 text-yellow-600" />
-                            <div>
-                                <p className="font-bold text-lg">Agencia de Envíos / Delivery</p>
-                                <p className="text-sm text-slate-500">Envío por agencia de transportes</p>
-                            </div>
-                            <span className="ml-auto font-bold text-yellow-600 text-xl">
-                                S/ {calcularCostoEnvio().toFixed(2)}
-                            </span>
-                        </button>
-                        
-                        {data.metodoEnvio === "agencia" && (
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                        Selecciona agencia/delivery:
-                                    </label>
-                                    <select 
-                                        value={data.agencia}
-                                        onChange={e => handleInputChange("agencia", e.target.value)}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white"
-                                    >
-                                        <option value="">Seleccionar agencia/delivery</option>
-                                        <option value="shalom">SHALOM</option>
-                                        <option value="flores">FLORES</option>
-                                        <option value="marvisur">MARVISUR</option>
-                                        <option value="otros">OTROS</option>
-                                    </select>
+                {step < 5 && (
+                    <div className="mb-8">
+                        {continuarPedido && (
+                            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                    <Check className="h-5 w-5 text-green-600" />
                                 </div>
-                                
-                                {data.agencia === "otros" && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                                            Nombre de la agencia:
-                                        </label>
-                                        <input 
-                                            type="text"
-                                            value={data.agenciaOtro}
-                                            onChange={e => handleInputChange("agenciaOtro", e.target.value)}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                                        />
-                                    </div>
-                                )}
+                                <div>
+                                    <p className="font-bold text-green-800">¡Metraje Confirmado!</p>
+                                    <p className="text-sm text-green-700">
+                                        Orden {continuarPedido.numeroOrden} - Ahora puedes completar el pago
+                                    </p>
+                                </div>
                             </div>
                         )}
-                        
-                        <button 
-                            onClick={() => { handleInputChange("metodoEnvio", "otrapersona"); handleInputChange("agencia", ""); handleInputChange("agenciaOtro", "") }}
-                            className={`w-full bg-white rounded-xl border-2 p-4 flex items-center gap-4 text-left ${
-                                data.metodoEnvio === "otrapersona" ? "border-blue-600 bg-blue-50" : "border-slate-200"
-                            }`}
-                        >
-                            <User className="h-8 w-8 text-blue-600" />
-                            <div>
-                                <p className="font-bold text-lg">Recoge Otra Persona</p>
-                                <p className="text-sm text-slate-500">Alguien más recibe el pedido</p>
-                            </div>
-                        </button>
-                        
-                        {data.metodoEnvio === "otrapersona" && (
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                        DNI de quien recibe *
-                                    </label>
-                                    <input 
-                                        type="text"
-                                        value={data.dniRecibe}
-                                        onChange={e => handleInputChange("dniRecibe", e.target.value)}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                        Nombres *
-                                    </label>
-                                    <input 
-                                        type="text"
-                                        value={data.nombreRecibe}
-                                        onChange={e => handleInputChange("nombreRecibe", e.target.value)}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                        Celular (opcional)
-                                    </label>
-                                    <input 
-                                        type="text"
-                                        value={data.celularRecibe}
-                                        onChange={e => handleInputChange("celularRecibe", e.target.value)}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                                    />
-                                </div>
-                            </div>
-)}
-                    </div>
-                </div>
-            )}
 
-            {step === 4 && (
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900 mb-4">Resumen y Pago</h2>
-                    
-                    {continuarPedido && items.length > 0 && (
-                        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
-                            <h3 className="font-bold text-slate-700 mb-3">Productos del pedido</h3>
-                            <div className="space-y-2">
-                                {items.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center text-sm">
-                                        <div>
-                                            <p className="font-medium text-slate-800">{item.producto.nombre}</p>
-                                            <p className="text-xs text-slate-500">
-                                                {item.tipo === "pieza" 
-                                                    ? `${item.cantidad} pieza(s) • ~${item.cantidadMetros}m` 
-                                                    : `${item.cantidad} metros`
-                                                }
-                                            </p>
+                        {continuarPedido ? (
+                            <div className="bg-slate-100 rounded-xl p-4 text-center">
+                                <p className="font-bold text-slate-700 text-lg">Paso 4: Resumen y Pago</p>
+                                <p className="text-sm text-slate-500">Revisa el resumen y completa el pago</p>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between mb-2">
+                                {PASOS.map((p, idx) => (
+                                    <div key={p.num} className="flex items-center flex-1">
+                                        <div className={`flex flex-col items-center ${idx > 0 ? 'flex-1' : ''}`}>
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${step === p.num
+                                                ? "bg-slate-900 text-white ring-4 ring-yellow-400"
+                                                : step > p.num
+                                                    ? "bg-green-600 text-white"
+                                                    : "bg-slate-200 text-slate-500"
+                                                }`}>
+                                                {step > p.num ? <Check className="h-6 w-6" /> : p.num}
+                                            </div>
+                                            <span className="text-xs mt-1 font-medium text-slate-900">
+                                                {p.titulo}
+                                            </span>
                                         </div>
-                                        <p className="font-bold text-slate-900">S/ {item.precioTotal.toFixed(2)}</p>
+                                        {idx < PASOS.length - 1 && (
+                                            <div className={`h-1 flex-1 mx-2 rounded ${step > p.num ? 'bg-green-600' : 'bg-slate-200'}`} />
+                                        )}
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
-                    
-                    <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4">
-                        <div className="flex justify-between">
-                            <span className="text-slate-600">Subtotal</span>
-                            <span className="font-medium">S/ {calcularSubtotal().toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-slate-600">Costo de envío</span>
-                            <span className="font-medium">S/ {calcularCostoEnvio().toFixed(2)}</span>
-                        </div>
-                        <div className="border-t pt-2 flex justify-between">
-                            <span className="font-bold">Total</span>
-                            <span className="font-bold text-xl">S/ {calcularTotal().toFixed(2)}</span>
-                        </div>
+                        )}
                     </div>
-                    
-                    <div className="bg-white rounded-xl border border-slate-200 p-4 mt-4 space-y-3">
-                        <p className="font-bold text-slate-800">Métodos de Pago</p>
-                        <div className="flex items-center gap-2">
-                            <CreditCard className="h-5 w-5 text-blue-600" />
-                            <div>
-                                <p><strong>BCP:</strong> 191-655123-22</p>
-                                <p><strong>BBVA:</strong> 001-12345678-9</p>
-                                <p><strong>Interbank:</strong> 890-123456-78</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Phone className="h-5 w-5 text-green-600" />
-                            <p><strong>Yape/Plin:</strong> 981-404-062</p>
-                        </div>
-                        <p className="text-xs text-slate-400">Nombre de cuenta: MANCHESTER COLLECTION E.I.R.L.</p>
-                    </div>
-                    
-                    <div className="bg-white rounded-xl border border-slate-200 p-4 mt-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <label className="font-bold text-slate-800">Número de Operación *</label>
-                            {continuarPedido && (
-                                <span className="text-xs text-green-600 font-medium">(Actualizado con metraje confirmado)</span>
+                )}
+
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                    {step === 1 && (
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">Tu Carrito</h2>
+                            {items.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <ShoppingCart className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                                    <p className="text-slate-500 mb-4">Tu carrito está vacío</p>
+                                    <Button onClick={() => router.push("/dashboard")}>
+                                        Ver Productos
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {items.map(item => {
+                                        const precioUnitario = Number(item.producto.precio)
+                                        const cantidadMetros = item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad
+                                        
+                                        const precioTotal = item.tipo === "pieza"
+                                            ? precioUnitario * cantidadMetros
+                                            : precioUnitario * item.cantidad
+                                        const precioTotalXPieza = item.tipo === "pieza"
+                                            ? precioUnitario * item.cantidad
+                                            : 0
+
+                                        return (
+                                            <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                                                <div className="flex gap-4">
+                                                    {item.producto.imagen ? (
+                                                        <img
+                                                            src={item.producto.imagen}
+                                                            alt={item.producto.nombre}
+                                                            className="w-24 h-24 object-cover rounded-lg shrink-0"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
+                                                            <ShoppingCart className="h-8 w-8 text-slate-400" />
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex-1">
+                                                        <h3 className="font-bold text-slate-900 text-lg">{item.producto.nombre}</h3>
+                                                        <p className="text-sm text-slate-600 font-medium">{item.producto.categoria}</p>
+                                                        <p className="text-sm text-blue-700 font-medium">{item.tipoLabel}</p>
+                                                        <p className="text-sm text-slate-600 font-medium">Precio del artículo por metro: S/ {precioUnitario.toFixed(2)}</p>
+                                                    </div>
+
+                                                    <div className="text-right">
+                                                        <p className="font-bold text-slate-900 text-lg">S/ {precioTotal.toFixed(2)}</p>
+                                                        {item.tipo === "pieza" && (
+                                                            <p className="text-xs text-amber-600 font-medium">(Metraje de pieza por verificar)</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => actualizarCantidad(item.id, item.tipo === "pieza" ? item.cantidad - 1 : item.cantidad - 0.01)}
+                                                            disabled={item.tipo === "pieza" ? item.cantidad <= 1 : item.cantidad <= 0.01}
+                                                            className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                                                        >
+                                                            <Minus className="h-4 w-4 text-slate-700" />
+                                                        </button>
+                                                        <input
+                                                            type="number"
+                                                            step={item.tipo === "pieza" ? "1" : "0.01"}
+                                                            min={item.tipo === "pieza" ? "1" : "0.01"}
+                                                            value={item.cantidad}
+                                                            onChange={(e) => {
+                                                                const raw = parseFloat(e.target.value)
+                                                                const value = item.tipo === "pieza" ? Math.floor(raw) || 1 : (raw || 0.01)
+                                                                const minVal = item.tipo === "pieza" ? 1 : 0.01
+                                                                if (value >= minVal) actualizarCantidad(item.id, value)
+                                                            }}
+                                                            className="w-20 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900"
+                                                        />
+                                                        <button
+                                                            onClick={() => actualizarCantidad(item.id, item.tipo === "pieza" ? item.cantidad + 1 : item.cantidad + 0.01)}
+                                                            className="p-2 bg-slate-100 rounded hover:bg-slate-200"
+                                                        >
+                                                            <Plus className="h-4 w-4 text-slate-700" />
+                                                        </button>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => eliminarItem(item.id)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded"
+                                                    >
+                                                        <Trash2 className="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+
+                                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-600 font-medium">Subtotal:</span>
+                                            <div className="text-right">
+                                                <span className="font-medium text-slate-900 text-lg">S/ {calcularSubtotal().toFixed(2)}</span>
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-4 mt-6">
+                                        <Link href="/dashboard" className="flex-1">
+                                            <Button variant="outline" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black">
+                                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                                Seguir Comprando
+                                            </Button>
+                                        </Link>
+
+                                        <Button onClick={() => setStep(2)} className="flex-1 bg-green-600 hover:bg-green-700 text-lg">
+                                            Continuar
+                                            <ArrowRight className="h-4 w-4 ml-2" />
+                                        </Button>
+                                    </div>
+                                </div>
                             )}
                         </div>
-                        <input 
-                            type="text"
-                            value={data.numeroOperacion}
-                            onChange={e => handleInputChange("numeroOperacion", e.target.value)}
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                            placeholder="XXXXXXXXX"
-                        />
+                    )}
+
+                    {step === 2 && (
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">Datos de Facturación</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Documento *</label>
+                                    <select
+                                        value={data.tipoDocumento}
+                                        onChange={e => handleInputChange("tipoDocumento", e.target.value)}
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                    >
+                                        <option value="">Seleccionar</option>
+                                        <option value="dni">DNI</option>
+                                        <option value="ruc">RUC</option>
+                                        <option value="ce">Carnet de Extranjería</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Número *</label>
+                                    <input
+                                        type="text"
+                                        value={data.numeroDoc}
+                                        onChange={e => handleInputChange("numeroDoc", e.target.value)}
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Nombre *</label>
+                                    <input
+                                        type="text"
+                                        value={data.nombreFactura}
+                                        onChange={e => handleInputChange("nombreFactura", e.target.value)}
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Dirección *</label>
+                                    <input
+                                        type="text"
+                                        value={data.direccion}
+                                        onChange={e => handleInputChange("direccion", e.target.value)}
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                    />
+                                </div>
+                                <div className="flex gap-4 mt-6">
+                                    <Button onClick={() => setStep(1)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
+                                    <Button onClick={() => setStep(3)} className="flex-1 bg-green-600 text-white">Continuar</Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 3 && (
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">Método de Envío</h2>
+                            <div className="space-y-4">
+                                <button
+                                    onClick={() => handleInputChange("metodoEnvio", "retiro")}
+                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "retiro" ? "border-green-600 bg-green-50" : "border-slate-200"}`}
+                                >
+                                    <p className="font-bold text-slate-900">Retiro en Persona</p>
+                                    <p className="text-sm text-slate-500">S/ 0.00</p>
+                                </button>
+                                <button
+                                    onClick={() => handleInputChange("metodoEnvio", "agencia")}
+                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "agencia" ? "border-yellow-500 bg-yellow-50" : "border-slate-200"}`}
+                                >
+                                    <p className="font-bold text-slate-900">Agencia de Envíos</p>
+                                    <p className="text-sm text-slate-500">S/ {calcularCostoEnvio().toFixed(2)}</p>
+                                </button>
+                                <div className="flex gap-4 mt-6">
+                                    <Button onClick={() => setStep(2)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
+                                    <Button onClick={() => setStep(4)} className="flex-1 bg-green-600 text-white">Continuar</Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 4 && (
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">Resumen y Pago</h2>
+                            <div className="bg-slate-50 p-4 rounded-lg mb-4">
+                                <p className="font-bold mb-2">Total: S/ {calcularTotal().toFixed(2)}</p>
+                            </div>
+                            <div className="flex gap-4 mt-4">
+                                <Button onClick={() => setStep(3)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
+                                <Button onClick={crearPedido} disabled={loading} className="flex-1 bg-green-600 text-white">
+                                    {loading ? "Procesando..." : "Confirmar Pedido"}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            </div>
+
+            {deletingId && items.find(i => i.id === deletingId) && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
+                        <p className="text-lg font-bold text-slate-900 mb-4">¿Eliminar {items.find(i => i.id === deletingId)?.producto.nombre}?</p>
+                        <div className="flex gap-3">
+                            <Button onClick={cancelarEliminar} variant="outline" className="flex-1">Cancelar</Button>
+                            <Button onClick={confirmarEliminar} className="flex-1 bg-red-600">Sí, eliminar</Button>
+                        </div>
+
                     </div>
                 </div>
             )}
 
             {step === 4 && continuarPedido && (
                 <div className="mt-8 flex gap-4">
-                    <Button 
+                    <Button
                         variant="outline"
                         onClick={() => router.push("/dashboard/pedidos")}
                         className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
                     >
                         Cancelar
                     </Button>
-                    <Button 
+                    <Button
                         onClick={finalizarPedidoExistente}
                         disabled={loading || !validarPaso(step)}
                         className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
@@ -855,14 +852,14 @@ export default function CheckoutPage() {
 
             {step === 4 && !continuarPedido && (
                 <div className="mt-8 flex gap-4">
-                    <Button 
+                    <Button
                         variant="outline"
                         onClick={() => router.push("/dashboard")}
                         className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
                     >
                         Cancelar
                     </Button>
-                    <Button 
+                    <Button
                         onClick={crearPedido}
                         disabled={loading || !validarPaso(step)}
                         className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
@@ -884,7 +881,7 @@ export default function CheckoutPage() {
                                 <p className="text-sm text-slate-500">El metraje exacto está siendo procesado.</p>
                             </div>
                         </div>
-                        
+
                         <div className="mb-4">
                             <p className="text-sm font-medium text-slate-700 mb-2">Artículos que requieren metraje:</p>
                             <div className="bg-slate-50 rounded-lg p-3 max-h-32 overflow-y-auto">
@@ -896,33 +893,92 @@ export default function CheckoutPage() {
                                 ))}
                             </div>
                         </div>
-                        
-                        <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
-                            <p className="text-sm text-yellow-800">
-                                Te notificaremos cuando esté listo para continuar.
+                    </div>
+
+                    <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                            Te notificaremos cuando esté listo para continuar.
+                        </p>
+                    </div>
+                    <div className="flex gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => { setShowMetrajePopup(false); router.push("/dashboard") }}
+                            className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={async () => {
+                                setShowMetrajePopup(false)
+                                await crearPedidoConMetrajeTemporal()
+                            }}
+                            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                        >
+                            Aceptar
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+
+            {deletingId && items.find(i => i.id === deletingId) && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
+                        <div className="text-center mb-4">
+                            <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
+                            <p className="text-lg font-bold text-slate-900">¿Estás seguro de eliminar?</p>
+                            <p className="text-slate-600 mt-2">
+                                El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
                             </p>
                         </div>
-                        <div className="flex gap-3">
-                            <Button 
+                        <div className="flex justify-center gap-3">
+                            <Button
                                 variant="outline"
-                                onClick={() => { setShowMetrajePopup(false); router.push("/dashboard") }}
-                                className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
+                                onClick={cancelarEliminar}
+                                className="border-slate-300 text-black"
                             >
                                 Cancelar
                             </Button>
-                            <Button 
-                                onClick={async () => {
-                                    setShowMetrajePopup(false)
-                                    await crearPedidoConMetrajeTemporal()
-                                }}
-                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                            <Button
+                                onClick={confirmarEliminar}
+                                className="bg-red-600 hover:bg-red-700"
                             >
-                                Aceptar
+                                Sí, eliminar
                             </Button>
                         </div>
                     </div>
                 </div>
             )}
-        </div>
+
+            {deletingId && items.find(i => i.id === deletingId) && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
+                        <div className="text-center mb-4">
+                            <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
+                            <p className="text-lg font-bold text-slate-900">¿Estás seguro de eliminar?</p>
+                            <p className="text-slate-600 mt-2">
+                                El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
+                            </p>
+                        </div>
+                        <div className="flex justify-center gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={cancelarEliminar}
+                                className="border-slate-300 text-black"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={confirmarEliminar}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                Sí, eliminar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     )
 }

@@ -166,9 +166,17 @@ export function BotonAgregarCarrito({ producto }: Props) {
                         </label>
                         <input
                             type="number"
-                            min="1"
+                            step={tipoPedido === "pieza" ? "1" : "0.01"}
+                            min={tipoPedido === "pieza" ? "1" : "0.01"}
                             value={cantidad}
-                            onChange={(e) => setCantidad(Math.max(1, parseInt(e.target.value) || 1))}
+                            onChange={(e) => {
+                                const val = parseFloat(e.target.value)
+                                if (tipoPedido === "pieza") {
+                                    setCantidad(Math.max(1, Math.floor(val) || 1))
+                                } else {
+                                    setCantidad(Math.max(0.01, val || 0.01))
+                                }
+                            }}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>

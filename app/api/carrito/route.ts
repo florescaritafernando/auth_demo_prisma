@@ -33,13 +33,16 @@ export async function GET() {
             const cantidadMetros = item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad
             const precioPorMetro = Number(item.producto.precio)
             const precioUnitario = item.tipo === "pieza" ? precioPorMetro * metrosPorPieza : precioPorMetro
+            const precioTotal = item.tipo === "pieza" ? item.cantidad * precioPorMetro * metrosPorPieza : item.cantidad * precioPorMetro
+            const precioTotalXPieza = item.tipo === "pieza" ? item.cantidad * precioPorMetro : 0
             return {
                 ...item,
                 cantidadMetros,
-                tipoLabel: item.tipo === "metros" ? "metros" : `${item.cantidad} pieza (~${cantidadMetros}m)`,
+                tipoLabel: item.tipo === "metros" ? "Por metros" : "Por piezas",
                 metrosPorPieza,
                 precioUnitario,
-                precioTotal: item.tipo === "pieza" ? item.cantidad * precioPorMetro * metrosPorPieza : item.cantidad * precioPorMetro
+                precioTotal,
+                precioTotalXPieza
             }
         })
 
@@ -123,12 +126,11 @@ export async function POST(request: NextRequest) {
                     return NextResponse.json({ success: false, error: "Producto no encontrado" }, { status: 404 })
                 }
 
-                // Calculate total stock in metros (sum of all warehouse stocks)
-                const totalStockMetros = producto.stocks.reduce((sum, s) => sum + s.stock, 0)
+                // Calculate total stock (stock field = number of pieces, each piece = 50 meters)
+                const metrosPorPieza = 50
+                const totalStockMetros = producto.stocks.reduce((sum, s) => sum + (s.stock * metrosPorPieza), 0)
                 console.log("Stock total metros:", totalStockMetros, "stocks:", producto.stocks)
                 
-                // 1 pieza = 50 metros
-                const metrosPorPieza = 50
                 const esPieza = tipoRecibido === "pieza"
                 
                 // cantidad means pieces or meters - convert all to metros for stock check
@@ -136,12 +138,13 @@ export async function POST(request: NextRequest) {
                 
                 console.log("Checking:", { cantidad, cantidadEnMetros, esPieza, totalStockMetros })
 
-                // Get existing item in cart using the correct unique constraint
+                // Get existing item in cart using the composite unique constraint
                 const existente = await prisma.carrito.findUnique({
                     where: {
-                        userId_productoId: {
+                        userId_productoId_tipo: {
                             userId: session.user.id,
-                            productoId
+                            productoId,
+                            tipo: tipoRecibido
                         }
                     }
                 })
@@ -195,7 +198,32 @@ export async function POST(request: NextRequest) {
                     where: { id: carritoId }
                 })
 
-                return NextResponse.json({ success: true })
+                const items = await prisma.carrito.findMany({
+                    where: { userId: session.user.id },
+                    include: { producto: true },
+                    orderBy: { createdAt: "desc" }
+                })
+
+const metrosPorPieza = 50
+        const itemsWithTotal = items.map(item => {
+            const precioPorMetro = Number(item.producto.precio)
+            const precioUnitario = item.tipo === "pieza" ? precioPorMetro * metrosPorPieza : precioPorMetro
+            const precioTotal = item.tipo === "pieza" ? item.cantidad * precioPorMetro * metrosPorPieza : item.cantidad * precioPorMetro
+            const precioTotalXPieza = item.tipo === "pieza" ? item.cantidad * precioPorMetro : 0
+            return {
+                ...item,
+                cantidadMetros: item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad,
+                tipoLabel: item.tipo === "pieza" ? "Por pieza" : "Por metro",
+                metrosPorPieza,
+                precioUnitario,
+                precioTotal,
+                precioTotalXPieza
+            }
+        })
+
+                const total = itemsWithTotal.reduce((sum, item) => sum + item.precioTotal, 0)
+
+                return NextResponse.json({ success: true, items: itemsWithTotal, total })
             }
 
             case "actualizar": {
@@ -271,5 +299,118 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
         console.error("Carrito POST error:", error)
         return NextResponse.json({ success: false, error: "Error interno: " + error.message }, { status: 500 })
+    }
+}
+
+export async function PATCH(request: NextRequest) {
+    let session
+    try {
+        const incomingHeaders = new Headers(request.headers)
+        session = await auth.api.getSession({ headers: incomingHeaders })
+    } catch (e: any) {
+        return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
+    }
+    
+    if (!session?.user) {
+        return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
+    }
+
+    try {
+        const body = await request.json()
+        const { itemId, cantidad } = body
+
+        if (!itemId) {
+            return NextResponse.json({ success: false, error: "Item requerido" }, { status: 400 })
+        }
+
+        await prisma.carrito.update({
+            where: { id: itemId, userId: session.user.id },
+            data: { cantidad }
+        })
+
+        const items = await prisma.carrito.findMany({
+            where: { userId: session.user.id },
+            include: { producto: true },
+            orderBy: { createdAt: "desc" }
+        })
+
+        const metrosPorPieza = 50
+        const itemsWithTotal = items.map(item => {
+            const precioPorMetro = Number(item.producto.precio)
+            const precioUnitario = item.tipo === "pieza" ? precioPorMetro * metrosPorPieza : precioPorMetro
+            const precioTotal = item.tipo === "pieza" ? item.cantidad * precioPorMetro * metrosPorPieza : item.cantidad * precioPorMetro
+            return {
+                ...item,
+                cantidadMetros: item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad,
+                tipoLabel: item.tipo === "pieza" ? "Por pieza" : "Por metro",
+                metrosPorPieza,
+                precioUnitario,
+                precioTotal
+            }
+        })
+
+        const total = itemsWithTotal.reduce((sum, item) => sum + item.precioTotal, 0)
+
+        return NextResponse.json({ success: true, items: itemsWithTotal, total })
+    } catch (error: any) {
+        console.error("Carrito PATCH error:", error)
+        return NextResponse.json({ success: false, error: "Error interno" }, { status: 500 })
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    let session
+    try {
+        const incomingHeaders = new Headers(request.headers)
+        session = await auth.api.getSession({ headers: incomingHeaders })
+    } catch (e: any) {
+        return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
+    }
+    
+    if (!session?.user) {
+        return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
+    }
+
+    try {
+        const { searchParams } = new URL(request.url)
+        const itemId = searchParams.get("itemId")
+
+        if (!itemId) {
+            return NextResponse.json({ success: false, error: "Item requerido" }, { status: 400 })
+        }
+
+        await prisma.carrito.delete({
+            where: { id: itemId, userId: session.user.id }
+        })
+
+        const items = await prisma.carrito.findMany({
+            where: { userId: session.user.id },
+            include: { producto: true },
+            orderBy: { createdAt: "desc" }
+        })
+
+        const metrosPorPieza = 50
+        const itemsWithTotal = items.map(item => {
+            const precioPorMetro = Number(item.producto.precio)
+            const precioUnitario = item.tipo === "pieza" ? precioPorMetro * metrosPorPieza : precioPorMetro
+            const precioTotal = item.tipo === "pieza" ? item.cantidad * precioPorMetro * metrosPorPieza : item.cantidad * precioPorMetro
+            const precioTotalXPieza = item.tipo === "pieza" ? item.cantidad * precioPorMetro : 0
+            return {
+                ...item,
+                cantidadMetros: item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad,
+                tipoLabel: item.tipo === "pieza" ? "Por pieza" : "Por metro",
+                metrosPorPieza,
+                precioUnitario,
+                precioTotal,
+                precioTotalXPieza
+            }
+        })
+
+        const total = itemsWithTotal.reduce((sum, item) => sum + item.precioTotal, 0)
+
+        return NextResponse.json({ success: true, items: itemsWithTotal, total })
+    } catch (error: any) {
+        console.error("Carrito DELETE error:", error)
+        return NextResponse.json({ success: false, error: "Error interno" }, { status: 500 })
     }
 }

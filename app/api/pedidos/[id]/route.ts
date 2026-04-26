@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { headers } from "next/headers"
 import prisma from "@/lib/prisma"
-import { auth } from "@/lib/auth"
+import { auth, enviarEmail } from "@/lib/auth"
+
+function calculateCostoEnvio(subtotal: number, metodoEnvio?: string | null): number {
+    if (!metodoEnvio || metodoEnvio === "retiro") return 0
+    if (metodoEnvio === "agencia") {
+        if (subtotal >= 3000) return 30
+        if (subtotal >= 1500) return 20
+        if (subtotal >= 500) return 15
+        return 10
+    }
+    return 10
+}
 
 export async function GET(
     request: NextRequest,
@@ -111,16 +122,92 @@ export async function PATCH(
             data: updateData
         })
 
-        if (metrajeItemsArray && Array.isArray(metrajeItemsArray)) {
-            for (const item of metrajeItemsArray) {
-                await prisma.pedidoDetalle.update({
-                    where: { id: item.detalleId },
-                    data: { 
-                        metraje: item.metraje,
-                        cantidad: Math.ceil(item.metraje / 50)
-                    }
-                })
+        if (estado === "rechazado") {
+            await prisma.notificacion.create({
+                data: {
+                    userId: pedido.userId,
+                    tipo: "pedido_estado",
+                    titulo: "Pedido rechazado",
+                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Por favor, contacta con nuestro equipo al WhatsApp para más información.`,
+                    pedidoId: id
+                }
+            })
+            
+            const usuario = await prisma.user.findUnique({
+                where: { id: pedido.userId },
+                select: { email: true, name: true }
+            })
+            
+            console.log("Intentando enviar correo a:", usuario?.email)
+            
+            if (usuario?.email) {
+                const emailHtml = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #dc2626;">Pedido Rechazado</h2>
+                        <p>Hola ${usuario.name || "cliente"},</p>
+                        <p>Lamentablemente tu pedido <strong>${pedido.numeroOrden}</strong> ha sido rechazado.</p>
+                        <p>Por favor, contacta con nuestro equipo al WhatsApp para más información:</p>
+                        <p style="background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center;">
+                            <strong>WhatsApp:</strong> 981-404-062
+                        </p>
+                        <p style="margin-top: 20px; color: #6b7280; font-size: 12px;">
+                            Manchester Collection - Tienda en línea
+                        </p>
+                    </div>
+                `
+                try {
+                    await enviarEmail(usuario.email, `Pedido ${pedido.numeroOrden} rechazado`, emailHtml)
+                    console.log("Correo enviado exitosamente")
+                } catch (err) {
+                    console.error("Error al enviar correo:", err)
+                }
             }
+        }
+
+        if (metrajeItemsArray && Array.isArray(metrajeItemsArray)) {
+            let nuevoTotal = 0
+            
+            for (const item of metrajeItemsArray) {
+                const detalleActual = await prisma.pedidoDetalle.findUnique({
+                    where: { id: item.detalleId },
+                    include: { producto: true }
+                })
+                
+                if (detalleActual) {
+                    const nuevoMetraje = item.metraje
+                    const nuevaCantidad = Math.ceil(nuevoMetraje / 50)
+                    const precioBase = Number(detalleActual.producto.precio)
+                    
+                    await prisma.pedidoDetalle.update({
+                        where: { id: item.detalleId },
+                        data: { 
+                            metraje: nuevoMetraje,
+                            cantidad: nuevaCantidad,
+                            precio: precioBase
+                        }
+                    })
+                    
+                    nuevoTotal += precioBase * nuevoMetraje
+                }
+            }
+            
+            const otrosDetalles = await prisma.pedidoDetalle.findMany({
+                where: { pedidoId: id, tipo: "metros" }
+            })
+            
+            for (const det of otrosDetalles) {
+                nuevoTotal += Number(det.precio) * det.cantidad
+            }
+            
+            const costoEnvio = calculateCostoEnvio(nuevoTotal, pedido.metodoEnvio || "agencia")
+            
+            await prisma.pedido.update({
+                where: { id },
+                data: { 
+                    total: nuevoTotal,
+                    costoEnvio: costoEnvio
+                }
+            })
             
             if (pedido.estado === "metraje_en_proceso") {
                 await prisma.pedido.update({
@@ -132,12 +219,53 @@ export async function PATCH(
                     data: {
                         userId: pedido.userId,
                         tipo: "metraje_confirmado",
-                        titulo: "¡Metraje confirmado!",
-                        mensaje: `Tu pedido ${pedido.numeroOrden} tiene el metraje confirmado. Ya puedes continuar con el pago.`,
+                        titulo: "Metraje confirmado",
+                        mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado y el precio final es S/ ${nuevoTotal.toFixed(2)}. Puedes continuar con el pago.`,
                         pedidoId: id
                     }
                 })
             }
+        } else if (estado === "metraje_confirmado" && existingPedido.estado === "metraje_en_proceso") {
+            const piezasDetalles = await prisma.pedidoDetalle.findMany({
+                where: { pedidoId: id, tipo: "pieza" }
+            })
+            
+            let nuevoTotal = 0
+            for (const pieza of piezasDetalles) {
+                if (pieza.metraje && pieza.metraje > 0) {
+                    nuevoTotal += Number(pieza.precio) * pieza.metraje
+                }
+            }
+            
+            const metrosDetalles = await prisma.pedidoDetalle.findMany({
+                where: { pedidoId: id, tipo: "metros" }
+            })
+            
+            for (const det of metrosDetalles) {
+                nuevoTotal += Number(det.precio) * det.cantidad
+            }
+            
+            const costoEnvio = calculateCostoEnvio(nuevoTotal, pedido.metodoEnvio)
+            
+            if (nuevoTotal > 0) {
+                await prisma.pedido.update({
+                    where: { id },
+                    data: { 
+                        total: nuevoTotal,
+                        costoEnvio: costoEnvio
+                    }
+                })
+            }
+            
+            await prisma.notificacion.create({
+                data: {
+                    userId: pedido.userId,
+                    tipo: "metraje_confirmado",
+                    titulo: "Metraje confirmado",
+                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado y el precio final es S/ ${nuevoTotal.toFixed(2)}. Puedes continuar con el pago.`,
+                    pedidoId: id
+                }
+            })
         }
 
         return NextResponse.json({ success: true, pedido })

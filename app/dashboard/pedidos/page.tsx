@@ -4,6 +4,7 @@ import { headers, cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Package, Clock, CheckCircle, XCircle, MapPin, User, CreditCard, Phone, FileText, PlayCircle } from "lucide-react"
+import { AlertaWrapper } from "@/components/alerta-wrapper"
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string; icon: any }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800", icon: Clock },
@@ -61,6 +62,7 @@ export default async function PedidosPage() {
 
     return (
         <div className="p-6 md:p-10 font-sans">
+            <AlertaWrapper />
             <div className="max-w-5xl mx-auto">
                 <div className="mb-8 flex items-center justify-between">
                     <div>
@@ -91,7 +93,7 @@ export default async function PedidosPage() {
                             const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
                             
                             // Hide price for metraje states
-                            const ocultarPrecio = ["metraje_en_proceso", "metraje_confirmado"].includes(pedido.estado)
+                            const ocultarPrecio = pedido.estado === "metraje_en_proceso"
                             const mostrarContinuar = pedido.estado === "metraje_confirmado"
                             
                             return (

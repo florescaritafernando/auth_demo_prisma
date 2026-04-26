@@ -102,7 +102,7 @@ export function PedidoAccordion({ pedidos }: Props) {
                     const config = ESTADO_CONFIG[pedido.estado] || ESTADO_CONFIG.pendiente
                     const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
                     const tienePiezas = pedido.pedidoDetalle.some(d => d.tipo === "pieza")
-                    const ocultarPrecio = ["metraje_en_proceso", "metraje_confirmado"].includes(pedido.estado)
+                    const ocultarPrecio = pedido.estado === "metraje_en_proceso"
                     const isExpanded = expandedId === pedido.id
 
                     return (
@@ -156,57 +156,70 @@ export function PedidoAccordion({ pedidos }: Props) {
                                 <div className="p-4 bg-slate-50 border-t border-slate-200">
                                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                         <div className="space-y-4">
-                                            <h3 className="font-bold text-slate-700 flex items-center gap-2 text-sm">
+                                            <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                                 Productos
                                             </h3>
                                             <div className="space-y-2 max-h-48 overflow-y-auto">
-                                                {pedido.pedidoDetalle.map((detalle) => (
-                                                    <div key={detalle.id} className="flex justify-between items-center text-sm bg-white rounded-lg p-2">
-                                                        <div>
-                                                            <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
-                                                            <p className="text-xs text-slate-500">
-                                                                {detalle.tipo === "pieza" 
-                                                                    ? `${detalle.cantidad} pieza(s) (~${detalle.metraje || "?"}m)`
-                                                                    : `${detalle.cantidad} metros`
-                                                                }
-                                                            </p>
+                                                {pedido.pedidoDetalle.map((detalle) => {
+                                                    const precioTotal = detalle.tipo === "pieza" 
+                                                        ? Number(detalle.precio) * (detalle.metraje || 0)
+                                                        : Number(detalle.precio) * detalle.cantidad
+                                                    
+                                                    return (
+                                                        <div key={detalle.id} className="flex justify-between items-center text-sm bg-white rounded-lg p-2">
+                                                            <div>
+                                                                <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
+                                                                <p className="text-xs text-slate-500">
+                                                                    {detalle.tipo === "pieza" 
+                                                                        ? `${detalle.cantidad} pieza(s) (~${detalle.metraje || "?"}m)`
+                                                                        : `${detalle.cantidad} metros`
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-bold text-slate-900">
+                                                                    S/ {precioTotal.toFixed(2)}
+                                                                </p>
+                                                                {detalle.tipo === "pieza" && detalle.metraje && (
+                                                                    <p className="text-xs text-slate-500">
+                                                                        {detalle.metraje}m × S/ {detalle.precio}/m
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <p className="font-medium text-slate-700">
-                                                            S/ {Number(detalle.precio * (detalle.tipo === "pieza" ? 50 : 1) * detalle.cantidad).toFixed(2)}
-                                                        </p>
-                                                    </div>
-                                                ))}
+                                                    )
+                                                })}
                                             </div>
                                         </div>
 
                                         <div className="space-y-4">
-                                            <h3 className="font-bold text-slate-700 flex items-center gap-2 text-sm">
+                                            <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                                 Facturación y Pago
                                             </h3>
                                             <div className="space-y-2 text-sm">
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">Documento:</span>
-                                                    <span className="font-medium">{pedido.tipoDocumento?.toUpperCase()} {pedido.numeroDoc}</span>
+                                                    <span className="text-slate-600">Documento:</span>
+                                                    <span className="font-bold text-slate-900">{pedido.tipoDocumento?.toUpperCase()} {pedido.numeroDoc}</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">Nombre:</span>
-                                                    <span className="font-medium">{pedido.nombreFactura}</span>
+                                                    <span className="text-slate-600">Nombre:</span>
+                                                    <span className="font-bold text-slate-900">{pedido.nombreFactura}</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">Nro. Operación:</span>
-                                                    <span className={`font-medium ${pedido.numeroOperacion === "012345678" ? "text-yellow-600" : ""}`}>
+                                                    <span className="text-slate-600">Nro. Operación:</span>
+                                                    <span className={`font-bold ${pedido.numeroOperacion === "012345678" ? "text-yellow-700" : "text-slate-900"}`}>
                                                         {pedido.numeroOperacion || "No registrado"}
                                                     </span>
                                                 </div>
                                             </div>
 
-                                            <h3 className="font-bold text-slate-700 flex items-center gap-2 text-sm pt-4">
+                                            <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm pt-4">
                                                 Envío
                                             </h3>
                                             <div className="space-y-2 text-sm">
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">Método:</span>
-                                                    <span className="font-medium">
+                                                    <span className="text-slate-600">Método:</span>
+                                                    <span className="font-bold text-slate-900">
                                                         {pedido.metodoEnvio === "retiro" ? "Retiro en persona" :
                                                          pedido.metodoEnvio === "agencia" ? `Agencia: ${agenciaLabel || pedido.agenciaOtro}` :
                                                          "Recoge otra persona"}
@@ -214,13 +227,13 @@ export function PedidoAccordion({ pedidos }: Props) {
                                                 </div>
                                                 {pedido.direccion && (
                                                     <div className="flex justify-between">
-                                                        <span className="text-slate-500">Dirección:</span>
-                                                        <span className="font-medium">{pedido.direccion}</span>
+                                                        <span className="text-slate-600">Dirección:</span>
+                                                        <span className="font-bold text-slate-900">{pedido.direccion}</span>
                                                     </div>
                                                 )}
                                                 {pedido.nombreRecibe && (
                                                     <div className="flex justify-between">
-                                                        <span className="text-slate-500">Recibe:</span>
+                                                        <span className="text-slate-600">Recibe:</span>
                                                         <span className="font-medium">{pedido.nombreRecibe} ({pedido.dniRecibe})</span>
                                                     </div>
                                                 )}
@@ -228,31 +241,31 @@ export function PedidoAccordion({ pedidos }: Props) {
                                         </div>
 
                                         <div className="space-y-4">
-                                            <h3 className="font-bold text-slate-700 flex items-center gap-2 text-sm">
+                                            <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                                 Resumen y Contacto
                                             </h3>
                                             <div className="space-y-2 text-sm">
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">Subtotal:</span>
-                                                    <span className="font-medium">S/ {Number(pedido.total - pedido.costoEnvio).toFixed(2)}</span>
+                                                    <span className="text-slate-600">Subtotal:</span>
+                                                    <span className="font-bold text-slate-900">S/ {Number(pedido.total - pedido.costoEnvio).toFixed(2)}</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">Costo envío:</span>
-                                                    <span className="font-medium">S/ {Number(pedido.costoEnvio || 0).toFixed(2)}</span>
+                                                    <span className="text-slate-600">Costo envío:</span>
+                                                    <span className="font-bold text-slate-900">S/ {Number(pedido.costoEnvio || 0).toFixed(2)}</span>
                                                 </div>
                                                 <div className="flex justify-between border-t pt-2">
-                                                    <span className="font-bold">Total:</span>
-                                                    <span className="font-bold">S/ {Number(pedido.total).toFixed(2)}</span>
+                                                    <span className="font-bold text-slate-900">Total:</span>
+                                                    <span className="font-bold text-green-700 text-lg">S/ {Number(pedido.total).toFixed(2)}</span>
                                                 </div>
                                             </div>
 
                                             <div className="text-sm pt-4">
-                                                <p className="text-slate-500">Email:</p>
-                                                <p className="font-medium">{pedido.user?.email || "N/A"}</p>
+                                                <p className="text-slate-600">Email:</p>
+                                                <p className="font-bold text-slate-900">{pedido.user?.email || "N/A"}</p>
                                                 {pedido.celularRecibe && (
                                                     <>
-                                                        <p className="text-slate-500 mt-2">Celular:</p>
-                                                        <p className="font-medium">{pedido.celularRecibe}</p>
+                                                        <p className="text-slate-600 mt-2">Celular:</p>
+                                                        <p className="font-bold text-slate-900">{pedido.celularRecibe}</p>
                                                     </>
                                                 )}
                                             </div>

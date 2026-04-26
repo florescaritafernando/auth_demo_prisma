@@ -33,11 +33,13 @@ export async function agregarAlCarrito(productoId: string, cantidad: number = 1)
     }
 
     try {
+        const tipoPedido = "metros"
         const existente = await prisma.carrito.findUnique({
             where: {
-                userId_productoId: {
+                userId_productoId_tipo: {
                     userId: session.user.id,
-                    productoId
+                    productoId,
+                    tipo: tipoPedido
                 }
             }
         })
@@ -52,7 +54,8 @@ export async function agregarAlCarrito(productoId: string, cantidad: number = 1)
                 data: {
                     userId: session.user.id,
                     productoId,
-                    cantidad
+                    cantidad,
+                    tipo: tipoPedido
                 }
             })
         }

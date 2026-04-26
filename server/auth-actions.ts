@@ -9,17 +9,33 @@ export async function registerEmail(formdata: FormData) {
     const name = formdata.get("name") as string;
     const email = formdata.get("email") as string;
     const password = formdata.get("password") as string;
+    const confirmPassword = formdata.get("confirmPassword") as string;
 
-    const result = await auth.api.signUpEmail({
-        body: {
-            name,
-            email,
-            password,
-        },
-        headers: await headers(),
-    });
+    if (password !== confirmPassword) {
+        throw new Error("Las contraseñas no coinciden");
+    }
 
-    redirect('/');
+    if (password.length < 6) {
+        throw new Error("La contraseña debe tener al menos 6 caracteres");
+    }
+
+    try {
+        const result = await auth.api.signUpEmail({
+            body: {
+                name,
+                email,
+                password,
+            },
+            headers: await headers(),
+        });
+        
+        redirect('/login');
+    } catch (error: any) {
+        if (error.message?.includes("already exists") || error.code === "USER_ALREADY_EXISTS") {
+            throw new Error("Este correo ya está registrado");
+        }
+        throw error;
+    }
 }
 
 export async function loginEmail(formdata: FormData) {
