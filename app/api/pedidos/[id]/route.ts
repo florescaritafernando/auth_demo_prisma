@@ -33,7 +33,10 @@ export async function GET(
             include: {
                 user: { select: { id: true, name: true, email: true } },
                 pedidoDetalle: {
-                    include: { producto: true }
+                    include: { 
+                        producto: true,
+                        etiquetas: { orderBy: { createdAt: "asc" } }
+                    }
                 }
             }
         })
@@ -165,30 +168,41 @@ export async function PATCH(
         }
 
         if (metrajeItemsArray && Array.isArray(metrajeItemsArray)) {
-            let nuevoTotal = 0
-            
             for (const item of metrajeItemsArray) {
-                const detalleActual = await prisma.pedidoDetalle.findUnique({
-                    where: { id: item.detalleId },
-                    include: { producto: true }
-                })
-                
-                if (detalleActual) {
-                    const nuevoMetraje = item.metraje
-                    const nuevaCantidad = Math.ceil(nuevoMetraje / 50)
-                    const precioBase = Number(detalleActual.producto.precio)
-                    
-                    await prisma.pedidoDetalle.update({
-                        where: { id: item.detalleId },
-                        data: { 
-                            metraje: nuevoMetraje,
-                            cantidad: nuevaCantidad,
-                            precio: precioBase
+                if (item.detalleId && item.metraje > 0) {
+                    await prisma.metrajeEtiqueta.create({
+                        data: {
+                            detalleId: item.detalleId,
+                            valor: item.metraje
                         }
                     })
-                    
-                    nuevoTotal += precioBase * nuevoMetraje
                 }
+            }
+            
+            let nuevoTotal = 0
+            
+            const piezaDetalles = await prisma.pedidoDetalle.findMany({
+                where: { pedidoId: id, tipo: "pieza" },
+                include: { 
+                    producto: true,
+                    etiquetas: { select: { valor: true } }
+                }
+            })
+            
+            for (const detalle of piezaDetalles) {
+                const metrajeTotal = detalle.etiquetas.reduce((sum, e) => sum + e.valor, 0)
+                const precioBase = Number(detalle.producto.precio)
+                
+                await prisma.pedidoDetalle.update({
+                    where: { id: detalle.id },
+                    data: { 
+                        metraje: metrajeTotal,
+                        cantidad: Math.ceil(metrajeTotal / 50),
+                        precio: precioBase
+                    }
+                })
+                
+                nuevoTotal += precioBase * metrajeTotal
             }
             
             const otrosDetalles = await prisma.pedidoDetalle.findMany({
@@ -225,15 +239,19 @@ export async function PATCH(
                     }
                 })
             }
-        } else if (estado === "metraje_confirmado" && existingPedido.estado === "metraje_en_proceso") {
-            const piezasDetalles = await prisma.pedidoDetalle.findMany({
-                where: { pedidoId: id, tipo: "pieza" }
+} else if (estado === "metraje_confirmado" && existingPedido.estado === "metraje_en_proceso") {
+            const piezaDetalles = await prisma.pedidoDetalle.findMany({
+                where: { pedidoId: id, tipo: "pieza" },
+                include: { etiquetas: { select: { valor: true } } }
             })
             
             let nuevoTotal = 0
-            for (const pieza of piezasDetalles) {
-                if (pieza.metraje && pieza.metraje > 0) {
-                    nuevoTotal += Number(pieza.precio) * pieza.metraje
+            for (const pieza of piezaDetalles) {
+                const metrajeTotal = pieza.etiquetas.length > 0 
+                    ? pieza.etiquetas.reduce((sum, e) => sum + e.valor, 0)
+                    : (pieza.metraje || 0)
+                if (metrajeTotal > 0) {
+                    nuevoTotal += Number(pieza.precio) * metrajeTotal
                 }
             }
             

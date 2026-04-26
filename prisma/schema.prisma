@@ -27,6 +27,7 @@ model User {
   numeroDoc  String?
   direccion  String?
   ciudad    String?
+  celular   String?   // Teléfono de uso general
   
   sessions      Session[]
   accounts     Account[]
@@ -34,6 +35,7 @@ model User {
   pedidos      Pedido[]
   reclamos     Reclamo[]
   notificaciones Notificacion[]
+  tiendas      Tienda[]
 
   @@unique([email])
   @@map("user")
@@ -164,9 +166,12 @@ model Pedido {
   ciudad    String?
   
   // Método de envío
-  metodoEnvio  String?     // "retiro" | "agencia" | "otrapersona"
+  metodoEnvio  String?     // "tienda" | "agencia" | "delivery"
+  tiendaId   String?
+  tipoEnvio  String?     // "mismapersona" | "otropersona" (para agencia/delivery)
   agencia    String?     // "shalom" | "flores" | "marvisur" | "otros"
-  agenciaOtro String?   // nombre de otra agencia
+  delivery   String?     // "olva" | "safexpress" | "otros"
+  deliveryOtro String?
   costoEnvio  Float       @default(0)
   
   // Datos de quien recibe (para otra persona)
@@ -199,9 +204,21 @@ model PedidoDetalle {
   precio     Float
   pedido     Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
   producto   Producto @relation(fields: [productoId], references: [id])
+  etiquetas  MetrajeEtiqueta[]
 
   @@index([pedidoId])
   @@map("pedido_detalle")
+}
+
+model MetrajeEtiqueta {
+  id          String   @id @default(cuid())
+  detalleId   String
+  valor       Float
+  createdAt   DateTime @default(now())
+  detalle     PedidoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade)
+  
+  @@index([detalleId])
+  @@map("metraje_etiqueta")
 }
 
 model Reclamo {
@@ -237,4 +254,19 @@ model Notificacion {
   @@index([userId])
   @@index([userId, leida])
   @@map("notificacion")
+}
+
+model Tienda {
+  id          String   @id @default(cuid())
+  nombre      String
+  direccion  String
+  referencia String?
+  encargadoId String
+  activo     Boolean  @default(true)
+  createdAt   DateTime  @default(now())
+  
+  encargado   User     @relation(fields: [encargadoId], references: [id])
+  
+  @@index([encargadoId])
+  @@map("tienda")
 }

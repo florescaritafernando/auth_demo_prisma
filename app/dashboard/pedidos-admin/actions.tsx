@@ -21,6 +21,7 @@ interface DetalleItem {
     metraje: number | null
     producto: { id: string; nombre: string; categoria: string }
     precio: number
+    etiquetas?: { id: string; valor: number; createdAt: string }[]
 }
 
 interface Pedido {
@@ -38,6 +39,7 @@ interface Props {
 interface MetrajeRegistro {
     id: string
     value: number
+    isNew?: boolean
 }
 
 export function AdminPedidoActions({ pedido }: Props) {
@@ -46,15 +48,16 @@ export function AdminPedidoActions({ pedido }: Props) {
     const [metrajeData, setMetrajeData] = useState<Record<string, MetrajeRegistro[]>>(() => {
         const initial: Record<string, MetrajeRegistro[]> = {}
         pedido.pedidoDetalle
-            .filter(d => d.tipo === "pieza" && d.metraje)
+            .filter(d => d.tipo === "pieza")
             .forEach(d => {
-                initial[d.id] = [{ id: crypto.randomUUID(), value: d.metraje! }]
+                if (d.etiquetas && d.etiquetas.length > 0) {
+                    initial[d.id] = d.etiquetas.map(e => ({ id: e.id, value: e.valor }))
+                }
             })
         return initial
     })
     const [nroOperacion, setNroOperacion] = useState(pedido.numeroOperacion || "")
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-    const [editandoArticulo, setEditandoArticulo] = useState<string | null>(null)
 
     const piezaDetails = pedido.pedidoDetalle.filter(d => d.tipo === "pieza")
     const tienePiezas = piezaDetails.length > 0
@@ -85,11 +88,19 @@ export function AdminPedidoActions({ pedido }: Props) {
         setLoading(true)
         try {
             const metrajeItemsArray = Object.entries(metrajeData).flatMap(([detalleId, registros]) =>
-                registros.map(r => ({
-                    detalleId,
-                    metraje: r.value
-                }))
+                registros
+                    .filter(r => r.isNew === true && r.value > 0)
+                    .map(r => ({
+                        detalleId,
+                        metraje: r.value
+                    }))
             )
+
+            if (metrajeItemsArray.length === 0) {
+                alert("No hay nuevas etiquetas para guardar")
+                setLoading(false)
+                return
+            }
 
             const res = await fetch(`/api/pedidos/${pedido.id}`, {
                 method: "PATCH",
@@ -102,7 +113,6 @@ export function AdminPedidoActions({ pedido }: Props) {
             })
             const json = await res.json()
             if (json.success) {
-                setEditandoArticulo(null)
                 router.refresh()
             } else {
                 alert(json.error || "Error al guardar metraje")
@@ -117,9 +127,8 @@ export function AdminPedidoActions({ pedido }: Props) {
     const agregarMetraje = (detalleId: string) => {
         setMetrajeData(prev => ({
             ...prev,
-            [detalleId]: [...(prev[detalleId] || []), { id: crypto.randomUUID(), value: 0 }]
+            [detalleId]: [...(prev[detalleId] || []), { id: `new-${Date.now()}`, value: 0, isNew: true }]
         }))
-        setEditandoArticulo(detalleId)
     }
 
     const actualizarMetraje = (detalleId: string, registroId: string, value: number) => {
@@ -129,11 +138,63 @@ export function AdminPedidoActions({ pedido }: Props) {
         }))
     }
 
-    const eliminarMetraje = (detalleId: string, registroId: string) => {
+    const eliminarMetraje = async (detalleId: string, registroId: string, isFromDb: boolean = false) => {
+        if (isFromDb) {
+            setLoading(true)
+            try {
+                const res = await fetch(`/api/metraje-etiqueta/${registroId}`, {
+                    method: "DELETE",
+                    credentials: "include"
+                })
+                const json = await res.json()
+                if (json.success) {
+                    setMetrajeData(prev => ({
+                        ...prev,
+                        [detalleId]: prev[detalleId].filter(r => r.id !== registroId)
+                    }))
+                    router.refresh()
+                } else {
+                    alert(json.error || "Error al eliminar etiqueta")
+                }
+            } catch (e) {
+                alert("Error de conexión")
+            } finally {
+                setLoading(false)
+            }
+        } else {
+            setMetrajeData(prev => ({
+                ...prev,
+                [detalleId]: prev[detalleId].filter(r => r.id !== registroId)
+            }))
+        }
+    }
+
+    const limpiarTodasEtiquetas = async () => {
+        const etiquetas = metrajeData[deleteConfirm] || []
+        const conBD = etiquetas.filter(e => !e.isNew)
+        
+        if (conBD.length > 0) {
+            setLoading(true)
+            try {
+                for (const etq of conBD) {
+                    await fetch(`/api/metraje-etiqueta/${etq.id}`, {
+                        method: "DELETE",
+                        credentials: "include"
+                    })
+                }
+            } catch (e) {
+                alert("Error de conexión")
+            } finally {
+                setLoading(false)
+            }
+        }
+        
         setMetrajeData(prev => ({
             ...prev,
-            [detalleId]: prev[detalleId].filter(r => r.id !== registroId)
+            [deleteConfirm]: []
         }))
+        setDeleteConfirm(null)
+        router.refresh()
     }
 
     const getMetrajeTotal = (detalleId: string) => {
@@ -194,7 +255,6 @@ export function AdminPedidoActions({ pedido }: Props) {
                             const registros = metrajeData[detalle.id] || []
                             const metrajeTotal = getMetrajeTotal(detalle.id)
                             const precioTotal = Number(detalle.precio) * metrajeTotal
-                            const isEditando = editandoArticulo === detalle.id
 
                             return (
                                 <div key={detalle.id} className="bg-white rounded-lg p-3 border border-yellow-200">
@@ -213,90 +273,80 @@ export function AdminPedidoActions({ pedido }: Props) {
 
                                     {registros.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mb-3">
-                                            {registros.map((reg) => (
-                                                <div key={reg.id} className="flex items-center gap-1 bg-yellow-100 border border-yellow-300 rounded-full pl-4 pr-2 py-2">
-                                                    <Tag className="h-4 w-4 text-yellow-600" />
-                                                    <span className="text-lg font-bold text-yellow-800">{reg.value}m</span>
-                                                    <button
-                                                        onClick={() => eliminarMetraje(detalle.id, reg.id)}
-                                                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {isEditando && (
-                                        <div className="mb-3">
-                                            {registros.map((reg) => (
-                                                <div key={reg.id} className="flex items-center gap-2 mb-2">
-                                                    <input
-                                                        type="number"
-                                                        value={reg.value}
-                                                        onChange={e => actualizarMetraje(detalle.id, reg.id, parseFloat(e.target.value) || 0)}
-                                                        placeholder="Metros"
-                                                        className="flex-1 border-2 border-slate-500 rounded px-3 py-2 text-sm font-bold text-slate-900 bg-white"
-                                                    />
-                                                    <span className="text-sm font-bold text-slate-600">m</span>
-                                                    <button
-                                                        onClick={() => eliminarMetraje(detalle.id, reg.id)}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                                    >
-                                                        <XCircle className="h-5 w-5" />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                            {registros.map((reg) => {
+                                                const isNew = reg.isNew === true
+                                                return (
+                                                    <div key={reg.id} className="flex items-center gap-1 bg-yellow-100 border border-yellow-300 rounded-full pl-2 pr-1 py-1">
+                                                        <Tag className="h-4 w-4 text-yellow-600 ml-1" />
+                                                        {isNew ? (
+                                                            <input
+                                                                type="number"
+                                                                autoFocus
+                                                                value={reg.value || ""}
+                                                                onChange={e => actualizarMetraje(detalle.id, reg.id, parseFloat(e.target.value) || 0)}
+                                                                onKeyDown={e => {
+                                                                    if (e.key === "Enter") {
+                                                                        const newRegs = metrajeData[detalle.id].map(r => 
+                                                                            r.id === reg.id ? { ...r, isNew: false } : r
+                                                                        )
+                                                                        setMetrajeData(prev => ({
+                                                                            ...prev,
+                                                                            [detalle.id]: newRegs
+                                                                        }))
+                                                                    }
+                                                                }}
+                                                                className="w-16 border border-yellow-400 rounded px-2 py-1 text-lg font-bold text-yellow-800 bg-white"
+                                                                placeholder="0"
+                                                            />
+                                                        ) : (
+                                                            <>
+                                                                <span className="text-lg font-bold text-yellow-800">{reg.value}m</span>
+                                                                <button
+                                                                    onClick={() => eliminarMetraje(detalle.id, reg.id, !reg.isNew)}
+                                                                    className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100"
+                                                                >
+                                                                    <X className="h-4 w-4" />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
                                         </div>
                                     )}
 
                                     <div className="flex items-center justify-between pt-2 border-t border-yellow-100">
-                                        {isEditando ? (
-                                            <div className="flex gap-2">
+                                        <div className="flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => agregarMetraje(detalle.id)}
+                                                className="text-yellow-700 border-yellow-400 hover:bg-yellow-100"
+                                            >
+                                                <Plus className="h-3 w-3 mr-1" />
+                                                Añadir metraje
+                                            </Button>
+                                            {registros.length > 0 && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    onClick={() => {
-                                                        setEditandoArticulo(null)
-                                                        setMetrajeData(() => {
-                                                            const initial: Record<string, MetrajeRegistro[]> = {}
-                                                            piezaDetails.forEach(d => {
-                                                                if (d.metraje) {
-                                                                    initial[d.id] = [{ id: crypto.randomUUID(), value: d.metraje }]
-                                                                }
-                                                            })
-                                                            return initial
-                                                        })
-                                                    }}
-                                                    className="text-red-600 border-red-300"
+                                                    onClick={() => setDeleteConfirm(detalle.id)}
+                                                    className="text-red-600 border-red-300 hover:bg-red-50"
                                                 >
-                                                    <RotateCcw className="h-3 w-3 mr-1" />
-                                                    Cancelar
+                                                    <Trash2 className="h-3 w-3 mr-1" />
+                                                    Limpiar
                                                 </Button>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={guardarMetraje}
-                                                    disabled={loading}
-                                                    className="bg-green-600 hover:bg-green-700"
-                                                >
-                                                    <Save className="h-3 w-3 mr-1" />
-                                                    Guardar
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => agregarMetraje(detalle.id)}
-                                                    className="text-yellow-700 border-yellow-400 hover:bg-yellow-100"
-                                                >
-                                                    <Plus className="h-3 w-3 mr-1" />
-                                                    Añadir metraje
-                                                </Button>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            onClick={guardarMetraje}
+                                            disabled={loading || registros.length === 0}
+                                            className="bg-green-600 hover:bg-green-700"
+                                        >
+                                            <Save className="h-3 w-3 mr-1" />
+                                            Guardar
+                                        </Button>
                                     </div>
                                 </div>
                             )
@@ -317,6 +367,40 @@ export function AdminPedidoActions({ pedido }: Props) {
                         placeholder="Ej: 123-456-789"
                         className="w-full border-2 border-slate-500 rounded-lg px-3 py-2 text-sm font-bold text-slate-900 bg-white"
                     />
+                </div>
+            )}
+
+            {deleteConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
+                        <div className="text-center">
+                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Trash2 className="h-6 w-6 text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                ¿Limpiar etiquetas?
+                            </h3>
+                            <p className="text-slate-600 mb-6">
+                                ¿Estás seguro de que deseas eliminar todas las etiquetas de este artículo? Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setDeleteConfirm(null)}
+                                    className="flex-1"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={limpiarTodasEtiquetas}
+                                    disabled={loading}
+                                    className="flex-1 bg-red-600 hover:bg-red-700"
+                                >
+                                    Eliminar todas
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

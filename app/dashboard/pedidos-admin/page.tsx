@@ -29,7 +29,10 @@ async function getPedidos() {
             include: {
                 user: { select: { id: true, name: true, email: true } },
                 pedidoDetalle: {
-                    include: { producto: { select: { id: true, nombre: true, categoria: true } } }
+                    include: { 
+                        producto: { select: { id: true, nombre: true, categoria: true } },
+                        etiquetas: { orderBy: { createdAt: "asc" } }
+                    }
                 }
             },
             orderBy: { createdAt: "desc" }

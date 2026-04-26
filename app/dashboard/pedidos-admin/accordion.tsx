@@ -12,6 +12,7 @@ interface DetalleItem {
     metraje: number | null
     producto: { id: string; nombre: string; categoria: string }
     precio: number
+    etiquetas?: { id: string; valor: number }[]
 }
 
 interface Pedido {
@@ -161,8 +162,12 @@ export function PedidoAccordion({ pedidos }: Props) {
                                             </h3>
                                             <div className="space-y-2 max-h-48 overflow-y-auto">
                                                 {pedido.pedidoDetalle.map((detalle) => {
+                                                    const tieneEtiquetas = detalle.etiquetas && detalle.etiquetas.length > 0
+                                                    const metrajeTotal = tieneEtiquetas 
+                                                        ? detalle.etiquetas.reduce((sum, e) => sum + e.valor, 0)
+                                                        : (detalle.metraje || 0)
                                                     const precioTotal = detalle.tipo === "pieza" 
-                                                        ? Number(detalle.precio) * (detalle.metraje || 0)
+                                                        ? Number(detalle.precio) * metrajeTotal
                                                         : Number(detalle.precio) * detalle.cantidad
                                                     
                                                     return (
@@ -171,7 +176,7 @@ export function PedidoAccordion({ pedidos }: Props) {
                                                                 <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
                                                                 <p className="text-xs text-slate-500">
                                                                     {detalle.tipo === "pieza" 
-                                                                        ? `${detalle.cantidad} pieza(s) (~${detalle.metraje || "?"}m)`
+                                                                        ? `${detalle.cantidad} pieza(s) (~${metrajeTotal || "?"}m)`
                                                                         : `${detalle.cantidad} metros`
                                                                     }
                                                                 </p>
@@ -180,9 +185,9 @@ export function PedidoAccordion({ pedidos }: Props) {
                                                                 <p className="font-bold text-slate-900">
                                                                     S/ {precioTotal.toFixed(2)}
                                                                 </p>
-                                                                {detalle.tipo === "pieza" && detalle.metraje && (
+                                                                {detalle.tipo === "pieza" && metrajeTotal > 0 && (
                                                                     <p className="text-xs text-slate-500">
-                                                                        {detalle.metraje}m × S/ {detalle.precio}/m
+                                                                        {metrajeTotal}m × S/ {detalle.precio}/m
                                                                     </p>
                                                                 )}
                                                             </div>

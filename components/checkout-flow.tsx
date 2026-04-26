@@ -32,8 +32,12 @@ interface CheckoutData {
     provincia: string
     distrito: string
     metodoEnvio: string
+    tiendaId: string
+    tipoEnvio: string
     agencia: string
     agenciaOtro: string
+    delivery: string
+    deliveryOtro: string
     dniRecibe: string
     nombreRecibe: string
     celularRecibe: string
@@ -102,14 +106,80 @@ const UBIGEO: Record<string, Record<string, string[]>> = {
     "Lima": {
         "Lima": ["Lima", "Ancón", "Ate", "Barranco", "Breña", "Carabayllo", "Chaclacayo", "Chorrillos", "Cieneguilla", "Comas", "El Agustino", "Independencia", "Jesús María", "La Molina", "La Victoria", "Lince", "Los Olivos", "Lurigancho", "Lurín", "Magdalena del Mar", "Miraflores", "Pachacámac", "Pucusana", "Pueblo Libre", "Puente Piedra", "Rímac", "San Bartolo", "San Juan de Lurigancho", "San Juan de Miraflores", "San Luis", "San Martín de Porres", "San Miguel", "Santa Anita", "Santa María del Mar", "Santa Rosa", "Santiago de Surco", "Surquillo", "Villa El Salvador", "Villa María del Triunfo"],
         "Barranca": ["Barranca", "Barranca", "Paramonga", "Supe", "Supe Puerto"],
-        "Cajat": ["Cajat", "Cajat", "San Juan de Lurigancho"],
+        "Cajatete": ["Cajatete", "Cajatete", "San Juan de Lurigancho"],
         "Canta": ["Canta", "Arahuay", "Canta", "Huamantanga", "Huaros", "Lachaqui", "Quintay", "San Buenaventura", "Santa Rosa de Quives"],
         "Cañete": ["San Vicente de Cañete", "Calango", "Cerro Azul", "Chilca", "Coayllo", "Imperial", "Lunahuaná", "Mala", "Nieve", "Pacarán", "Quilmaná", "San Luis", "San Vicente", "Santa Cruz de Andama", "Unas"],
-        "Huaral": ["Huaral", "Acos", "Atavilia Bajo", "Buena Vista Alta", "Cajat", "Cerro de Pas", "Chancay", "Iguain", "La Trinidad", "Las Libertadores", "Pucara", "San José", "San Juan de Mas", "Santa Ines", "Sayán"],
+        "Huaral": ["Huaral", "Acos", "Atavilia Bajo", "Buena Vista Alta", "Cajatete", "Cerro de Pas", "Chancay", "Iguain", "La Trinidad", "Las Libertadores", "Pucara", "San José", "San Juan de Mas", "Santa Ines", "Sayán"],
         "Huarochirí": ["Matucana", "Antioquía", "Callahuanca", "Huarochirí", "Langa", "Laraos", "Leonor Ordóñez", "Mariatana", "Matucana", "Morococha", "Olaya", "Pacaraos", "Pedro Escobedo", "Quinches", "Río Blanco", "San Andrés de Tupico", "San Antonio", "San Bartolomé", "San Juan de Iris", "San Juan de Tantaranche", "Santa María de Chicma", "Santiago de Tantaranche", "Santo Domingo de los Olleros"],
         "Huaura": ["Huacho", "Ampur", "Calango", "Carquín", "Chancayllo", "Don Martin", "El Carrión", "Huaca", "Huaman", "Huaura", "Ica", "Launi", "Leonor Ordóñez", "Limpe", "Paccho", "Pampan", "Quinches", "Sayán", "Supe", "Supe Puerto"],
-        "Oyon": ["Oyon", "Ambar", "Caujul", "Cochamarca", "Colpas", "Huancapon", "Minahuan", "OY", "Pachangara", "Quinches", "Rag", "Shilca", "Yurac"],
+        "Oyon": ["Oyon", "Ambar", "Caujul", "Cochamarca", "Colpas", "Huancapon", "Minahuan", "Oyon", "Pachangara", "Quinches", "Rag", "Shilca", "Yurac"],
         "Yauyos": ["Yauyos", "Alis", "Ate", "Awton", "Cata", "Chocos", "Cusco", "Huantan", "Huayaringa", "Langa", "Laraos", "Leonor Ordóñez", "Lincha", "Made", "Mariatana", "Miraflores", "Omas", "Putin", "Quinches", "San Juan de Iris", "Santa Cruz de Alpomarca", "Santiago de Tantaranche", "Santo Domingo de los Olleros", "Tupe", "Viñac", "Yauyos"]
+    },
+    "Loreto": {
+        "Maynas": ["Iquitos", "Belén", "Punchana", "San Juan", "Teniente Manuel Clavero"],
+        "Alto Amazonas": ["Yurimaguas", "Lago", "Nauta", "Roberto Alencar"],
+        "Loreto": ["Nauta", "Capaná", "Echarate", "Indiana"],
+        "Mariscal Ramón Castilla": ["Caballococha", "Pebas", "San Juan"],
+        "Requena": ["Requena", "Alto Amazonas", "Capena", "Damas", "Francisco"],
+        "Ucayali": ["Pucallpa", "Contamana", "Callería", "Manantay", "Campoverde"]
+    },
+    "Madre de Dios": {
+        "Tambopata": ["Tambopata", "Fitzcarrald", "Puerto Maldonado", "Rollap"],
+        "Manú": ["Manú", "Iñapari", "Salvación", "Boca Manú"],
+        "Tahuamanu": ["Tahuamanu", "Iñapari", "Río"]
+    },
+    "Moquegua": {
+        "Mariscal Nieto": ["Moquegua", "Carumas", "El Al", "San Cristóbal", "Torata"],
+        "General Sánchez Cerro": ["Moquegua", "Chinas", "Ilo", "La Capilla", "Los Andes", "Quinistaquillas"],
+        "Ilo": ["Ilo", "Chinas", "El Choro", "La Capilla", "Pacocha", "Puerto"]
+    },
+    "Pasco": {
+        "Pasco": ["Cerro de Pasco", "Chaipián", "Huachón", "Huariaca", "Huasta", "Huayllay", "Ninacaca", "Pallanchacra", "Paucar", "San Pedro de P", "Simón Bolívar", "Ticllacocha", "Vitoc"],
+        "Oxapampa": ["Oxapampa", "Chontabamba", "Iscozacin", "Mazamari", "Pampa", "Pichanaqui", "Puerto", "San Fernando", "Villa Rica"],
+        "Daniel Alcides Carrión": ["Daniel Alcides Carrión", "Chacayan", "Gamal", "Huancayo", "Paucartambo"]
+    },
+    "Piura": {
+        "Piura": ["Piura", "26 de Octubre", "Catacaos", "Cura Mori", "El Tallán", "La Arena", "La Unión", "Las Lomas", "Tambo Grande"],
+        "Ayabaca": ["Ayabaca", "Frias", "Lagunas", "Pampa", "San Juan de la Virgin"],
+        "Huancabamba": ["Huancabamba", "Sondor", "Tabaconas"],
+        "Morropón": ["Chiclayo", "Buenos Aires", "Chalaco", "La Par", "Santa Catalina"],
+        "Paita": ["Paita", "Amotape", "Arenal", "La Huaca", "Tambo"],
+        "Sullana": ["Sullana", "Bellavista", "Marcavelica", "Quere"],
+        "Talara": ["Talara", "Arenal", "El Alto", "La Brea", "Máncora", "Quere"]
+    },
+    "Puno": {
+        "Puno": ["Puno", "Acora", "Amantani", "Atuncolla", "Capachica", "Isla Taquile", "Isla Uros", "Juli", "Pichacani", "Puntillo", "Tiquillaca", "Tito"],
+        "Azángaro": ["Azángaro", "Achaya", "Arapa", "Caminaca", "Chupa", "Muñequi", "Potoni", "Samán", "San Antonio", "San José", "Santiago de Pupuja"],
+        "San Román": ["Juliaca", "Capazo", "Chillía", "Desaguadero", "Huacullani", "Kelluyo", "Pikillalla", "San Antonio", "Tinque"],
+        "Chucuito": ["Chucuito", "Puno", "Ilo", "Ispaca"],
+        "El Collao": ["Ilave", "Conduriri", "Huacullani", "Puno", "Santa Rosa"],
+        "Melgar": ["Ayaviri", "Anta", "Cuyuchí", "Llalli", "Macari", "San Antonio de P", "San Juan de P"]
+    },
+    "San Martín": {
+        "Tarapoto": ["Tarapoto", "Alberto Leve", "Caynarach", "Chazuta", "El Porvenir", "Huembo", "Morales", "Papaplaya", "San Antonio"],
+        "Moyobamba": ["Moyobamba", "Calzadas", "Cuñumbu", "Huicunda", "Moyobamba", "NARANJILLO", "Pacara", "Shant", "Sión"],
+        "Bellavista": ["Bellavista", "Caspizapa", "Shapumba", "Tingo"],
+        "Mariscal Cáceres": ["Campo Verde", "Cumbitoto", "Huallaga", "Pimentel", "San José"],
+        "Rioja": ["Rioja", "Awajun", "El Dorado", "Fray Martín", "Pijahuan", "Shapaja"],
+        "Lamas": ["Lamas", "Alto Bia", "Cañopot", "Chazuta", "El Dorado", "Huicunda", "Papaplaya", "Rumizapa"],
+        "Tocache": ["Cascayán", "Naranjal", "Papaplaya", "Pichanaki", "Polvora", "Shunte"]
+    },
+    "Tacna": {
+        "Tacna": ["Tacna", "Alto de la Ciudad", "Beti", "Cañapa", "Ciudad Nueva", "Copa", "Ite", "La Yarada", "Los Andes", "Pocollay", "Sampalpuente", "Santa Rosa"],
+        "Tarata": ["Tarata", "Cajía", "Estique", "Estique Pueblo", "Huanuni", "Ite", "Labral", "Mollagata", "Sucre"],
+        "Jorge Basadre": ["Jorge Basadre", "Ilabaya", "Ite", "Locumba", "Sama"],
+        "Candarave": ["Candarave", "Cañapa", "Ite", "Kallapuma", "Sayllapaya", "Toquepala"]
+    },
+    "Tumbes": {
+        "Tumbes": ["Tumbes", "Corrales", "La Cruz", "Pimentel", "San Juan de la Virgin"],
+        "Contralmirante Villar": ["Contralmirante Toro", "Canoas", "Casitas", "La Brea", "Pimentel"],
+        "Zarumilla": ["Zarumilla", "Acapulco", "Garita", "La", "Matapalo", "Papayal"]
+    },
+    "Ucayali": {
+        "Callería": ["Pucallpa", "Campoverde", "Iparia", "Manantay", "Y"],
+        "Atalaya": ["Atalaya", "Daimur", "Raymondi", "Sepahua", "Tahuania"],
+        "Padre Abad": ["Padre Abad", "Bambamarca", "Contamana", "Iparia", "San Alejandro"],
+        "Coronel Portillo": ["Pucallpa", "Bambamarca", "Campo Verde", "Iparia", "Manantay"]
     }
 }
 
@@ -131,8 +201,12 @@ export default function CheckoutPage() {
         provincia: "",
         distrito: "",
         metodoEnvio: "",
+        tiendaId: "",
+        tipoEnvio: "",
         agencia: "",
         agenciaOtro: "",
+        delivery: "",
+        deliveryOtro: "",
         dniRecibe: "",
         nombreRecibe: "",
         celularRecibe: "",
@@ -349,8 +423,8 @@ export default function CheckoutPage() {
 
     const handleInputChange = (field: keyof CheckoutData, value: string) => {
         setData(prev => ({ ...prev, [field]: value }))
-        if (field === "metodoEnvio") {
-            setData(prev => ({ ...prev, metodoEnvio: value, agencia: "", agenciaOtro: "" }))
+        if (field === "metodoEnvio" && value !== prev.metodoEnvio) {
+            setData(prev => ({ ...prev, metodoEnvio: value, tiendaId: "", tipoEnvio: "", agencia: "", agenciaOtro: "", delivery: "", deliveryOtro: "", dniRecibe: "", nombreRecibe: "", celularRecibe: "" }))
         }
     }
 
@@ -366,10 +440,13 @@ export default function CheckoutPage() {
                 return data.tipoDocumento && data.numeroDoc && data.nombreFactura && data.direccion
             case 3:
                 if (!data.metodoEnvio) return false
+                if (data.metodoEnvio === "tienda" && !data.tiendaId) return false
                 if (data.metodoEnvio === "agencia" && !data.agencia) return false
                 if (data.metodoEnvio === "agencia" && data.agencia === "otros" && !data.agenciaOtro) return false
-                if (data.metodoEnvio === "otrapersona") {
-                    return data.dniRecibe && data.nombreRecibe
+                if (data.metodoEnvio === "delivery" && !data.delivery) return false
+                if (data.metodoEnvio === "delivery" && data.delivery === "otros" && !data.deliveryOtro) return false
+                if ((data.metodoEnvio === "agencia" || data.metodoEnvio === "delivery") && data.tipoEnvio === "otropersona") {
+                    return data.dniRecibe && data.nombreRecibe && data.celularRecibe
                 }
                 return true
             case 4:
@@ -409,11 +486,13 @@ export default function CheckoutPage() {
                     provincia: data.provincia,
                     distrito: data.distrito,
                     metodoEnvio: data.metodoEnvio,
-                    agencia: data.agencia,
-                    agenciaOtro: data.agenciaOtro,
-                    dniRecibe: data.dniRecibe,
-                    nombreRecibe: data.nombreRecibe,
-                    celularRecibe: data.celularRecibe,
+                    tiendaId: data.metodoEnvio === "tienda" ? data.tiendaId : null,
+                    tipoEnvio: data.metodoEnvio !== "tienda" ? data.tipoEnvio : null,
+                    agencia: data.metodoEnvio === "agencia" ? (data.agencia === "otros" ? data.agenciaOtro : data.agencia) : null,
+                    delivery: data.metodoEnvio === "delivery" ? (data.delivery === "otros" ? data.deliveryOtro : data.delivery) : null,
+                    dniRecibe: data.dniRecibe || null,
+                    nombreRecibe: data.nombreRecibe || null,
+                    celularRecibe: data.celularRecibe || null,
                     numeroOperacion: data.numeroOperacion,
                     items: itemsParaApi
                 }),
@@ -459,11 +538,13 @@ export default function CheckoutPage() {
                     provincia: data.provincia,
                     distrito: data.distrito,
                     metodoEnvio: data.metodoEnvio,
-                    agencia: data.agencia,
-                    agenciaOtro: data.agenciaOtro,
-                    dniRecibe: data.dniRecibe,
-                    nombreRecibe: data.nombreRecibe,
-                    celularRecibe: data.celularRecibe,
+                    tiendaId: data.metodoEnvio === "tienda" ? data.tiendaId : null,
+                    tipoEnvio: data.metodoEnvio !== "tienda" ? data.tipoEnvio : null,
+                    agencia: data.metodoEnvio === "agencia" ? (data.agencia === "otros" ? data.agenciaOtro : data.agencia) : null,
+                    delivery: data.metodoEnvio === "delivery" ? (data.delivery === "otros" ? data.deliveryOtro : data.delivery) : null,
+                    dniRecibe: data.dniRecibe || null,
+                    nombreRecibe: data.nombreRecibe || null,
+                    celularRecibe: data.celularRecibe || null,
                     numeroOperacion: "012345678",
                     items: itemsParaApi
                 }),
@@ -740,32 +821,118 @@ export default function CheckoutPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Número *</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        {data.tipoDocumento === "ruc" ? "Nro. de RUC *" : data.tipoDocumento === "ce" ? "Nro. de documento *" : "Nro. de documento *"}
+                                    </label>
                                     <input
                                         type="text"
                                         value={data.numeroDoc}
-                                        onChange={e => handleInputChange("numeroDoc", e.target.value)}
+                                        onChange={e => {
+                                            const maxLen = data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15
+                                            const filtered = e.target.value.replace(/[^0-9]/g, "").slice(0, maxLen)
+                                            handleInputChange("numeroDoc", filtered)
+                                        }}
+                                        maxLength={data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15}
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                        placeholder={data.tipoDocumento === "ruc" ? "11 dígitos" : data.tipoDocumento === "dni" ? "8 dígitos" : "15 dígitos"}
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Nombre *</label>
-                                    <input
-                                        type="text"
-                                        value={data.nombreFactura}
-                                        onChange={e => handleInputChange("nombreFactura", e.target.value)}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
-                                    />
-                                </div>
+                                {data.tipoDocumento !== "ruc" && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Nombres y apellidos *</label>
+                                        <input
+                                            type="text"
+                                            value={data.nombreFactura}
+                                            onChange={e => {
+                                                const filtered = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "").slice(0, 50)
+                                                handleInputChange("nombreFactura", filtered)
+                                            }}
+                                            maxLength={50}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                            placeholder="Solo letras, máximo 50 caracteres"
+                                        />
+                                    </div>
+                                )}
+                                {data.tipoDocumento === "ruc" && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Razón Social *</label>
+                                        <input
+                                            type="text"
+                                            value={data.nombreFactura}
+                                            onChange={e => {
+                                                const filtered = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]/g, "").slice(0, 80)
+                                                handleInputChange("nombreFactura", filtered)
+                                            }}
+                                            maxLength={80}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                            placeholder="Razón social, máximo 80 caracteres"
+                                        />
+                                    </div>
+                                )}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Dirección *</label>
                                     <input
                                         type="text"
                                         value={data.direccion}
-                                        onChange={e => handleInputChange("direccion", e.target.value)}
+                                        onChange={e => {
+                                            const filtered = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s0-9#\-\.]/g, "").slice(0, 80)
+                                            handleInputChange("direccion", filtered)
+                                        }}
+                                        maxLength={80}
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                        placeholder="Dirección, máximo 80 caracteres"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Departamento (opcional)</label>
+                                    <select
+                                        value={data.departamento}
+                                        onChange={e => {
+                                            handleInputChange("departamento", e.target.value)
+                                            handleInputChange("provincia", "")
+                                            handleInputChange("distrito", "")
+                                        }}
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                    >
+                                        <option value="">Seleccionar</option>
+                                        {Object.keys(UBIGEO).map(dep => (
+                                            <option key={dep} value={dep}>{dep}</option>
+                                        ))}
+                                    </select>
+                                </div>
+{data.departamento && UBIGEO[data.departamento] && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Provincia (opcional)</label>
+                                        <select
+                                            value={data.provincia}
+                                            onChange={e => {
+                                                handleInputChange("provincia", e.target.value)
+                                                handleInputChange("distrito", "")
+                                            }}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                        >
+                                            <option value="">Seleccionar</option>
+                                            {Object.keys(UBIGEO[data.departamento] || {}).map(prov => (
+                                                <option key={prov} value={prov}>{prov}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                        {data.departamento && data.provincia && UBIGEO[data.departamento]?.[data.provincia] && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Distrito (opcional)</label>
+                                                <select
+                                                    value={data.distrito}
+                                                    onChange={e => handleInputChange("distrito", e.target.value)}
+                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                                                >
+                                                    <option value="">Seleccionar</option>
+                                                    {(UBIGEO[data.departamento]?.[data.provincia] || []).map(dist => (
+                                                        <option key={dist} value={dist}>{dist}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
                                 <div className="flex gap-4 mt-6">
                                     <Button onClick={() => setStep(1)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
                                     <Button onClick={() => setStep(3)} className="flex-1 bg-green-600 text-white">Continuar</Button>
@@ -776,25 +943,187 @@ export default function CheckoutPage() {
 
                     {step === 3 && (
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">Método de Envío</h2>
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">Método de Entrega</h2>
                             <div className="space-y-4">
                                 <button
-                                    onClick={() => handleInputChange("metodoEnvio", "retiro")}
-                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "retiro" ? "border-green-600 bg-green-50" : "border-slate-200"}`}
+                                    onClick={() => data.metodoEnvio !== "tienda" && handleInputChange("metodoEnvio", "tienda")}
+                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "tienda" ? "border-green-600 bg-green-50" : "border-slate-200"} ${data.metodoEnvio === "tienda" ? "cursor-not-allowed opacity-75" : ""}`}
+                                    disabled={data.metodoEnvio === "tienda"}
                                 >
-                                    <p className="font-bold text-slate-900">Retiro en Persona</p>
-                                    <p className="text-sm text-slate-500">S/ 0.00</p>
+                                    <p className="font-bold text-black">Recoger en Tienda</p>
+                                    <p className="text-sm text-slate-500">S/ 0.00 - Retira en nuestro local</p>
                                 </button>
+
+                                {data.metodoEnvio === "tienda" && (
+                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg">
+                                        <p className="text-sm font-medium text-black mb-2">Selecciona la tienda:</p>
+                                        <select
+                                            value={data.tiendaId || ""}
+                                            onChange={(e) => handleInputChange("tiendaId", e.target.value)}
+                                            className="w-full p-3 border rounded-lg text-black"
+                                        >
+                                            <option value="">Seleccionar tienda...</option>
+                                            <option value="tienda1">Tienda Centro - Jr. de la Unión 456</option>
+                                            <option value="tienda2">Tienda Norte - Av. Alfredo Benavides 1234</option>
+                                            <option value="tienda3">Tienda Este - Av. Javier Prado 2500</option>
+                                        </select>
+                                    </div>
+                                )}
+
                                 <button
-                                    onClick={() => handleInputChange("metodoEnvio", "agencia")}
-                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "agencia" ? "border-yellow-500 bg-yellow-50" : "border-slate-200"}`}
+                                    onClick={() => data.metodoEnvio !== "agencia" && handleInputChange("metodoEnvio", "agencia")}
+                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "agencia" ? "border-yellow-500 bg-yellow-50" : "border-slate-200"} ${data.metodoEnvio === "agencia" ? "cursor-not-allowed opacity-75" : ""}`}
+                                    disabled={data.metodoEnvio === "agencia"}
                                 >
-                                    <p className="font-bold text-slate-900">Agencia de Envíos</p>
-                                    <p className="text-sm text-slate-500">S/ {calcularCostoEnvio().toFixed(2)}</p>
+                                    <p className="font-bold text-black">Agencia de Envíos</p>
+                                    <p className="text-sm text-slate-500">S/ {calcularCostoEnvio().toFixed(2)} - Delivery a agencia</p>
                                 </button>
+
+                                {data.metodoEnvio === "agencia" && (
+                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-4">
+                                        <div>
+                                            <p className="text-sm font-medium text-black mb-2">Selecciona agencia:</p>
+                                            <select
+                                                value={data.agencia || ""}
+                                                onChange={(e) => handleInputChange("agencia", e.target.value)}
+                                                className="w-full p-3 border rounded-lg text-black"
+                                            >
+                                                <option value="">Seleccionar agencia...</option>
+                                                <option value="shalom">Shalom</option>
+                                                <option value="flores">Flores</option>
+                                                <option value="marvisur">Marvisur</option>
+                                                <option value="olva">Olva</option>
+                                                <option value="safexpress">Safexpress</option>
+                                                <option value="otros">Otra agencia</option>
+                                            </select>
+                                        </div>
+                                        {data.agencia === "otros" && (
+                                            <input
+                                                type="text"
+                                                placeholder="Nombre de la agencia"
+                                                value={data.agenciaOtro || ""}
+                                                onChange={(e) => handleInputChange("agenciaOtro", e.target.value)}
+                                                className="w-full p-3 border rounded-lg text-black"
+                                            />
+                                        )}
+                                        <div>
+                                            <p className="text-sm font-medium text-black mb-2">¿Quién recibe?</p>
+                                            <select
+                                                value={data.tipoEnvio || "mismapersona"}
+                                                onChange={(e) => handleInputChange("tipoEnvio", e.target.value)}
+                                                className="w-full p-3 border rounded-lg text-black"
+                                            >
+                                                <option value="mismapersona">Yo mismo</option>
+                                                <option value="otropersona">Otra persona</option>
+                                            </select>
+                                        </div>
+                                        {data.tipoEnvio === "otropersona" && (
+                                            <div className="space-y-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="DNI (8 dígitos)"
+                                                    value={data.dniRecibe || ""}
+                                                    onChange={(e) => handleInputChange("dniRecibe", e.target.value.replace(/\D/g, "").slice(0, 8))}
+                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    maxLength={8}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nombre completo"
+                                                    value={data.nombreRecibe || ""}
+                                                    onChange={(e) => handleInputChange("nombreRecibe", e.target.value)}
+                                                    className="w-full p-3 border rounded-lg text-black"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Celular (9 dígitos)"
+                                                    value={data.celularRecibe || ""}
+                                                    onChange={(e) => handleInputChange("celularRecibe", e.target.value.replace(/\D/g, "").slice(0, 9))}
+                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    maxLength={9}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => data.metodoEnvio !== "delivery" && handleInputChange("metodoEnvio", "delivery")}
+                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "delivery" ? "border-blue-500 bg-blue-50" : "border-slate-200"} ${data.metodoEnvio === "delivery" ? "cursor-not-allowed opacity-75" : ""}`}
+                                    disabled={data.metodoEnvio === "delivery"}
+                                >
+                                    <p className="font-bold text-black">Delivery / Delivery Express</p>
+                                    <p className="text-sm text-slate-500">S/ {calcularCostoEnvio().toFixed(2)} - Envío a domicilio</p>
+                                </button>
+
+                                {data.metodoEnvio === "delivery" && (
+                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-4">
+                                        <div>
+                                            <p className="text-sm font-medium text-black mb-2">Tipo de delivery:</p>
+                                            <select
+                                                value={data.delivery || ""}
+                                                onChange={(e) => handleInputChange("delivery", e.target.value)}
+                                                className="w-full p-3 border rounded-lg text-black"
+                                            >
+                                                <option value="">Seleccionar...</option>
+                                                <option value="olva">Olva</option>
+                                                <option value="safexpress">Safexpress</option>
+                                                <option value="otros">Otro</option>
+                                            </select>
+                                        </div>
+                                        {data.delivery === "otros" && (
+                                            <input
+                                                type="text"
+                                                placeholder="Nombre del delivery"
+                                                value={data.deliveryOtro || ""}
+                                                onChange={(e) => handleInputChange("deliveryOtro", e.target.value)}
+                                                className="w-full p-3 border rounded-lg text-black"
+                                            />
+                                        )}
+                                        <div>
+                                            <p className="text-sm font-medium text-black mb-2">¿Quién recibe?</p>
+                                            <select
+                                                value={data.tipoEnvio || "mismapersona"}
+                                                onChange={(e) => handleInputChange("tipoEnvio", e.target.value)}
+                                                className="w-full p-3 border rounded-lg text-black"
+                                            >
+                                                <option value="mismapersona">Yo mismo</option>
+                                                <option value="otropersona">Otra persona</option>
+                                            </select>
+                                        </div>
+                                        {data.tipoEnvio === "otropersona" && (
+                                            <div className="space-y-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="DNI (8 dígitos)"
+                                                    value={data.dniRecibe || ""}
+                                                    onChange={(e) => handleInputChange("dniRecibe", e.target.value.replace(/\D/g, "").slice(0, 8))}
+                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    maxLength={8}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nombre completo"
+                                                    value={data.nombreRecibe || ""}
+                                                    onChange={(e) => handleInputChange("nombreRecibe", e.target.value)}
+                                                    className="w-full p-3 border rounded-lg text-black"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Celular (9 dígitos)"
+                                                    value={data.celularRecibe || ""}
+                                                    onChange={(e) => handleInputChange("celularRecibe", e.target.value.replace(/\D/g, "").slice(0, 9))}
+                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    maxLength={9}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="flex gap-4 mt-6">
                                     <Button onClick={() => setStep(2)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
-                                    <Button onClick={() => setStep(4)} className="flex-1 bg-green-600 text-white">Continuar</Button>
+                                    <Button onClick={() => setStep(4)} disabled={!validarPaso(3)} className="flex-1 bg-green-600 text-white">Continuar</Button>
                                 </div>
                             </div>
                         </div>
