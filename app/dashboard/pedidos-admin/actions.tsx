@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag } from "lucide-react"
+import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus } from "lucide-react"
 import { RechazarPedidoModal } from "@/components/pedidos/RechazarPedidoModal"
 
 const ESTADOS_DISPONIBLES = [
@@ -32,6 +32,7 @@ interface Pedido {
     numeroOperacion: string | null
     motivoRechazo: string | null
     pedidoDetalle: DetalleItem[]
+    delegado: { id: string; name: string | null } | null
 }
 
 interface Props {

@@ -16,7 +16,7 @@ export function TomarPedidoButton({ pedidoId, delegadoName, onTomar }: Props) {
     if (delegadoName) {
         return (
             <div className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                Asignado: {delegadoName}
+                Pedido asignado a: {delegadoName}
             </div>
         )
     }

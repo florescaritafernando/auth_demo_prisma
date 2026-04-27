@@ -60,3 +60,4 @@ For more information, see: https://nextjs.org/docs/app/api-reference/turbopack#s
 EJECUTAR en terminal
 
 npm install
+

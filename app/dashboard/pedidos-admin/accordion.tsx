@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { ChevronDown, ChevronUp, FileText } from "lucide-react"
+import { ChevronDown, ChevronUp, FileText, UserCheck, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AdminPedidoActions } from "./actions"
 
@@ -140,6 +140,12 @@ export function PedidoAccordion({ pedidos }: Props) {
                                                     Piezas
                                                 </span>
                                             )}
+                                            {pedido.delegado && (
+                                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
+                                                    <UserCheck className="h-3 w-3" />
+                                                    {pedido.delegado.name || "Pedido asignado a: "}
+                                                </span>
+                                            )}
                                         </div>
                                         <p className="text-sm text-slate-500 truncate">
                                             {pedido.user?.name || pedido.user?.email || "Cliente"} • {pedido.nombreFactura}
@@ -176,19 +182,19 @@ export function PedidoAccordion({ pedidos }: Props) {
                                             <div className="space-y-2 max-h-48 overflow-y-auto">
                                                 {pedido.pedidoDetalle.map((detalle) => {
                                                     const tieneEtiquetas = detalle.etiquetas && detalle.etiquetas.length > 0
-                                                    const metrajeTotal = tieneEtiquetas 
+                                                    const metrajeTotal = tieneEtiquetas
                                                         ? detalle.etiquetas.reduce((sum, e) => sum + e.valor, 0)
                                                         : (detalle.metraje || 0)
-                                                    const precioTotal = detalle.tipo === "pieza" 
+                                                    const precioTotal = detalle.tipo === "pieza"
                                                         ? Number(detalle.precio) * metrajeTotal
                                                         : Number(detalle.precio) * detalle.cantidad
-                                                    
+
                                                     return (
                                                         <div key={detalle.id} className="flex justify-between items-center text-sm bg-white rounded-lg p-2">
                                                             <div>
                                                                 <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
                                                                 <p className="text-xs text-slate-500">
-                                                                    {detalle.tipo === "pieza" 
+                                                                    {detalle.tipo === "pieza"
                                                                         ? `${detalle.cantidad} pieza(s) (~${metrajeTotal || "?"}m)`
                                                                         : `${detalle.cantidad} metros`
                                                                     }
@@ -239,9 +245,9 @@ export function PedidoAccordion({ pedidos }: Props) {
                                                     <span className="text-slate-600">Método:</span>
                                                     <span className="font-bold text-slate-900">
                                                         {pedido.metodoEnvio === "tienda" ? "Retiro en Tienda" :
-                                                         pedido.metodoEnvio === "agencia" ? `Agencia: ${agenciaLabel || pedido.agenciaOtro || pedido.agencia}` :
-                                                         pedido.metodoEnvio === "delivery" ? `Delivery: ${deliveryLabel || pedido.deliveryOtro || pedido.delivery}` :
-                                                         "-"}
+                                                            pedido.metodoEnvio === "agencia" ? `Agencia: ${agenciaLabel || pedido.agenciaOtro || pedido.agencia}` :
+                                                                pedido.metodoEnvio === "delivery" ? `Delivery: ${deliveryLabel || pedido.deliveryOtro || pedido.delivery}` :
+                                                                    "-"}
                                                     </span>
                                                 </div>
                                                 {pedido.metodoEnvio === "tienda" && pedido.tienda && (
@@ -305,6 +311,34 @@ export function PedidoAccordion({ pedidos }: Props) {
 
                                     <div className="mt-6 pt-4 border-t border-slate-200">
                                         <AdminPedidoActions pedido={pedido} />
+
+                                        {!pedido.delegado && (
+                                            <div className="mt-4">
+                                                <Button
+                                                    onClick={async () => {
+                                                        try {
+                                                            const res = await fetch(`/api/pedidos/${pedido.id}/delegar`, {
+                                                                method: "POST",
+                                                                credentials: "include"
+                                                            })
+                                                            const json = await res.json()
+                                                            if (json.success) {
+                                                                window.location.reload()
+                                                            } else {
+                                                                alert(json.error || "Error al tomar pedido")
+                                                            }
+                                                        } catch (e) {
+                                                            console.error(e)
+                                                            alert("Error al tomar pedido")
+                                                        }
+                                                    }}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                >
+                                                    <UserPlus className="h-4 w-4 mr-2" />
+                                                    Tomar Pedido
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -328,11 +362,10 @@ export function PedidoAccordion({ pedidos }: Props) {
                             <button
                                 key={page}
                                 onClick={() => setCurrentPage(page)}
-                                className={`w-8 h-8 rounded text-sm font-medium ${
-                                    currentPage === page
-                                        ? "bg-slate-900 text-white"
-                                        : "bg-white text-slate-600 hover:bg-slate-100"
-                                } border border-slate-300`}
+                                className={`w-8 h-8 rounded text-sm font-medium ${currentPage === page
+                                    ? "bg-slate-900 text-white"
+                                    : "bg-white text-slate-600 hover:bg-slate-100"
+                                    } border border-slate-300`}
                             >
                                 {page}
                             </button>
