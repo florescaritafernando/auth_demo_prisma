@@ -34,8 +34,8 @@ export function ArticulosClient({ initialProductos }: Props) {
     const [currentPage, setCurrentPage] = useState(1)
 
     const filtered = initialProductos.filter(p => {
-        const matchSearch = p.nombre.toLowerCase().includes(search.toLowerCase()) || 
-                       p.categoria.toLowerCase().includes(search.toLowerCase())
+        const matchSearch = p.nombre.toLowerCase().includes(search.toLowerCase()) ||
+            p.categoria.toLowerCase().includes(search.toLowerCase())
         const matchCategoria = !filtroCategoria || p.categoria === filtroCategoria
         return matchSearch && matchCategoria
     })
@@ -59,9 +59,9 @@ export function ArticulosClient({ initialProductos }: Props) {
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                            <input 
-                                type="text" 
-                                placeholder="Buscar por nombre..." 
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre..."
                                 className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm text-slate-800 placeholder:text-slate-400"
                                 value={search}
                                 onChange={(e) => {
@@ -128,7 +128,7 @@ export function ArticulosClient({ initialProductos }: Props) {
                                             </td>
                                             <td className="px-3 py-3 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <BotonEditarProducto producto={prod} />
+                                                    <BotonEditarProducto producto={prod as any} />
                                                     <BotonEliminarProducto id={prod.id} />
                                                 </div>
                                             </td>

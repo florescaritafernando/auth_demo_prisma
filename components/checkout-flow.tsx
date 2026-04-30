@@ -192,7 +192,7 @@ export default function CheckoutPage() {
     const [error, setError] = useState("")
     const [items, setItems] = useState<CarritoItem[]>([])
     const [deletingId, setDeletingId] = useState<string | null>(null)
-    const [tiendas, setTiendas] = useState<{id: string, nombre: string, direccion: string}[]>([])
+    const [tiendas, setTiendas] = useState<{ id: string, nombre: string, direccion: string }[]>([])
     const [data, setData] = useState<CheckoutData>({
         tipoDocumento: "",
         numeroDoc: "",
@@ -248,7 +248,8 @@ export default function CheckoutPage() {
                 setContinuarPedido(pedido)
                 console.log("Pedido data:", JSON.stringify(pedido, null, 2))
 
-                setData({
+                setData((prev) => ({
+                    ...prev,
                     tipoDocumento: pedido.tipoDocumento || "",
                     numeroDoc: pedido.numeroDoc || "",
                     nombreFactura: pedido.nombreFactura || "",
@@ -263,7 +264,7 @@ export default function CheckoutPage() {
                     nombreRecibe: pedido.nombreRecibe || "",
                     celularRecibe: pedido.celularRecibe || "",
                     numeroOperacion: pedido.numeroOperacion === "012345678" ? "" : (pedido.numeroOperacion || "")
-                })
+                }))
 
                 const itemsFromPedido = (pedido.pedidoDetalle || []).map((detalle: any) => ({
                     id: detalle.id,
@@ -446,18 +447,18 @@ export default function CheckoutPage() {
         setData(prev => {
             const newData = { ...prev, [field]: value }
             if (field === "metodoEnvio" && value !== prev.metodoEnvio) {
-                return { 
-                    ...newData, 
-                    metodoEnvio: value, 
-                    tiendaId: "", 
-                    tipoEnvio: "", 
-                    agencia: "", 
-                    agenciaOtro: "", 
-                    delivery: "", 
-                    deliveryOtro: "", 
-                    dniRecibe: "", 
-                    nombreRecibe: "", 
-                    celularRecibe: "" 
+                return {
+                    ...newData,
+                    metodoEnvio: value,
+                    tiendaId: "",
+                    tipoEnvio: "",
+                    agencia: "",
+                    agenciaOtro: "",
+                    delivery: "",
+                    deliveryOtro: "",
+                    dniRecibe: "",
+                    nombreRecibe: "",
+                    celularRecibe: ""
                 }
             }
             return newData
@@ -545,7 +546,7 @@ export default function CheckoutPage() {
                 setLoading(false)
                 return
             }
-            
+
             let json
             try {
                 json = JSON.parse(text)
@@ -681,7 +682,7 @@ export default function CheckoutPage() {
             setError("Por favor ingresa tu número de operación")
             return
         }
-        
+
         setShowPaymentModal(false)
         setLoading(true)
         setError("")
@@ -834,7 +835,7 @@ export default function CheckoutPage() {
                                     {items.map(item => {
                                         const precioUnitario = Number(item.producto.precio)
                                         const cantidadMetros = item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad
-                                        
+
                                         const precioTotal = item.tipo === "pieza"
                                             ? precioUnitario * cantidadMetros
                                             : precioUnitario * item.cantidad
@@ -1053,7 +1054,7 @@ export default function CheckoutPage() {
                                         ))}
                                     </select>
                                 </div>
-{data.departamento && UBIGEO[data.departamento] && (
+                                {data.departamento && UBIGEO[data.departamento] && (
                                     <div>
                                         <label className="block text-sm font-medium text-black mb-1">Provincia (opcional)</label>
                                         <select
@@ -1071,21 +1072,21 @@ export default function CheckoutPage() {
                                         </select>
                                     </div>
                                 )}
-                                        {data.departamento && data.provincia && UBIGEO[data.departamento]?.[data.provincia] && (
-                                            <div>
-                                                <label className="block text-sm font-medium text-black mb-1">Distrito (opcional)</label>
-                                                <select
-                                                    value={data.distrito}
-                                                    onChange={e => handleInputChange("distrito", e.target.value)}
-                                                    className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
-                                                >
-                                                    <option value="">Seleccionar</option>
-                                                    {(UBIGEO[data.departamento]?.[data.provincia] || []).map(dist => (
-                                                        <option key={dist} value={dist}>{dist}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
+                                {data.departamento && data.provincia && UBIGEO[data.departamento]?.[data.provincia] && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-black mb-1">Distrito (opcional)</label>
+                                        <select
+                                            value={data.distrito}
+                                            onChange={e => handleInputChange("distrito", e.target.value)}
+                                            className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                        >
+                                            <option value="">Seleccionar</option>
+                                            {(UBIGEO[data.departamento]?.[data.provincia] || []).map(dist => (
+                                                <option key={dist} value={dist}>{dist}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 <div className="flex gap-4 mt-6">
                                     <Button onClick={() => setStep(1)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
                                     <Button onClick={() => setStep(3)} disabled={!validarPaso(2)} className="flex-1 bg-green-600 text-white">Continuar</Button>
@@ -1284,10 +1285,10 @@ export default function CheckoutPage() {
                         </div>
                     )}
 
-{step === 4 && (
+                    {step === 4 && (
                         <div>
                             <h2 className="text-xl font-bold text-black mb-4">Resumen y Pago</h2>
-                            
+
                             {metrajeConfirmado && continuarPedido ? (
                                 <div className="mb-4">
                                     <div className="bg-green-50 border-2 border-green-400 p-4 rounded-lg mb-4">
@@ -1296,7 +1297,7 @@ export default function CheckoutPage() {
                                             <p className="font-bold text-green-800">¡Metraje Confirmado!</p>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="border-2 border-black rounded-lg p-4">
                                         <p className="font-bold text-black mb-3">Artículos:</p>
                                         <div className="space-y-2">
@@ -1307,7 +1308,7 @@ export default function CheckoutPage() {
                                                         <div className="text-black">
                                                             <p className="font-medium">{detalle.producto?.nombre || `Producto ${idx + 1}`}</p>
                                                             <p className="text-xs text-gray-600">
-                                                                {detalle.metraje 
+                                                                {detalle.metraje
                                                                     ? `${detalle.metraje}m × S/ ${Number(detalle.precio).toFixed(2)}/m`
                                                                     : `${detalle.cantidad} ${detalle.tipo === "pieza" ? "pieza(s)" : "m"} × S/ ${Number(detalle.precio).toFixed(2)}/m`
                                                                 }
@@ -1319,7 +1320,7 @@ export default function CheckoutPage() {
                                             })}
                                         </div>
                                     </div>
-                                    
+
                                     <div className="bg-slate-50 p-4 rounded-lg mt-4 text-sm">
                                         <div className="flex justify-between mb-1">
                                             <span className="text-black">Subtotal:</span>
@@ -1341,11 +1342,11 @@ export default function CheckoutPage() {
                                             <p className="font-bold mb-2 text-black">Total: S/ {Number(continuarPedido.total || 0).toFixed(2)}</p>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="mt-6">
-                                        <Button 
+                                        <Button
                                             onClick={() => setShowPaymentModal(true)}
-                                            disabled={loading} 
+                                            disabled={loading}
                                             className="w-full bg-green-600 text-white font-bold"
                                         >
                                             {loading ? "Procesando..." : "Finalizar Compra"}
@@ -1361,7 +1362,7 @@ export default function CheckoutPage() {
                                         </div>
                                         <p className="text-sm text-amber-700">Haz click en 'Agendar pedido' para agendar revisión de piezas</p>
                                     </div>
-                                    
+
                                     <div className="border-2 border-black rounded-lg p-4">
                                         <p className="font-bold text-black mb-3">Artículos:</p>
                                         <div className="space-y-2">
@@ -1386,17 +1387,17 @@ export default function CheckoutPage() {
                                             )}
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex gap-4 mt-6">
-                                        <Button 
-                                            onClick={() => setStep(3)} 
+                                        <Button
+                                            onClick={() => setStep(3)}
                                             variant="outline"
                                             className="flex-1 border-slate-500 text-black font-bold"
                                         >
                                             Atrás
                                         </Button>
-                                        <Button 
-                                            onClick={() => router.push("/dashboard")} 
+                                        <Button
+                                            onClick={() => router.push("/dashboard")}
                                             variant="outline"
                                             className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
                                         >
@@ -1419,7 +1420,7 @@ export default function CheckoutPage() {
                                                         <div className="text-black">
                                                             <p className="font-medium">{item.producto.nombre}</p>
                                                             <p className="text-xs text-gray-600">
-                                                                {item.metraje 
+                                                                {item.metraje
                                                                     ? `${item.metraje}m × S/ ${Number(item.producto.precio).toFixed(2)}/m`
                                                                     : `${item.cantidad} ${item.tipo === "pieza" ? "pieza(s)" : "m"} × S/ ${Number(item.producto.precio).toFixed(2)}/m`
                                                                 }
@@ -1431,7 +1432,7 @@ export default function CheckoutPage() {
                                             })}
                                         </div>
                                     </div>
-                                    
+
                                     <div className="bg-slate-50 p-4 rounded-lg mb-4 text-sm">
                                         <div className="flex justify-between mb-1">
                                             <span className="text-black">Subtotal:</span>
@@ -1453,25 +1454,25 @@ export default function CheckoutPage() {
                                             <p className="font-bold mb-2 text-black">Total: S/ {calcularTotal().toFixed(2)}</p>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex gap-4 mt-4">
-                                        <Button 
-                                            onClick={() => setStep(3)} 
+                                        <Button
+                                            onClick={() => setStep(3)}
                                             variant="outline"
                                             className="flex-1 border-slate-500 text-black font-bold"
                                         >
                                             Volver atrás
                                         </Button>
-                                        <Button 
-                                            onClick={() => router.push("/dashboard")} 
+                                        <Button
+                                            onClick={() => router.push("/dashboard")}
                                             variant="outline"
                                             className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
                                         >
                                             Cancelar
                                         </Button>
-                                        <Button 
+                                        <Button
                                             onClick={() => setShowPaymentModal(true)}
-                                            disabled={loading} 
+                                            disabled={loading}
                                             className="flex-1 bg-green-600 text-white font-bold"
                                         >
                                             Finalizar Compra
@@ -1502,11 +1503,11 @@ export default function CheckoutPage() {
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl">
                         <h2 className="text-xl font-bold text-black mb-4">Métodos de Pago</h2>
-                        
+
                         <div className="bg-slate-50 p-4 rounded-lg mb-4">
                             <p className="font-bold text-lg text-black">Total: S/ {continuarPedido?.total ? Number(continuarPedido.total).toFixed(2) : calcularTotal().toFixed(2)}</p>
                         </div>
-                        
+
                         <div className="space-y-3 mb-4">
                             <div className="border rounded-lg p-3">
                                 <p className="font-bold text-sm text-black mb-2">🏦 Transferencia Bancaria</p>
@@ -1516,7 +1517,7 @@ export default function CheckoutPage() {
                                     <p>Interbank: 620-3004489521</p>
                                 </div>
                             </div>
-                            
+
                             <div className="border rounded-lg p-3">
                                 <p className="font-bold text-sm text-black mb-2">📱 Yape / Plin</p>
                                 <div className="text-sm text-slate-700">
@@ -1525,7 +1526,7 @@ export default function CheckoutPage() {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div className="mb-4">
                             <label className="block text-sm font-medium mb-1 text-black">Número de operación:</label>
                             <input
@@ -1536,16 +1537,16 @@ export default function CheckoutPage() {
                                 placeholder="Ingresa el número de operación"
                             />
                         </div>
-                        
+
                         <div className="flex gap-3">
-                            <Button 
+                            <Button
                                 onClick={() => setShowPaymentModal(false)}
                                 variant="outline"
                                 className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
                             >
                                 Cancelar
                             </Button>
-                            <Button 
+                            <Button
                                 onClick={confirmarPago}
                                 disabled={loading || !data.numeroOperacion}
                                 className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
