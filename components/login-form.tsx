@@ -58,11 +58,11 @@ export function LoginForm({
               <div className="flex size-8 items-center justify-center rounded-md">
                 <GalleryVerticalEndIcon className="size-6" />
               </div>
-              <span className="sr-only">MANCHESTER Inc.</span>
+              <span className="sr-only">Manchester Colletion Peru</span>
             </a>
-            <h1 className="text-xl font-bold">Welcome to MANCHESTER Inc.</h1>
+            <h1 className="text-xl font-bold">Bienvenido a Manchester Colletion Peru</h1>
             <FieldDescription>
-              Don&apos;t have an account? <a href="/signup">Sign up</a>
+              ¿No tienes una cuenta? <a href="/signup">Registrate</a>
             </FieldDescription>
           </div>
 
@@ -74,11 +74,11 @@ export function LoginForm({
 
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input 
+            <Input
               name="email"
               id="email"
               type="email"
-              placeholder="m@example.com"
+              placeholder="Ingrese su correo electrónico"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -86,7 +86,7 @@ export function LoginForm({
           </Field>
           <Field>
             <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input 
+            <Input
               name="password"
               id="password"
               type="password"
@@ -102,7 +102,7 @@ export function LoginForm({
             </Button>
           </Field>
           <div className="flex items-center justify-center">
-            <a href="#">Forgot your password?</a>
+            <a href="#">¿Olvidaste tu contraseña?</a>
           </div>
           <FieldSeparator>Or</FieldSeparator>
           <Field className="grid gap-4 sm:grid-cols-2">
@@ -131,6 +131,9 @@ export function LoginForm({
         By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
         and <a href="#">Privacy Policy</a>.
       </FieldDescription>
+      <Button onClick={() => window.history.back()}>
+        Volver al Inicio
+      </Button>
     </div>
   )
 }

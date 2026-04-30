@@ -17,7 +17,7 @@ export async function DELETE(
 
         const userRole = (session.user as any)?.role || "cliente"
 
-        if (userRole !== "admin") {
+        if (userRole !== "admin" && userRole !== "empleado") {
             return NextResponse.json({ success: false, error: "Solo administradores" }, { status: 403 })
         }
 

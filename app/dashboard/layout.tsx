@@ -15,7 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
 
     const role = (session.user as any)?.role || "cliente"
-    const titulo = role === "admin" ? "Panel de Administracion" : "Panel de Control"
+    const titulo = role === "admin" ? "Panel de Administracion" : role === "empleado" ? "Panel de Colaboradores" : role === "cliente" ? "Panel de Cliente" : "Panel de Control"
 
     return (
         <SidebarProvider>

@@ -62,7 +62,7 @@ export function SignupForm({
               <div className="flex size-8 items-center justify-center rounded-md">
                 <GalleryVerticalEndIcon className="size-6" />
               </div>
-              <span className="sr-only">MANCHESTER Inc.</span>
+              <span className="sr-only">Manchester Colletion Peru</span>
             </a>
             <h1 className="text-xl font-bold">Crear Cuenta</h1>
             <FieldDescription>
@@ -117,6 +117,9 @@ export function SignupForm({
           </Field>
         </FieldGroup>
       </form>
+      <Button onClick={() => window.history.back()}>
+        Volver al Inicio
+      </Button>
     </div>
   )
 }
