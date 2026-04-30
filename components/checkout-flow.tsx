@@ -15,6 +15,7 @@ interface CarritoItem {
         nombre: string
         categoria: string
         precio: number
+        imagen?: string | null
     }
     cantidadMetros: number
     tipoLabel: string
@@ -480,7 +481,7 @@ export default function CheckoutPage() {
             case 2:
                 const docLen = data.numeroDoc?.length || 0
                 const requiredLen = data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 1
-                return data.tipoDocumento && docLen >= requiredLen && data.nombreFactura && data.direccion
+                return !!(data.tipoDocumento && docLen >= requiredLen && data.nombreFactura && data.direccion)
             case 3:
                 if (!data.metodoEnvio) return false
                 if (data.metodoEnvio === "tienda" && !data.tiendaId) return false
@@ -489,14 +490,14 @@ export default function CheckoutPage() {
                 if (data.metodoEnvio === "delivery" && !data.delivery) return false
                 if (data.metodoEnvio === "delivery" && data.delivery === "otros" && !data.deliveryOtro) return false
                 if ((data.metodoEnvio === "agencia" || data.metodoEnvio === "delivery") && data.tipoEnvio === "otropersona") {
-                    return data.dniRecibe && data.nombreRecibe && data.celularRecibe
+                    return !!(data.dniRecibe && data.nombreRecibe && data.celularRecibe)
                 }
                 return true
             case 4:
                 if (continuarPedido && !metrajeConfirmado) return true
-                if (continuarPedido && metrajeConfirmado) return data.numeroOperacion && data.numeroOperacion.length > 0
+                if (continuarPedido && metrajeConfirmado) return !!(data.numeroOperacion && data.numeroOperacion.length > 0)
                 if (tienePiezas) return true
-                return data.numeroOperacion && data.numeroOperacion.length > 0
+                return !!(data.numeroOperacion && data.numeroOperacion.length > 0)
             default:
                 return true
         }
