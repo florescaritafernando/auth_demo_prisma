@@ -181,13 +181,14 @@ export function PedidoAccordion({ pedidos }: Props) {
                                             </h3>
                                             <div className="space-y-2 max-h-48 overflow-y-auto">
                                                 {pedido.pedidoDetalle.map((detalle) => {
-                                                    const tieneEtiquetas = detalle.etiquetas && detalle.etiquetas.length > 0
-                                                    const metrajeTotal = tieneEtiquetas
-                                                        ? detalle.etiquetas.reduce((sum, e) => sum + e.valor, 0)
-                                                        : (detalle.metraje || 0)
+                                                    const tieneEtiquetas = detalle.etiquetas && detalle.etiquetas.length > 0;
+                                                    // Cambiamos e.metraje por e.valor según lo que indica tu error de TypeScript
+                                                    const metrajeTotal = detalle.etiquetas?.reduce((sum, e) => sum + (e.valor || 0), 0)
+                                                        ?? (detalle.metraje || 0);
+
                                                     const precioTotal = detalle.tipo === "pieza"
                                                         ? Number(detalle.precio) * metrajeTotal
-                                                        : Number(detalle.precio) * detalle.cantidad
+                                                        : Number(detalle.precio) * detalle.cantidad;
 
                                                     return (
                                                         <div key={detalle.id} className="flex justify-between items-center text-sm bg-white rounded-lg p-2">
@@ -310,7 +311,7 @@ export function PedidoAccordion({ pedidos }: Props) {
                                     </div>
 
                                     <div className="mt-6 pt-4 border-t border-slate-200">
-                                        <AdminPedidoActions pedido={pedido} />
+                                        <AdminPedidoActions pedido={pedido as any} />
 
                                         {!pedido.delegado && (
                                             <div className="mt-4">
