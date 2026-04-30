@@ -29,7 +29,7 @@ async function getPedidos() {
             include: {
                 user: { select: { id: true, name: true, email: true } },
                 pedidoDetalle: {
-                    include: { 
+                    include: {
                         producto: { select: { id: true, nombre: true, categoria: true } },
                         etiquetas: { orderBy: { createdAt: "asc" } }
                     }
@@ -128,7 +128,7 @@ export default async function PedidosAdminPage() {
                         <p className="text-slate-500">Los pedidos aparecerán aquí cuando los clientes realicen compras.</p>
                     </div>
                 ) : (
-                    <PedidoAccordion pedidos={pedidos} />
+                    <PedidoAccordion pedidos={pedidos as any} />
                 )}
             </div>
         </div>
