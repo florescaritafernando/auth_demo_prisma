@@ -71,7 +71,7 @@ export function AdminPedidoActions({ pedido }: Props) {
             setShowRechazarModal(true)
             return
         }
-        
+
         setLoading(true)
         try {
             const res = await fetch(`/api/pedidos/${pedido.id}`, {
@@ -202,9 +202,11 @@ export function AdminPedidoActions({ pedido }: Props) {
     }
 
     const limpiarTodasEtiquetas = async () => {
+        if (!deleteConfirm) return;
+
         const etiquetas = metrajeData[deleteConfirm] || []
         const conBD = etiquetas.filter(e => !e.isNew)
-        
+
         if (conBD.length > 0) {
             setLoading(true)
             try {
@@ -220,7 +222,7 @@ export function AdminPedidoActions({ pedido }: Props) {
                 setLoading(false)
             }
         }
-        
+
         setMetrajeData(prev => ({
             ...prev,
             [deleteConfirm]: []
@@ -264,7 +266,7 @@ export function AdminPedidoActions({ pedido }: Props) {
                 </div>
             </div>
 
-{tienePiezas && pedido.estado !== "confirmado" && pedido.estado !== "completado" && (
+            {tienePiezas && pedido.estado !== "confirmado" && pedido.estado !== "completado" && (
                 <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
                         <h4 className="font-bold text-yellow-900 flex items-center gap-2">
@@ -318,7 +320,7 @@ export function AdminPedidoActions({ pedido }: Props) {
                                                                 onChange={e => actualizarMetraje(detalle.id, reg.id, parseFloat(e.target.value) || 0)}
                                                                 onKeyDown={e => {
                                                                     if (e.key === "Enter") {
-                                                                        const newRegs = metrajeData[detalle.id].map(r => 
+                                                                        const newRegs = metrajeData[detalle.id].map(r =>
                                                                             r.id === reg.id ? { ...r, isNew: false } : r
                                                                         )
                                                                         setMetrajeData(prev => ({
@@ -437,13 +439,15 @@ export function AdminPedidoActions({ pedido }: Props) {
             )}
         </div>
     )
-    
-    {showRechazarModal && (
-        <RechazarPedidoModal
-            pedidoId={pedido.id}
-            numeroOrden={pedido.numeroOrden}
-            onClose={() => setShowRechazarModal(false)}
-            onReject={rechazarPedido}
-        />
-    )}
+
+    {
+        showRechazarModal && (
+            <RechazarPedidoModal
+                pedidoId={pedido.id}
+                numeroOrden={pedido.numeroOrden}
+                onClose={() => setShowRechazarModal(false)}
+                onReject={rechazarPedido}
+            />
+        )
+    }
 }
