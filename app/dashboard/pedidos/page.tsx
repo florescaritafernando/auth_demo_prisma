@@ -13,13 +13,13 @@ async function getPedidos() {
     try {
         const cookieStore = await cookies()
         const allCookies = cookieStore.toString()
-        
-        const res = await fetch(`${process.env.NEXT_PUBLIC_URL || "http://localhost:3000"}/api/pedidos`, {
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://landing-page-y-control-panel.onrender.com"}/api/pedidos`, {
             headers: { Cookie: allCookies || "" }
         })
-        
+
         if (!res.ok) return []
-        
+
         const json = await res.json()
         return json.pedidos || []
     } catch (e) {
