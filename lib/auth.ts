@@ -9,9 +9,9 @@ export async function enviarEmail(to: string, subject: string, html: string) {
     try {
         await resend.emails.send({
             from: "onboarding@resend.dev",
-            to,
-            subject,
-            html,
+            to: to,
+            subject: subject,
+            html: html,
         })
         console.log(`Email sent to ${to}`)
         return true
@@ -95,7 +95,7 @@ export const auth = betterAuth({
         enabled: true,
     },
     passwordReset: {
-        sendResetEmail: async ({ user, url }) => {
+        sendResetEmail: async ({ user, url }: { user: any; url: string }) => {
             await resend.emails.send({
                 from: "onboarding@resend.dev",
                 to: user.email,
