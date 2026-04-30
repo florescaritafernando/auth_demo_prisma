@@ -36,43 +36,43 @@ const PRODUCTOS_DESTACADOS = [
   {
     nombre: "D-10-001",
     categoria: "Telas Industriales",
-    imagen: "/images/D-10-001.PNG",
+    imagen: "/images/D-10-001.png",
     descripcion: "Ideal para trajes formales y eventos",
   },
   {
     nombre: "D-10-005",
     categoria: "Telas Premium",
-    imagen: "/images/D-10-005.PNG",
+    imagen: "/images/D-10-005.png",
     descripcion: "Calidad europea superior garantizada",
   },
   {
     nombre: "D-10-020",
     categoria: "Telas Exclusivas",
-    imagen: "/images/D-10-020.PNG",
+    imagen: "/images/D-10-020.png",
     descripcion: "Diseños vanguardistas",
   },
   {
     nombre: "D-27-310",
     categoria: "Telas Clásicas",
-    imagen: "/images/D-27-310.PNG",
+    imagen: "/images/D-27-310.png",
     descripcion: "Durabilidad excepcional",
   },
   {
     nombre: "D-27-315",
     categoria: "Telas",
-    imagen: "/images/D-27-315.PNG",
+    imagen: "/images/D-27-315.png",
     descripcion: "Acabado perfecto al tacto",
   },
   {
     nombre: "D-27-500",
     categoria: "Temporada",
-    imagen: "/images/D-27-500.PNG",
+    imagen: "/images/D-27-500.png",
     descripcion: "Tendencia de temporada",
   },
   {
     nombre: "D-27-505",
     categoria: "Colección",
-    imagen: "/images/D-27-505.PNG",
+    imagen: "/images/D-27-505.png",
     descripcion: "Colección especial limitada",
   },
 ];
@@ -178,9 +178,9 @@ export default function Home() {
               <a href="/" className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 whitespace-nowrap">
                 Manchester <span className="font-light text-slate-500">Collection</span>
               </a>
-              
+
               {/* Menú Hamburguesa para Móviles */}
-              <button 
+              <button
                 className="lg:hidden p-2 text-slate-600 focus:outline-none"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Alternar menú"
@@ -191,7 +191,7 @@ export default function Home() {
 
             {/* Contenedor Colapsable (Móvil) / Fila (Desktop) */}
             <div className={`w-full lg:flex lg:items-center lg:justify-end gap-6 transition-all duration-300 ${isMobileMenuOpen ? 'block' : 'hidden lg:flex'}`}>
-              
+
               {/* Barra de busqueda Responsiva */}
               <div className="relative w-full lg:w-[350px] xl:w-[400px] flex items-center mt-4 lg:mt-0">
                 <Search className="absolute left-4 text-slate-400 h-5 w-5" />
