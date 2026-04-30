@@ -16,9 +16,9 @@ interface Producto {
     nombre: string
     categoria: string
     precio: number
-    descripcion?: string
+    descripcion: string | null
     stocks: Stock[]
-    imagen: string
+    imagen: string | null
 }
 
 interface CarritoItem {

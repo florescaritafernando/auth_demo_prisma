@@ -14,9 +14,10 @@ interface Producto {
     nombre: string
     categoria: string
     precio: number
-    descripcion?: string
+    descripcion?: string | null
     activo: boolean
     stocks: Stock[]
+    imagen: string | null
 }
 
 interface Props {
@@ -132,8 +133,8 @@ export function BotonAgregarCarrito({ producto }: Props) {
                             <button
                                 onClick={() => setTipoPedido("metros")}
                                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-colors ${tipoPedido === "metros"
-                                        ? "bg-blue-50 border-blue-500 text-blue-700"
-                                        : "border-slate-300 text-slate-600 hover:bg-slate-50"
+                                    ? "bg-blue-50 border-blue-500 text-blue-700"
+                                    : "border-slate-300 text-slate-600 hover:bg-slate-50"
                                     }`}
                             >
                                 <Ruler className="h-4 w-4" />
@@ -142,8 +143,8 @@ export function BotonAgregarCarrito({ producto }: Props) {
                             <button
                                 onClick={() => setTipoPedido("pieza")}
                                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-colors ${tipoPedido === "pieza"
-                                        ? "bg-blue-50 border-blue-500 text-blue-700"
-                                        : "border-slate-300 text-slate-600 hover:bg-slate-50"
+                                    ? "bg-blue-50 border-blue-500 text-blue-700"
+                                    : "border-slate-300 text-slate-600 hover:bg-slate-50"
                                     }`}
                             >
                                 <Package className="h-4 w-4" />

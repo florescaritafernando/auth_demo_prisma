@@ -106,7 +106,7 @@ export default async function DashboardPage() {
                                             <p className="text-sm text-slate-600 leading-relaxed line-clamp-2">{prod.descripcion || "Sin descripcion"}</p>
                                         </div>
                                         <div className="pt-6 mt-auto">
-                                            <BotonAgregarCarrito producto={prod} />
+                                            <BotonAgregarCarrito producto={prod as any} />
                                         </div>
                                     </div>
                                 </div>
