@@ -80,14 +80,14 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
     const IconComponent = config.icon
     const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
     const deliveryLabel = pedido.delivery ? (DELIVERY_LABELS[pedido.delivery] || pedido.deliveryOtro) : null
-    
+
     const ocultarPrecio = pedido.estado === "metraje_en_proceso"
     const mostrarContinuar = pedido.estado === "metraje_confirmado"
     const ocultarPago = ocultarPrecio || pedido.estado === "metraje_confirmado"
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div 
+            <div
                 className="p-4 cursor-pointer hover:bg-slate-50 transition-colors"
                 onClick={() => setExpanded(!expanded)}
             >
@@ -107,7 +107,7 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                             </p>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                         <div className="text-right">
                             {ocultarPrecio ? (
@@ -119,12 +119,12 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                                 {pedido.pedidoDetalle?.length || 0} items
                             </p>
                         </div>
-                        
+
                         <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${config.color} ${config.colorTexto} flex items-center gap-1`}>
                             <IconComponent className="h-4 w-4" />
                             {config.label}
                         </span>
-                        
+
                         {mostrarContinuar && (
                             <Link href={`/dashboard/checkout?pedido=${pedido.id}`}>
                                 <Button className="bg-green-600 hover:bg-green-700 text-sm">
@@ -133,10 +133,10 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                                 </Button>
                             </Link>
                         )}
-                        
+
                         {userRole === "admin" && (
                             <form action={`/api/pedidos/${pedido.id}`} method="POST">
-                                <select 
+                                <select
                                     name="estado"
                                     defaultValue={pedido.estado}
                                     onChange={(e) => e.target.form?.submit()}
@@ -149,7 +149,7 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                                 </select>
                             </form>
                         )}
-                        
+
                         <div className="w-8 h-8 flex items-center justify-center">
                             {expanded ? (
                                 <ChevronUp className="h-5 w-5 text-slate-400" />
@@ -160,7 +160,7 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                     </div>
                 </div>
             </div>
-            
+
             {expanded && (
                 <div className="border-t border-slate-100">
                     <div className="p-4 bg-slate-50">
@@ -171,7 +171,7 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                                     <div className="text-slate-800">
                                         <p className="font-medium">{detalle.producto?.nombre || `Producto ${idx + 1}`}</p>
                                         <p className="text-xs text-slate-500">
-                                            {detalle.metraje 
+                                            {detalle.metraje
                                                 ? `${detalle.metraje}m × S/ ${Number(detalle.precio).toFixed(2)}/m`
                                                 : `${detalle.cantidad} ${detalle.tipo === "pieza" ? "pieza(s)" : "m"} × S/ ${Number(detalle.precio).toFixed(2)}/m`
                                             }
@@ -183,7 +183,7 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                                 </div>
                             ))}
                         </div>
-                        
+
                         {!ocultarPrecio && (
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
@@ -201,7 +201,7 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                             </div>
                         )}
                     </div>
-                    
+
                     <div className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                             <div className="flex items-start gap-2">
@@ -213,18 +213,18 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                                     </p>
                                 </div>
                             </div>
-                            
+
                             <div className="flex items-start gap-2">
                                 <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
                                 <div>
                                     <p className="text-slate-500">Envío:</p>
                                     <p className="font-medium text-slate-800">
-                                        {pedido.metodoEnvio === "tienda" ? "Retiro en Tienda" : 
-                                         pedido.metodoEnvio === "agencia" ? `Agencia: ${agenciaLabel || pedido.agenciaOtro || "No especificada"}` : 
-                                         pedido.metodoEnvio === "delivery" ? `Delivery: ${deliveryLabel || pedido.deliveryOtro || "No especificado"}` :
-                                         "-"}
+                                        {pedido.metodoEnvio === "tienda" ? "Retiro en Tienda" :
+                                            pedido.metodoEnvio === "agencia" ? `Agencia: ${agenciaLabel || pedido.agenciaOtro || "No especificada"}` :
+                                                pedido.metodoEnvio === "delivery" ? `Delivery: ${deliveryLabel || pedido.deliveryOtro || "No especificado"}` :
+                                                    "-"}
                                     </p>
-                                    {pedido.tiendaId && pedido.tienda && (
+                                    {pedido.tienda && pedido.tienda && (
                                         <p className="text-slate-500">{pedido.tienda.nombre} - {pedido.tienda.direccion}</p>
                                     )}
                                     {pedido.tipoEnvio === "otropersona" && pedido.nombreRecibe && (
@@ -235,7 +235,7 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                                     )}
                                 </div>
                             </div>
-                            
+
                             {!ocultarPago && (
                                 <div className="flex items-start gap-2">
                                     <Phone className="h-4 w-4 text-slate-400 mt-0.5" />
@@ -247,7 +247,7 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                                     </div>
                                 </div>
                             )}
-                            
+
                             <div className="flex items-start gap-2">
                                 <Package className="h-4 w-4 text-slate-400 mt-0.5" />
                                 <div>
