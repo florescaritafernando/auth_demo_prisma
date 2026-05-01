@@ -89,7 +89,7 @@ export default async function DashboardPage() {
                                             <Heart className="h-5 w-5" />
                                         </button>
                                         <Image
-                                            src={prod.imagen || "/images/D-10-001.PNG"}
+                                            src={prod.imagen || "/images/D-10-001.png"}
                                             alt={prod.nombre}
                                             fill
                                             className="object-contain p-6 transition-transform duration-700 group-hover:scale-105"

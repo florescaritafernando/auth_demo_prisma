@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
         const staff = await prisma.user.findMany({
             where: { role: { in: ["admin", "empleado"] } }
         })
-        
+
         await prisma.notificacion.createMany({
             data: staff.map(user => ({
                 userId: user.id,
@@ -210,6 +210,8 @@ export async function POST(request: NextRequest) {
 function calculateCostoEnvio(items: any[], metodoEnvio?: string): number {
     if (metodoEnvio === "tienda" || metodoEnvio === "retiro") return 0
     const subtotal = calculateTotal(items)
+    if (subtotal >= 6000) return 40
+    if (subtotal >= 5000) return 35
     if (subtotal >= 3000) return 30
     if (subtotal >= 1500) return 20
     if (subtotal >= 500) return 15

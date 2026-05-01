@@ -114,12 +114,12 @@ const SOCIOS_CLAVES = [
     logo: "/images/colortexperu.png",
   },
   {
-    nombre: "Textiles del Pacifico",
+    nombre: "COLORTEX PERU S.A.",
     descripcion: "Distribuidor autorizado de hilaturas premium",
     logo: "/images/colortexperu.png",
   },
   {
-    nombre: "Fabrica Nacional de Telas",
+    nombre: "COLORTEX PERU S.A.",
     descripcion: "Socio estratégico nacional",
     logo: "/images/colortexperu.png",
   },
@@ -425,19 +425,18 @@ export default function Home() {
               </li>
               <li className="flex items-start">
                 <span className="text-white mr-2">Email:</span>
-                <a href="mailto:ventas@manchesterperu.com" className="hover:text-white transition-colors">ventas@manchesterperu.com</a>
+                <a href="mailto:manchestercollectionperu@gmail.com" className="hover:text-white transition-colors">manchestercollectionperu@gmail.com</a>
               </li>
               <li className="flex items-start">
                 <span className="text-white mr-2">Ubicación:</span>
-                Lima, Perú
+                La Victoria, Lima, Perú
               </li>
             </ul>
           </div>
           <div>
             <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-sm">Horario de Atención</h4>
             <ul className="space-y-4 text-sm">
-              <li className="flex justify-between border-b border-slate-800 pb-2"><span>Lunes a Viernes</span> <span className="text-white">9am - 7pm</span></li>
-              <li className="flex justify-between border-b border-slate-800 pb-2"><span>Sábado</span> <span className="text-white">9am - 5pm</span></li>
+              <li className="flex justify-between border-b border-slate-800 pb-2"><span>Lunes a Sábado</span> <span className="text-white">9am - 7pm</span></li>
               <li className="flex justify-between"><span>Domingo</span> <span className="text-slate-500">Cerrado</span></li>
             </ul>
           </div>
@@ -462,13 +461,8 @@ export default function Home() {
         <span className="absolute right-20 bg-white text-slate-900 text-sm font-bold py-2 px-4 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
           ¡Hola! ¿En qué te ayudamos?
         </span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 48 48"
-          fill="currentColor"
-          className="h-10 w-10"
-        >
-          <path d="M38.2 9.8a16.657 16.657 0 0 0-16.4.1l-.2-.1-.2.2a16.47 16.47 0 0 0-5.6 12.8c0 9.1 7.4 16.5 16.5 16.5a16.5 16.5 0 0 0 16.5-16.5 16.6 16.6 0 0 0-10.6-15.9ZM24 35.4a11.9 11.9 0 0 1-6.1-1.7l-.4-.2-4.4.9.9-4.3.1-.4a12.3 12.3 0 0 1 1.6-6c0-6.7-5.5-12.2-12.2-12.2A12.2 12.2 0 0 0 .8 11.1c-.3.6-.4 1.2-.3 1.8s.1.9.2 1.3l.9 3.9a24.3 24.3 0 0 0 2.8 6.6 24.4 24.4 0 0 0 6.3 5.9l3.7 1.5c.4.2.9.3 1.3.3h.1l.4-.1a4.6 4.6 0 0 0 1.3-.5l3.9-1.6c.2 0 .3.1.5.1.4 0 .8-.1 1.2-.2.4-.2.8-.4 1.2-.7a12 12 0 0 1-1.9-1.8Zm0 0Z" />
+        <svg>
+          <Image src="/images/whatsapp-logo.svg" alt="WhatsApp" width={40} height={40} />
         </svg>
       </a>
     </div>

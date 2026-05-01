@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { PackageCheck, RulerDimensionLine } from "lucide-react"
+
 
 interface CarritoItem {
     id: string
@@ -1303,7 +1305,7 @@ export default function CheckoutPage() {
                                         <p className="font-bold text-black mb-3">Artículos:</p>
                                         <div className="space-y-2">
                                             {continuarPedido.pedidoDetalle?.map((detalle: any, idx: number) => {
-                                                const subtotal = detalle.metraje ? detalle.metraje * detalle.precio : detalle.cantidad * detalle.precio
+                                                const subtotalporItem = detalle.metraje ? detalle.metraje * detalle.precio : detalle.cantidad * detalle.precio
                                                 return (
                                                     <div key={idx} className="flex justify-between text-sm">
                                                         <div className="text-black">
@@ -1315,12 +1317,51 @@ export default function CheckoutPage() {
                                                                 }
                                                             </p>
                                                         </div>
-                                                        <span className="text-black font-medium">S/ {subtotal.toFixed(2)}</span>
+                                                        <span className="text-black font-medium">S/ {subtotalporItem.toFixed(2)}</span>
                                                     </div>
                                                 )
                                             })}
                                         </div>
                                     </div>
+
+                                    {/* En el Resumen de Pago (Paso 4), antes del cálculo final */}
+                                    <div className="border border-slate-300 bg-slate-50 p-4 rounded-lg mt-6 text-sm">
+                                        <h3 className="font-bold text-black mb-3">Resumen por Producto</h3>
+                                        <div className="space-y-3">
+                                            {continuarPedido.pedidoDetalle?.map((detalle: any, index: number) => {
+                                                const subtotalporItem = detalle.metraje
+                                                    ? detalle.metraje * detalle.precio
+                                                    : detalle.cantidad * detalle.precio;
+
+                                                return (
+                                                    <div key={index} className="bg-white p-3 rounded shadow-sm">
+                                                        <div className="flex justify-between text-black mb-1">
+                                                            <span className="font-medium">{detalle.producto?.nombre || `Producto ${index + 1}`}</span>
+                                                            <span>S/ {subtotalporItem.toFixed(2)}</span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                            {detalle.tipo === "pieza" ? (
+                                                                <>
+                                                                    <PackageCheck className="h-3 w-3" />
+                                                                    <span>Piezas: {detalle.cantidad}</span>
+                                                                    {detalle.metraje && <span>• Metraje: {detalle.metraje}m</span>}
+                                                                    <span>• P.Unit: S/ {Number(detalle.precio).toFixed(2)}</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <RulerDimensionLine className="h-3 w-3" />
+                                                                    <span>Metraje: {detalle.metraje || detalle.cantidad}m</span>
+                                                                    <span>• P.Unit: S/ {Number(detalle.precio).toFixed(2)}</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
 
                                     <div className="bg-slate-50 p-4 rounded-lg mt-4 text-sm">
                                         <div className="flex justify-between mb-1">

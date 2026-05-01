@@ -3,21 +3,45 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "./prisma";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
-export async function enviarEmail(to: string, subject: string, html: string) {
+interface EmailResponse {
+    success: boolean;
+    id?: string;
+    error?: any;
+}
+
+export async function enviarEmail(
+    to: string,
+    subject: string,
+    html: string
+): Promise<EmailResponse> {
+
+    // Validación básica de parámetros
+    if (!process.env.RESEND_API_KEY) {
+        console.error("Falta RESEND_API_KEY en las variables de entorno");
+        return { success: false, error: "Configuración de API faltante" };
+    }
+
     try {
-        await resend.emails.send({
-            from: "onboarding@resend.dev",
-            to: to,
-            subject: subject,
-            html: html,
-        })
-        console.log(`Email sent to ${to}`)
-        return true
+        const { data, error } = await resend.emails.send({
+            from: "Manchester Collection <onboarding@resend.dev>",
+            to,
+            subject,
+            html,
+        });
+
+        if (error) {
+            console.error("Error de Resend API:", error);
+            return { success: false, error };
+        }
+
+        console.log(`✅ Email enviado exitosamente a ${to}. ID: ${data?.id}`);
+        return { success: true, id: data?.id };
+
     } catch (e) {
-        console.error("Error sending email:", e)
-        return false
+        console.error("Error inesperado al enviar email:", e);
+        return { success: false, error: e };
     }
 }
 
