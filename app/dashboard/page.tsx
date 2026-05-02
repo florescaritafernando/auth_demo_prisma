@@ -30,8 +30,9 @@ async function getProductos() {
 }
 
 export default async function DashboardPage() {
+    const headersList = await headers()
     const session = await auth.api.getSession({
-        headers: await headers()
+        headers: headersList
     });
 
     if (!session) redirect("/login");

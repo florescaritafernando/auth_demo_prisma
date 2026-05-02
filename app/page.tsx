@@ -461,9 +461,7 @@ export default function Home() {
         <span className="absolute right-20 bg-white text-slate-900 text-sm font-bold py-2 px-4 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
           ¡Hola! ¿En qué te ayudamos?
         </span>
-        <svg>
-          <Image src="/images/whatsapp-logo.svg" alt="WhatsApp" width={40} height={40} />
-        </svg>
+        <Image src="/images/whatsapp-logo.svg" alt="WhatsApp" width={40} height={40} />
       </a>
     </div>
   );

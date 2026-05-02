@@ -48,16 +48,23 @@ npm run dev
 
 notas
 
-si aparece esto
-error: Turbopack is not supported on this platform (darwin/arm64) because native bindings are not available. Only WebAssembly (WASM) bindings were loaded, and Turbopack requires native bindings.
+en mac 
 
-To use Next.js on this platform, use Webpack instead:
-  next dev --webpack
-
-For more information, see: https://nextjs.org/docs/app/api-reference/turbopack#supported-platforms
-
-
-EJECUTAR en terminal
-
+rm -rf .next node_modules package-lock.json
+npm install lightningcss
 npm install
+npm run dev
 
+
+### cambiar para maquina locals
+
+### app/dashboard/pedidos/page.tsx
+
+//const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/pedidos
+
+//const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://landing-page-y-control-panel.onrender.com"}/api/
+
+### lib/auth-client.ts
+
+//baseURL: process.env.NEXT_PUBLIC_API_URL
+//baseURL: "http://localhost:3000"

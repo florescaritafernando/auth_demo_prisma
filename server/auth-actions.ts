@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 
 export async function registerEmail(formdata: FormData) {
@@ -27,6 +28,13 @@ export async function registerEmail(formdata: FormData) {
                 password,
             },
             headers: await headers(),
+        });
+        
+        const cookieStore = await cookies();
+        cookieStore.set("registration_success", email, {
+            httpOnly: true,
+            maxAge: 60,
+            path: "/",
         });
         
         redirect('/login');

@@ -5,14 +5,50 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { NotificationWrapper } from "@/components/notifications/NotificationWrapper"
 
+import prisma from "@/lib/prisma";
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const session = await auth.api.getSession({
-        headers: await headers()
+    const headersList = await headers();
+    let session = await auth.api.getSession({
+        headers: headersList
     });
 
+    console.log("=== Dashboard Layout Debug ===");
+    console.log("Session from getSession:", session ? "exists" : "null");
+
     if (!session) {
+        const cookieHeader = headersList.get("cookie") || "";
+        
+        // Buscar todas las cookies better-auth.session_token
+        const tokenMatches = cookieHeader.matchAll(/better-auth\.session_token=([^;]+)/g);
+        const tokens = Array.from(tokenMatches).map(m => m[1]);
+        
+        console.log("Found tokens:", tokens.length);
+
+        for (const token of tokens) {
+            console.log("Trying token:", token.substring(0, 30) + "...");
+            
+            const dbSession = await prisma.session.findUnique({
+                where: { token: token },
+                include: { user: true }
+            });
+
+            console.log("DB Session for token:", dbSession ? `found (expires: ${dbSession.expiresAt})` : "not found");
+
+            if (dbSession && dbSession.expiresAt > new Date()) {
+                session = { user: dbSession.user } as any;
+                console.log("Session restored from DB!");
+                break;
+            }
+        }
+    }
+
+    if (!session) {
+        console.log("No session found, redirecting to login");
         redirect("/login");
     }
+
+    console.log("Session authenticated:", session.user?.email);
 
     const role = (session.user as any)?.role || "cliente"
     const titulo = role === "admin" ? "Panel de Administracion" : role === "empleado" ? "Panel de Colaboradores" : role === "cliente" ? "Panel de Cliente" : "Panel de Control"

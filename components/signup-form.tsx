@@ -11,7 +11,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { GalleryVerticalEndIcon } from "lucide-react"
+import { GalleryVerticalEndIcon, AlertCircle } from "lucide-react"
 import { registerEmail } from "@/server/auth-actions"
 
 export function SignupForm({
@@ -108,7 +108,10 @@ export function SignupForm({
             />
           </Field>
           {error && (
-            <p className="text-red-600 text-sm px-2">{error}</p>
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              <span className="text-sm font-medium">{error}</span>
+            </div>
           )}
           <Field>
             <Button type="submit" disabled={isLoading}>
@@ -117,8 +120,8 @@ export function SignupForm({
           </Field>
         </FieldGroup>
       </form>
-      <Button onClick={() => window.history.back()}>
-        Volver al Inicio
+      <Button onClick={() => window.location.href = "/login"}>
+        Volver al inicio de sesión
       </Button>
     </div>
   )

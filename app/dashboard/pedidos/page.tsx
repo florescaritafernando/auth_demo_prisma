@@ -14,7 +14,9 @@ async function getPedidos() {
         const cookieStore = await cookies()
         const allCookies = cookieStore.toString()
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://landing-page-y-control-panel.onrender.com"}/api/pedidos`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/pedidos`, {
+
+            //const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://landing-page-y-control-panel.onrender.com"}/api/pedidos`, {
             headers: { Cookie: allCookies || "" }
         })
 
