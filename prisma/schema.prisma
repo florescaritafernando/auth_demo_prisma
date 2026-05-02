@@ -36,8 +36,9 @@ model User {
 notificaciones Notificacion[]
   tiendas      Tienda[]
   almacenes    Almacen[]
-  pedidosDelegados Pedido[]    @relation("PedidoDelegado")
- 
+pedidosDelegados Pedido[]    @relation("PedidoDelegado")
+  favoritos       Favorito[]
+  
   @@unique([email])
   @@map("user")
 }
@@ -104,6 +105,7 @@ model Producto {
   carrito     Carrito[]
   pedidoDetalle PedidoDetalle[]
   stocks      ProductoStock[]
+  favoritos   Favorito[]
 
   @@map("producto")
 }
@@ -135,6 +137,19 @@ model ProductoStock {
 
   @@unique([productoId, almacenId])
   @@map("producto_stock")
+}
+
+model Favorito {
+  id         String   @id @default(cuid())
+  userId     String
+  productoId String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productoId])
+  @@index([userId])
+  @@map("favorito")
 }
 
 model Carrito {

@@ -145,7 +145,7 @@ export function LoginForm({
             <a href="#">¿Olvidaste tu contraseña?</a>
           </div>
           <FieldSeparator>O</FieldSeparator>
-          <Field className="grid gap-4 sm:grid-cols-2">
+          <Field className="grid gap-4 sm:grid-cols-1">
             <Button
               variant="outline"
               type="button"

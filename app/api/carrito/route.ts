@@ -186,7 +186,8 @@ export async function POST(request: NextRequest) {
                     })
                 }
 
-                return NextResponse.json({ success: true })
+                console.log("Guardando en BD - existente:", !!existente, "cantidad:", finalCantidad)
+                return NextResponse.json({ success: true, debug: { existente: !!existente, cantidad: finalCantidad } })
             }
 
             case "eliminar": {

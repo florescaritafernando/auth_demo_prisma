@@ -18,16 +18,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     if (!session) {
         const cookieHeader = headersList.get("cookie") || "";
-        
+
         // Buscar todas las cookies better-auth.session_token
         const tokenMatches = cookieHeader.matchAll(/better-auth\.session_token=([^;]+)/g);
         const tokens = Array.from(tokenMatches).map(m => m[1]);
-        
+
         console.log("Found tokens:", tokens.length);
 
         for (const token of tokens) {
             console.log("Trying token:", token.substring(0, 30) + "...");
-            
+
             const dbSession = await prisma.session.findUnique({
                 where: { token: token },
                 include: { user: true }
@@ -62,6 +62,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     <span className="ml-4 font-semibold text-slate-800">{titulo}</span>
                     {role === "admin" && (
                         <span className="ml-4 px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full uppercase">Admin</span>
+
+                    )}
+                    {role === "empleado" && (
+                        <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase">Colaborador</span>
+
                     )}
                 </div>
                 {children}

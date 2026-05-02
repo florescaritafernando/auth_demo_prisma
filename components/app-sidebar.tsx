@@ -15,6 +15,7 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Home, ShoppingBag, ShoppingCart, User, Package, BarChart3, AlertTriangle, Tag, Warehouse, BellRing } from "lucide-react"
 import { SignOutButton } from "@/components/signout-button"
+import Image from "next/image"
 
 const clienteItems = [
     { title: "Catalogo", url: "/dashboard", icon: Home },
@@ -56,25 +57,33 @@ export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
 
     return (
         <TooltipProvider>
-            <Sidebar className="bg-slate-50 border-r border-slate-200">
+            <Sidebar className="bg-slate-900 border-r border-slate-800">
                 <SidebarHeader>
-                    <div className="flex items-center gap-3 p-4 border-b border-slate-100">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white font-bold text-sm shadow-md">
-                            M
+                    <div className="flex items-center gap-3 p-4 border-b border-slate-700">
+                        <div className="relative h-8 w-8">
+                            <Image
+                                src="/favicon.ico"
+                                alt="Logo"
+                                fill
+                                className="object-contain rounded-lg"
+                            />
                         </div>
-                        <span className="font-extrabold whitespace-nowrap text-lg text-slate-900 tracking-tight">Manchester</span>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-sm text-[#F2EBE3] tracking-tight">Manchester</span>
+                            <span className="font-bold text-sm text-[#F2EBE3] tracking-wide">Collection Perú</span>
+                        </div>
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="pt-4">
                     <SidebarGroup>
-                        <SidebarGroupLabel className="text-slate-400 font-bold tracking-widest text-xs uppercase mb-2">
+                        <SidebarGroupLabel className="text-[#D4AF37] font-bold tracking-widest text-xs uppercase mb-2">
                             {role === "admin" ? "Administracion" : "Menu Principal"}
                         </SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu className="gap-2">
                                 {items.map((item) => (
                                     <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton asChild tooltip={item.title} className="h-10 text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-colors">
+                                        <SidebarMenuButton asChild tooltip={item.title} className="h-10 text-[#F2EBE3] hover:text-[#D4AF37] hover:bg-slate-800 font-medium transition-colors">
                                             <a href={item.url} className="flex items-center gap-3 w-full">
                                                 <item.icon className="h-5 w-5" />
                                                 <span>{item.title}</span>
@@ -86,7 +95,7 @@ export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
                         </SidebarGroupContent>
                     </SidebarGroup>
                 </SidebarContent>
-                <SidebarFooter className="border-t border-slate-100 p-4">
+                <SidebarFooter className="border-t border-slate-700 p-4">
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SignOutButton />

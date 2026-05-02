@@ -22,31 +22,40 @@ interface Producto {
 
 interface Props {
     producto: Producto
+    className?: string
 }
 
-export function BotonAgregarCarrito({ producto }: Props) {
+export function BotonAgregarCarrito({ producto, className = "" }: Props) {
     const [showModal, setShowModal] = useState(false)
     const [loading, setLoading] = useState(false)
     const [tipoPedido, setTipoPedido] = useState<"metros" | "pieza">("metros")
     const [cantidad, setCantidad] = useState<number>(1)
+    const [inputValue, setInputValue] = useState("1")
     const [error, setError] = useState("")
     const [isMounted, setIsMounted] = useState(false)
+    const [procesando, setProcesando] = useState(false)
+
+    useEffect(() => {
+        setInputValue(cantidad === 0 ? "" : String(cantidad))
+    }, [cantidad])
 
     useEffect(() => {
         setIsMounted(true)
     }, [])
 
     const handleAgregar = async () => {
+        if (procesando) return
+
         if (cantidad <= 0) {
             setError("La cantidad debe ser mayor a 0")
             return
         }
 
         setLoading(true)
+        setProcesando(true)
         setError("")
 
         try {
-            // Send cantidad directly - API handles conversion
             console.log("Fetching /api/carrito with:", { action: "agregar", productoId: producto.id, cantidad: cantidad, tipo: tipoPedido })
 
             const res = await fetch("/api/carrito", {
@@ -78,11 +87,33 @@ export function BotonAgregarCarrito({ producto }: Props) {
             }
 
             if (data.success) {
+                console.log("Producto agregado exitosamente, debug:", data.debug)
                 setShowModal(false)
                 setCantidad(1)
+                setInputValue("1")
                 setTipoPedido("metros")
-                alert("Producto agregado al carrito")
+
+                // Animación fly-to-cart desde el centro del modal
+                window.dispatchEvent(new CustomEvent("carrito-particula", {
+                    detail: {
+                        x: window.innerWidth / 2 - 24,
+                        y: window.innerHeight / 2 - 24,
+                        productoId: producto.id
+                    }
+                }))
+
+                // Actualizar contador inmediatamente y después de la animación
+                setTimeout(() => {
+                    window.dispatchEvent(new Event("carrito-actualizado"))
+                }, 100)
+
+                // Backup update después de la animación
+                setTimeout(() => {
+                    window.dispatchEvent(new Event("carrito-actualizado"))
+                }, 1500)
             } else {
+                console.error("Error al agregar:", data.error)
+                alert(data.error || "Error al agregar al carrito")
                 setError(data.error || "Error al agregar")
             }
         } catch (err: any) {
@@ -90,6 +121,7 @@ export function BotonAgregarCarrito({ producto }: Props) {
             setError(err.message || "Error al conectar con el servidor")
         } finally {
             setLoading(false)
+            setProcesando(false)
         }
     }
 
@@ -97,6 +129,7 @@ export function BotonAgregarCarrito({ producto }: Props) {
     const precioTotal = precioPorUnidad * cantidad
 
     const openModal = () => {
+        setInputValue(cantidad === 0 ? "" : String(cantidad))
         setShowModal(true)
     }
 
@@ -161,19 +194,27 @@ export function BotonAgregarCarrito({ producto }: Props) {
 
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Cantidad {tipoPedido === "pieza" && "(x pieza)"}
+                            Cantidad {tipoPedido === "pieza" && "(por pieza)"}
                         </label>
                         <input
-                            type="number"
-                            step={tipoPedido === "pieza" ? "1" : ""}
-                            min={tipoPedido === "pieza" ? "1" : ""}
-                            value={cantidad}
+                            type="text"
+                            inputMode="decimal"
+                            value={inputValue}
+                            placeholder="Ingrese cantidad"
                             onChange={(e) => {
-                                const val = parseFloat(e.target.value)
+                                setInputValue(e.target.value)
+                            }}
+                            onBlur={(e) => {
+                                const val = e.target.value.replace(",", ".")
+                                const numVal = parseFloat(val)
                                 if (tipoPedido === "pieza") {
-                                    setCantidad(Math.max(1, Math.floor(val) || 1))
+                                    const finalVal = isNaN(numVal) || numVal < 1 ? 1 : Math.floor(numVal)
+                                    setCantidad(finalVal)
+                                    setInputValue(String(finalVal))
                                 } else {
-                                    setCantidad(Math.max(0, val || 0.1))
+                                    const finalVal = isNaN(numVal) || numVal < 0.01 ? 0.1 : numVal
+                                    setCantidad(finalVal)
+                                    setInputValue(String(finalVal))
                                 }
                             }}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -184,7 +225,7 @@ export function BotonAgregarCarrito({ producto }: Props) {
                         <div className="flex justify-between text-sm">
                             <span className="text-slate-600">
                                 P. Unitario:
-                                {tipoPedido === "pieza" && " (aprox. 50mts x pieza)"}
+                                {tipoPedido === "pieza" && " (aprox. 50mts por pieza)"}
                             </span>
                             <span className="text-slate-800">S/ {precioPorUnidad.toFixed(2)}</span>
                         </div>
@@ -222,7 +263,8 @@ export function BotonAgregarCarrito({ producto }: Props) {
         <>
             <button
                 onClick={openModal}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                data-producto={producto.id}
+                className={`flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium w-full ${className}`}
             >
                 <ShoppingCart className="h-4 w-4" />
                 Agregar
