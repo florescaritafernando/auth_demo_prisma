@@ -47,10 +47,10 @@ interface Pedido {
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
     metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800" },
-    pendiente: { label: "Pendiente", color: "bg-blue-100", colorTexto: "text-blue-800" },
-    confirmado: { label: "Confirmado", color: "bg-blue-200", colorTexto: "text-blue-900" },
-    rechazado: { label: "Rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
-    completado: { label: "Completado", color: "bg-green-100", colorTexto: "text-green-800" },
+    pendiente: { label: "Pago en revisión", color: "bg-blue-100", colorTexto: "text-blue-800" },
+    confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900" },
+    rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
+    completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800" },
 }
 
 const AGENCIA_LABELS: Record<string, string> = {
@@ -68,12 +68,32 @@ const DELIVERY_LABELS: Record<string, string> = {
 
 interface Props {
     pedidos: Pedido[]
+    role: string
+    userId: string
 }
 
-export function PedidoAccordion({ pedidos }: Props) {
+export function PedidoAccordion({ pedidos, role, userId }: Props) {
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [currentPage, setCurrentPage] = useState(1)
+
+    const tomarPedido = async (pedidoId: string) => {
+        try {
+            const res = await fetch(`/api/pedidos/${pedidoId}/delegar`, {
+                method: "POST",
+                credentials: "include"
+            })
+            const json = await res.json()
+            if (json.success) {
+                window.location.reload()
+            } else {
+                alert(json.error || "Error al tomar pedido")
+            }
+        } catch (e) {
+            console.error(e)
+            alert("Error al tomar pedido")
+        }
+    }
 
     const totalPages = Math.ceil(pedidos.length / itemsPerPage)
     const paginatedPedidos = useMemo(() => {
@@ -112,18 +132,32 @@ export function PedidoAccordion({ pedidos }: Props) {
 
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 {paginatedPedidos.map((pedido) => {
-                    const config = ESTADO_CONFIG[pedido.estado] || ESTADO_CONFIG.pendiente
+                    const tienePiezas = pedido.pedidoDetalle.some(d => d.tipo === "pieza")
+                    const tienePiezasFaltantes = tienePiezas && pedido.pedidoDetalle.some(d => {
+                        if (d.tipo !== "pieza") return false
+                        const etiquetasCount = d.etiquetas?.length || 0
+                        return etiquetasCount !== Number(d.cantidad)
+                    })
+                    const tienePiezasCompletas = tienePiezas && pedido.pedidoDetalle.every(d => {
+                        if (d.tipo !== "pieza") return true
+                        const etiquetasCount = d.etiquetas?.length || 0
+                        return etiquetasCount === Number(d.cantidad)
+                    })
+                    // Si tiene metraje_confirmado pero piezas incompletas, mostrar como metraje_en_proceso
+                    const estadoReal = (pedido.estado === "metraje_confirmado" && tienePiezasFaltantes) 
+                        ? "metraje_en_proceso" 
+                        : pedido.estado
+                    const config = ESTADO_CONFIG[estadoReal] || ESTADO_CONFIG.pendiente
                     const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
                     const deliveryLabel = pedido.delivery ? (DELIVERY_LABELS[pedido.delivery] || pedido.deliveryOtro) : null
-                    const tienePiezas = pedido.pedidoDetalle.some(d => d.tipo === "pieza")
                     const ocultarPrecio = pedido.estado === "metraje_en_proceso"
                     const isExpanded = expandedId === pedido.id
 
                     return (
                         <div key={pedido.id} className="border-b border-slate-100 last:border-b-0">
-                            <button
+                            <div
                                 onClick={() => toggleExpand(pedido.id)}
-                                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer"
                             >
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
                                     <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
@@ -132,19 +166,52 @@ export function PedidoAccordion({ pedidos }: Props) {
                                     <div className="text-left min-w-0 flex-1">
                                         <div className="flex items-center gap-3 flex-wrap">
                                             <p className="font-bold text-slate-900">{pedido.numeroOrden}</p>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
-                                                {config.label}
-                                            </span>
-                                            {tienePiezas && (
-                                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                                                    Piezas
+                                            {pedido.estado === "completado" ? (
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
+                                                    {config.label}
                                                 </span>
+                                            ) : (
+                                                <>
+                                                    {!(tienePiezasFaltantes && pedido.estado === "metraje_en_proceso") && (
+                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
+                                                            {config.label}
+                                                        </span>
+                                                    )}
+                                                    {tienePiezas && (
+                                                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                                                            Piezas
+                                                        </span>
+                                                    )}
+                                                    {pedido.estado === "metraje_en_proceso" && tienePiezasFaltantes && (
+                                                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                                            Metraje incompleto
+                                                        </span>
+                                                    )}
+                                                    {tienePiezasCompletas && (
+                                                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700">
+                                                            Metraje completado
+                                                        </span>
+                                                    )}
+                                                </>
                                             )}
-                                            {pedido.delegado && (
+                                            {pedido.delegado ? (
                                                 <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
                                                     <UserCheck className="h-3 w-3" />
-                                                    {pedido.delegado.name || "Pedido asignado a: "}
+                                                    {pedido.delegado.name}
                                                 </span>
+                                            ) : (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="text-xs h-6 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        tomarPedido(pedido.id)
+                                                    }}
+                                                >
+                                                    <UserPlus className="h-3 w-3 mr-1" />
+                                                    Tomar Pedido
+                                                </Button>
                                             )}
                                         </div>
                                         <p className="text-sm text-slate-500 truncate">
@@ -170,7 +237,7 @@ export function PedidoAccordion({ pedidos }: Props) {
                                         <ChevronDown className="h-5 w-5 text-slate-400" />
                                     )}
                                 </div>
-                            </button>
+                            </div>
 
                             {isExpanded && (
                                 <div className="p-4 bg-slate-50 border-t border-slate-200">
@@ -196,7 +263,7 @@ export function PedidoAccordion({ pedidos }: Props) {
                                                                 <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
                                                                 <p className="text-xs text-slate-500">
                                                                     {detalle.tipo === "pieza"
-                                                                        ? `${detalle.cantidad} pieza(s) (~${metrajeTotal || "?"}m)`
+                                                                        ? `${detalle.cantidad} pieza(s)`
                                                                         : `${detalle.cantidad} metros`
                                                                     }
                                                                 </p>
@@ -311,7 +378,7 @@ export function PedidoAccordion({ pedidos }: Props) {
                                     </div>
 
                                     <div className="mt-6 pt-4 border-t border-slate-200">
-                                        <AdminPedidoActions pedido={pedido as any} />
+                                        <AdminPedidoActions pedido={pedido as any} role={role} userId={userId} />
 
                                         {!pedido.delegado && (
                                             <div className="mt-4">

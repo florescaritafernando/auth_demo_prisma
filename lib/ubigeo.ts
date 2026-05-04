@@ -1,4 +1,6 @@
-export const UBIGEO_DATA = {
+export type UbigeoType = Record<string, Record<string, string[]>>
+
+export const UBIGEO_DATA: UbigeoType = {
     "Amazonas": {
         "Chachapoyas": ["Chachapoyas", "Asunción", "Bagma", "Bélden", "Cheto", "Chuquibamba", "Corosha", "Cuisces", "El Tingo", "Granada", "Huancas", "La Jalca", "Leimebamba", "Levanto", "Luya", "Magdalena", "Mara", "Mariscal Castilla", "Mendoza", "Ocalli", "Piruro", "San Francisco", "San Juan de Lopecancha", "Santa Rosa", "Solano", "Sonche", "Utcubamba"],
         "Bagua": ["Bagua", "Churuja", "Corosha", "El Milagro", "Jazán", "Leimebamba", "Lonya Grande", "Yamaluc"],

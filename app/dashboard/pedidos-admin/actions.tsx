@@ -3,16 +3,16 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus } from "lucide-react"
+import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus, RefreshCw } from "lucide-react"
 import { RechazarPedidoModal } from "@/components/pedidos/RechazarPedidoModal"
 
 const ESTADOS_DISPONIBLES = [
     { value: "metraje_en_proceso", label: "Metraje en proceso", color: "bg-yellow-100 text-yellow-800" },
     { value: "metraje_confirmado", label: "Metraje confirmado", color: "bg-green-100 text-green-800" },
-    { value: "pendiente", label: "Pendiente", color: "bg-blue-100 text-blue-800" },
-    { value: "confirmado", label: "Confirmado", color: "bg-blue-200 text-blue-900" },
-    { value: "rechazado", label: "Rechazado", color: "bg-red-100 text-red-800" },
-    { value: "completado", label: "Completado", color: "bg-green-100 text-green-800" },
+    { value: "pendiente", label: "Pago en revisión", color: "bg-blue-100 text-blue-800" },
+    { value: "confirmado", label: "Pago confirmado", color: "bg-blue-200 text-blue-900" },
+    { value: "rechazado", label: "Rechazar pedido", color: "bg-red-100 text-red-800" },
+    { value: "completado", label: "Pedido completado", color: "bg-green-100 text-green-800" },
 ]
 
 interface DetalleItem {
@@ -31,12 +31,17 @@ interface Pedido {
     estado: string
     numeroOperacion: string | null
     motivoRechazo: string | null
+    costoEnvio: number
+    metodoEnvio: string | null
+    total: number
     pedidoDetalle: DetalleItem[]
-    delegado: { id: string; name: string | null } | null
+    delegated: { id: string; name: string | null } | null
 }
 
 interface Props {
     pedido: Pedido
+    role: string
+    userId: string
 }
 
 interface MetrajeRegistro {
@@ -45,7 +50,7 @@ interface MetrajeRegistro {
     isNew?: boolean
 }
 
-export function AdminPedidoActions({ pedido }: Props) {
+export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [showRechazarModal, setShowRechazarModal] = useState(false)
@@ -62,14 +67,33 @@ export function AdminPedidoActions({ pedido }: Props) {
     })
     const [nroOperacion, setNroOperacion] = useState(pedido.numeroOperacion || "")
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+    const [costoEnvioManual, setCostoEnvioManual] = useState<string>(String(pedido.costoEnvio || 0))
+    const [guardandoCosto, setGuardandoCosto] = useState(false)
+
+    const puedeEditar = role === "admin" || (role === "empleado" && pedido.delegated?.id === userId)
 
     const piezaDetails = pedido.pedidoDetalle.filter(d => d.tipo === "pieza")
     const tienePiezas = piezaDetails.length > 0
+    const tienePiezasCompletas = tienePiezas && piezaDetails.every(d => {
+        const etiquetasCount = d.etiquetas?.length || 0
+        return etiquetasCount === Number(d.cantidad)
+    })
 
     const cambiarEstado = async (nuevoEstado: string) => {
         if (nuevoEstado === "rechazado") {
             setShowRechazarModal(true)
             return
+        }
+
+        if (nuevoEstado === "metraje_confirmado") {
+            const hayPiezasFaltantes = piezaDetails.some(d => {
+                const etiquetasCount = d.etiquetas?.length || 0
+                return etiquetasCount !== Number(d.cantidad)
+            })
+            if (hayPiezasFaltantes) {
+                alert("No puedes confirmar el metraje porque faltan piezas por registrar")
+                return
+            }
         }
 
         setLoading(true)
@@ -85,6 +109,49 @@ export function AdminPedidoActions({ pedido }: Props) {
                 router.refresh()
             } else {
                 alert(json.error || "Error al actualizar estado")
+            }
+        } catch (e) {
+            alert("Error de conexión")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const guardarCostoEnvio = async () => {
+        const costoValue = costoEnvioManual === "" ? 0 : parseFloat(costoEnvioManual)
+        setGuardandoCosto(true)
+        try {
+            const res = await fetch(`/api/pedidos/${pedido.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ costoEnvio: isNaN(costoValue) ? 0 : costoValue }),
+                credentials: "include"
+            })
+            const json = await res.json()
+            if (json.success) {
+                router.refresh()
+            } else {
+                alert(json.error || "Error al guardar costo de envío")
+            }
+        } catch (e) {
+            alert("Error de conexión")
+        } finally {
+            setGuardandoCosto(false)
+        }
+    }
+
+    const recalcularPedido = async () => {
+        setLoading(true)
+        try {
+            const res = await fetch(`/api/pedidos/${pedido.id}/recalcular`, {
+                method: "POST",
+                credentials: "include"
+            })
+            const json = await res.json()
+            if (json.success) {
+                router.refresh()
+            } else {
+                alert(json.error || "Error al recalcular")
             }
         } catch (e) {
             alert("Error de conexión")
@@ -117,6 +184,17 @@ export function AdminPedidoActions({ pedido }: Props) {
     }
 
     const guardarMetraje = async () => {
+        // Validar que las etiquetas no excedan la cantidad de piezas
+        for (const detalle of piezaDetails) {
+            const etiquetasActuales = detalle.etiquetas?.length || 0
+            const nuevosRegistros = (metrajeData[detalle.id] || []).filter(r => r.isNew === true && r.value > 0).length
+            const totalEtiquetas = etiquetasActuales + nuevosRegistros
+            if (totalEtiquetas > Number(detalle.cantidad)) {
+                alert(`No puedes agregar más metrajes que piezas solicitadas. Has solicitado ${detalle.cantidad} pieza(s).`)
+                return
+            }
+        }
+
         setLoading(true)
         try {
             const metrajeItemsArray = Object.entries(metrajeData).flatMap(([detalleId, registros]) =>
@@ -145,6 +223,15 @@ export function AdminPedidoActions({ pedido }: Props) {
             })
             const json = await res.json()
             if (json.success) {
+                // Recalcular el pedido después de guardar el metraje
+                try {
+                    await fetch(`/api/pedidos/${pedido.id}/recalcular`, {
+                        method: "POST",
+                        credentials: "include"
+                    })
+                } catch (e) {
+                    console.error("Error al recalcular:", e)
+                }
                 router.refresh()
             } else {
                 alert(json.error || "Error al guardar metraje")
@@ -248,7 +335,12 @@ export function AdminPedidoActions({ pedido }: Props) {
             <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-slate-700">Cambiar estado:</span>
                 <div className="flex flex-wrap gap-2">
-                    {ESTADOS_DISPONIBLES.filter(e => e.value !== pedido.estado).map(estado => (
+                    {ESTADOS_DISPONIBLES.filter(e => {
+                        if (e.value === pedido.estado) return false
+                        if (e.value === "metraje_confirmado" && !tienePiezasCompletas && tienePiezas) return false
+                        if (e.value === "rechazado" && (pedido.estado === "confirmado" || pedido.estado === "completado")) return false
+                        return true
+                    }).map(estado => (
                         <Button
                             key={estado.value}
                             size="sm"
@@ -266,22 +358,71 @@ export function AdminPedidoActions({ pedido }: Props) {
                 </div>
             </div>
 
+            {(role === "admin" || role === "empleado") && (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div className="flex-1">
+                            <p className="text-sm font-medium text-slate-700">Costo de envío:</p>
+                            <p className="text-xs text-slate-500">
+                                Método: {pedido.metodoEnvio === "tienda" ? "Retiro en tienda" : pedido.metodoEnvio === "agencia" ? "Agencia" : pedido.metodoEnvio === "delivery" ? "Delivery" : "No especificado"}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={recalcularPedido}
+                                disabled={loading}
+                                className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                            >
+                                <RefreshCw className="h-4 w-4 mr-1" />
+                                Recalcular
+                            </Button>
+                            <input
+                                type="number"
+                                value={costoEnvioManual}
+                                onChange={(e) => setCostoEnvioManual(e.target.value)}
+                                className="w-24 px-3 py-2 border border-slate-300 rounded-lg text-right font-medium text-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                min="0"
+                                step="0.01"
+                            />
+                            <Button
+                                size="sm"
+                                onClick={guardarCostoEnvio}
+                                disabled={guardandoCosto || parseFloat(costoEnvioManual || "0") === pedido.costoEnvio}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                {guardandoCosto ? "Guardando..." : "Guardar"}
+                            </Button>
+                        </div>
+                    </div>
+                    {pedido.total < 500 && (
+                        <p className="text-xs text-orange-600 mt-2">
+                            * El costo mínimo automático para pedidos menores a S/500 es S/10
+                        </p>
+                    )}
+                </div>
+            )}
+
             {tienePiezas && pedido.estado !== "confirmado" && pedido.estado !== "completado" && (
                 <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
                         <h4 className="font-bold text-yellow-900 flex items-center gap-2">
                             <Clock className="h-4 w-4" />
                             Metraje de Piezas
+                            {!puedeEditar && <span className="text-xs text-slate-500 ml-2">(Solo lectura)</span>}
                         </h4>
-                        <Button
-                            size="sm"
-                            onClick={guardarMetraje}
-                            disabled={loading}
-                            className="bg-green-600 hover:bg-green-700 text-lg px-6 py-2"
-                        >
-                            <Save className="h-4 w-4 mr-2" />
-                            Guardar
-                        </Button>
+                        {puedeEditar && (
+                            <Button
+                                size="sm"
+                                onClick={guardarMetraje}
+                                disabled={loading}
+                                className="bg-green-600 hover:bg-green-700 text-lg px-6 py-2"
+                            >
+                                <Save className="h-4 w-4 mr-2" />
+                                Guardar
+                            </Button>
+                        )}
                     </div>
 
                     <div className="space-y-4">
@@ -295,12 +436,30 @@ export function AdminPedidoActions({ pedido }: Props) {
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex-1">
                                             <p className="font-bold text-slate-900 text-lg">{detalle.producto.nombre}</p>
-                                            {metrajeTotal > 0 && (
-                                                <p className="text-2xl font-bold text-green-700 mt-1">{metrajeTotal}m</p>
+                                            {detalle.etiquetas && detalle.etiquetas.length > 0 && (
+                                                <p className="text-sm font-bold text-slate-600 mt-1">
+                                                    {detalle.etiquetas.length} de {Number(detalle.cantidad)} piezas con metraje
+                                                </p>
                                             )}
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-2xl font-bold text-yellow-700">{detalle.cantidad} pieza(s)</p>
+                                            <p className="text-lg font-bold text-slate-700">
+                                                Cliente pidió: <span className="text-yellow-700">{detalle.cantidad} pieza(s)</span>
+                                            </p>
+                                            {(() => {
+                                                const cantidadPiezas = Number(detalle.cantidad) || 0
+                                                const etiquetasCount = detalle.etiquetas?.length || 0
+                                                const faltantes = cantidadPiezas - etiquetasCount
+                                                return (
+                                                    <>
+                                                        {faltantes > 0 ? (
+                                                            <p className="text-sm font-bold text-orange-600">Faltan {faltantes}</p>
+                                                        ) : (
+                                                            <p className="text-sm font-bold text-green-600">✓ Completo</p>
+                                                        )}
+                                                    </>
+                                                )
+                                            })()}
                                             <p className="text-xl font-bold text-green-700">S/ {precioTotal.toFixed(2)}</p>
                                         </div>
                                     </div>
@@ -335,12 +494,14 @@ export function AdminPedidoActions({ pedido }: Props) {
                                                         ) : (
                                                             <>
                                                                 <span className="text-lg font-bold text-yellow-800">{reg.value}m</span>
-                                                                <button
-                                                                    onClick={() => eliminarMetraje(detalle.id, reg.id, !reg.isNew)}
-                                                                    className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100"
-                                                                >
-                                                                    <X className="h-4 w-4" />
-                                                                </button>
+                                                                {puedeEditar && (
+                                                                    <button
+                                                                        onClick={() => eliminarMetraje(detalle.id, reg.id, !reg.isNew)}
+                                                                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100"
+                                                                    >
+                                                                        <X className="h-4 w-4" />
+                                                                    </button>
+                                                                )}
                                                             </>
                                                         )}
                                                     </div>
@@ -351,16 +512,18 @@ export function AdminPedidoActions({ pedido }: Props) {
 
                                     <div className="flex items-center justify-between pt-2 border-t border-yellow-100">
                                         <div className="flex gap-2">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => agregarMetraje(detalle.id)}
-                                                className="text-yellow-700 border-yellow-400 hover:bg-yellow-100"
-                                            >
-                                                <Plus className="h-3 w-3 mr-1" />
-                                                Añadir metraje
-                                            </Button>
-                                            {registros.length > 0 && (
+                                            {puedeEditar && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => agregarMetraje(detalle.id)}
+                                                    className="text-yellow-700 border-yellow-400 hover:bg-yellow-100"
+                                                >
+                                                    <Plus className="h-3 w-3 mr-1" />
+                                                    Añadir metraje
+                                                </Button>
+                                            )}
+                                            {puedeEditar && registros.length > 0 && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
@@ -372,15 +535,17 @@ export function AdminPedidoActions({ pedido }: Props) {
                                                 </Button>
                                             )}
                                         </div>
-                                        <Button
-                                            size="sm"
-                                            onClick={guardarMetraje}
-                                            disabled={loading || registros.length === 0}
-                                            className="bg-green-600 hover:bg-green-700"
-                                        >
-                                            <Save className="h-3 w-3 mr-1" />
-                                            Guardar
-                                        </Button>
+                                        {puedeEditar && (
+                                            <Button
+                                                size="sm"
+                                                onClick={guardarMetraje}
+                                                disabled={loading || registros.length === 0}
+                                                className="bg-green-600 hover:bg-green-700"
+                                            >
+                                                <Save className="h-3 w-3 mr-1" />
+                                                Guardar
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             )
@@ -437,17 +602,15 @@ export function AdminPedidoActions({ pedido }: Props) {
                     </div>
                 </div>
             )}
+
+            {showRechazarModal && (
+                <RechazarPedidoModal
+                    pedidoId={pedido.id}
+                    numeroOrden={pedido.numeroOrden}
+                    onClose={() => setShowRechazarModal(false)}
+                    onReject={rechazarPedido}
+                />
+            )}
         </div>
     )
-
-    {
-        showRechazarModal && (
-            <RechazarPedidoModal
-                pedidoId={pedido.id}
-                numeroOrden={pedido.numeroOrden}
-                onClose={() => setShowRechazarModal(false)}
-                onReject={rechazarPedido}
-            />
-        )
-    }
 }

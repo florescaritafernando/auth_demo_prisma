@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock } from "lucide-react"
+import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock, FileText, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PackageCheck, RulerDimensionLine } from "lucide-react"
+import { UBIGEO_DATA as UBIGEO, type UbigeoType } from "@/lib/ubigeo"
 
 
 interface CarritoItem {
@@ -24,6 +25,7 @@ interface CarritoItem {
     metrosPorPieza: number
     precioUnitario: number
     precioTotal: number
+    indicacionesCorte?: string | null
 }
 
 interface CheckoutData {
@@ -54,140 +56,6 @@ const PASOS = [
     { num: 4, titulo: "Pago", desc: "Resumen y operación" }
 ]
 
-const UBIGEO: Record<string, Record<string, string[]>> = {
-    "Amazonas": {
-        "Chachapoyas": ["Chachapoyas", "Asunción", "Bagama", "Bélden", "Cheto", "Chuquibamba", "Corosha", "Cuisces", "El Tingo", "Granada", "Huancas", "La Jalca", "Leimebamba", "Levanto", "Luya", "Magdalena", "Mara", "Mariscal Castilla", "Mendoza", "Ocalli", "Piruro", "San Francisco", "San Juan de Lopecancha", "Santa Rosa", "Solano", "Sonche", "Utcubamba"],
-        "Bagua": ["Bagua", "Churuja", "Corosha", "El Milegro", "Jazan", "Leimebamba", "Lonya Grande", "Yamaluc"],
-        "Condorcanqui": ["Namballe", "San Ignacio", "Santa Rosa de la Yunga"],
-        "Utcubamba": ["Bagua Chica", "Cajaruro", "Cumba", "El Tingo", "Granada", "Huancas", "Luya", "Omia", "San Antonio", "Santa Catalina", "Santo Domingo", "Tingo"]
-    },
-    "Ancash": {
-        "Huaraz": ["Huaraz", "Cochabamba", "Colcabamba", "Huanchay", "Jangas", "La Libertad", "Pira", "Shapas", "Tangshan"],
-        "Aija": ["Aija", "Coris", "Huacllan", "La Merced", "Succha"],
-        "Bolognesi": ["Chiquian", "Abra", "Cajacay", "Canis", "Chuquicón", "Huallanca", "Huasta", "Huayllapón", "Mancas", "Pacllón", "San Antonio", "San Pedrillo", "Tauca"],
-        "Carhuaz": ["Carhuaz", "Aco", "Marco", "San Miguel", "Shupluy"],
-        "Casma": ["Casma", "Buenavista Alta", "Comandante", "Yaután"],
-        "Corongo": ["Corongo", "Cabanas", "Carhua", "Coyllurqui", "Curasco", "Huatan", "Jacas", "Manú"],
-        "Huaylas": ["Pativilca", "Huallanca", "Huayán", "Moro", "Pampas"],
-        "Huarmey": ["Huarmey", "Cochapeti", "Cunya", "Malvas", "Quillo"],
-        "Mariscal Luzuriaga": ["Piscobamba", "Cascan", "Chavin", "Llamellin", "Lucma", "Musga"],
-        "Ocros": ["Ocros", "Acas", "Cajamarquilla", "Carhua", "Cocha", "Huata", "Huangra", "Mira", "Rag", "San Mateo", "San Miguel"],
-        "Pallasca": ["Cabana", "Buldibuyco", "Conchucos", "Huacas", "Huandoval", "Lacabamba", "Llapo", "Manú", "Pampas", "Santa Rosa", "Tauca"],
-        "Pomabamba": ["Pomabamba", "Huayllapón", "Pampas", "Parobamba", "Quinuabon"],
-        "Recuay": ["Recuay", "Catac", "Coyal", "Huarac", "Huayllapón", "Llamac", "Marka", "Pampas", "Shap"],
-        "Santa": ["Chimbote", "Cáceres", "Coishco", "Macate", "Moro", "Nepeña", "Samanco", "Santa", "Sauce"],
-        "Sihuas": ["Sihuas", "Acobamba", "Cashapampa", "Chingal", "Cucara", "Huandoval", "Pampas", "Quichuas", "Rag"],
-        "Yungay": ["Yungay", "Cascapara", "Mancos", "Matac", "Quillo", "Ranrahirca", "Shapra", "Uco"]
-    },
-    "Apurimac": {
-        "Abancay": ["Abancay", "Circa", "Curahuasi", "Huanipaca", "Kurimarca", "Lambrama", "Micaela", "Pichirhua", "San Antonio", "Sayhuite", "Tintay", "Tumay"],
-        "Andahuaylas": ["Andahuaylas", "Andarapa", "Chiara", "Huancarama", "Huancaray", "Huanca", "Kishuara", "Manthara", "Marmeta", "OrCCPana CCPabancón", "Pampachiri", "Pichirhua", "Rosaspata", "San Antonio de Cachi", "San Jerónimo", "San Miguel", "Santa María", "Talavera"],
-        "Antabamba": ["Antabamba", "El Oro", "Huaquirca", "Juan", "Oropesa", "Pachaconas", "Sabaino"],
-        "Aymaraes": ["Chalhuanca", "Capaya", "Caraybamba", "Colca", "Curasco", "Huaytiri", "Justo", "Luray", "Ocaña", "Pampachiri", "SaÑana", "Sank", "Santiago", "Santo Tomas", "Tiaparo"],
-        "Cotabambas": ["Cotabambas", "Ccochaccasa", "Chuicbamba", "Cotabambas", "Huayllaga", "Marmeta", "Matalaca", "Rag", "Tantara"],
-        "Chincheros": ["Chincheros", "Anco-Huallo", "Chincheros", "CochARAs", "Huamanguiri", "Los", "Mana"],
-        "Grau": ["Grau", "Anta", "C禧y", "Gamarra", "Huaiquit", "Mariscal Gamarra", "Pichi", "Progreso", "San Antonio", "Santa Clara", "Tapao"]
-    },
-    "Arequipa": {
-        "Arequipa": ["Arequipa", "Cayma", "Cerro Colorado", "Characato", "Chiguata", "La Joya", "Mollebaya", "Paucarpata", "Puesto", "Sachaca", "Sabandía", "San Juan de Siguas", "Santa Isabel", "Santa Rita", "Siguas", "Tiabaya", "Uchumayo", "Vitor"],
-        "Camaná": ["Camaná", "Camilaca", "Coata", "Huancapi", "La Trinidad", "Lima", "Quinista", "San Juan de Tarucani", "Santo Domingo", "Seda"],
-        "Caravelí": ["Caravelí", "Acarí", "Atiquipa", "Bella Union", "CAVAs", "Chala", "Huanuhuanú", "Jaqui", "Jequetepeque", "La Higuera", "Lomas", "Mollebamba", "Quicacha", "Yauca"],
-        "Castilla": ["Aplao", "Andamios", "Ayo", "Chaca", "Chilca", "Chivay", "Coporaque", "Huambo", "Huanca", "Ichupampa", "Lari", "Lluta", "Madrigal", "Mina", "Mora", "Pichucuma", "Puno", "Quality", "Salamanca", "Salcca", "Sank", "Sora", "Tapay", "Tata", "Taya", "Tomente", "Uyun", "Yana", "YP"],
-        "Caylloma": ["Chivay", "AchOCALata", "Boros", "Cabanaconde", "Caylloma", "Condo", "Huambo", "Huanca", "Iltico", "KechUapa", "Lari", "Llut", "Madrigal", "Mina", "Mollebamba", "San Antonio", "San Juan de Siguas", "Santa Cruz", "Sibs", "Tapay", "Tuti", "Yanque"],
-        "Islay": ["Mollendo", "Cano", "Cocachacra", "Huall", "La Curva", "Pueblo Nuevo", "Quequeña", "Tambo"],
-        "La Unión": ["Cotahuasi", "Alca", "Charcana", "Huaynate", "Pampas", "Poque", "Quechu", "Sayla", "Taurisma", "Tomepampa", "Toro", "Uu"]
-    },
-    "Ayacucho": {
-        "Huamanga": ["Ayacucho", "Acocro", "Acos Vinchos", "Carmen Alto", "Chiara", "Cusco", "Jesús Nazareno", "Ocros", "Pacancha", "Quinua", "San Antonio de Cachi", "San José de Ticllas", "San Juan de la Virgen", "Santiago de Pischa", "Socos", "Tambillo", "Vinchos"],
-        "Cangallo": ["Cangallo", "Chuschi", "Los Morochucos", "María Parado de Bellido", "ParCCía", "Pucacolpa", "Quichuas", "San Juan de la Frontera", "San Pedro de la Gloria", "Sank", "Totorma", "Vilcanchos"],
-        "Huanca Sancos": ["Ccarhuana", "Concepción", "Chupamba", "Huancarane", "Indepandancia", "Los Sauces", "Pampas", "Quvincho", "San Antonio de Cachi", "Sank", "Soras", "Tucsic", "Villa Vista"],
-        "Huanta": ["Huanta", "Ayahuanco", "Canayre", "CCarpish", "Chaccrampa", "Clas", "Huamanguilla", "Huanta", "Iguan", "L-lo", "Luricocha", "Pichcacha", "Quinoa", "Raff", "San Antonio", "San Clemente", "Santa Rosa"],
-        "La Mar": ["San Miguel", "Anchihuay", "Chilcas", "Chon", "Cusco", "El Porvenir", "La Mar", "Lomas", "Luricocha", "Matalaca", "OcaLLAn", "Sank", "Santa Rosa", "Tintay", "To大了", "Villa Mercedes"],
-        "Lucanas": ["Puquio", "Auca", "Banda", "Cachuete", "Carmen Salcedo", "Chaviña", "Chopes", "Cocuk", "Cusco", "Getudo", "Humaya", "Llauta", " Nacmye", "Ninacnie", "OCros", "Pueblo Nuevo", "Pukare", "Quiñ-onez", "Rio Grande", "Salcabamba", "SConcord", "Sank", "Santa Cruz", "Santa Filomena", "Santiago de Pukara", "Santo Domingo de Pilpila", "Sivia", "Tucle", "Ukhuana", "Uran", "Wilca"],
-        "Parinacochas": ["Parinacochas", "Chumpi", "Coracora", "Coro", "Cuznago", "Huamanquicha", "Huaynama", "Julcampa", "Kcruela", "Pampa Grande", "Pukasy", "Quere", "Sank", "Tinkik", "Tomine", "Yana"]
-    },
-    "Lima": {
-        "Lima": ["Lima", "Ancón", "Ate", "Barranco", "Breña", "Carabayllo", "Chaclacayo", "Chorrillos", "Cieneguilla", "Comas", "El Agustino", "Independencia", "Jesús María", "La Molina", "La Victoria", "Lince", "Los Olivos", "Lurigancho", "Lurín", "Magdalena del Mar", "Miraflores", "Pachacámac", "Pucusana", "Pueblo Libre", "Puente Piedra", "Rímac", "San Bartolo", "San Juan de Lurigancho", "San Juan de Miraflores", "San Luis", "San Martín de Porres", "San Miguel", "Santa Anita", "Santa María del Mar", "Santa Rosa", "Santiago de Surco", "Surquillo", "Villa El Salvador", "Villa María del Triunfo"],
-        "Barranca": ["Barranca", "Barranca", "Paramonga", "Supe", "Supe Puerto"],
-        "Cajatete": ["Cajatete", "Cajatete", "San Juan de Lurigancho"],
-        "Canta": ["Canta", "Arahuay", "Canta", "Huamantanga", "Huaros", "Lachaqui", "Quintay", "San Buenaventura", "Santa Rosa de Quives"],
-        "Cañete": ["San Vicente de Cañete", "Calango", "Cerro Azul", "Chilca", "Coayllo", "Imperial", "Lunahuaná", "Mala", "Nieve", "Pacarán", "Quilmaná", "San Luis", "San Vicente", "Santa Cruz de Andama", "Unas"],
-        "Huaral": ["Huaral", "Acos", "Atavilia Bajo", "Buena Vista Alta", "Cajatete", "Cerro de Pas", "Chancay", "Iguain", "La Trinidad", "Las Libertadores", "Pucara", "San José", "San Juan de Mas", "Santa Ines", "Sayán"],
-        "Huarochirí": ["Matucana", "Antioquía", "Callahuanca", "Huarochirí", "Langa", "Laraos", "Leonor Ordóñez", "Mariatana", "Matucana", "Morococha", "Olaya", "Pacaraos", "Pedro Escobedo", "Quinches", "Río Blanco", "San Andrés de Tupico", "San Antonio", "San Bartolomé", "San Juan de Iris", "San Juan de Tantaranche", "Santa María de Chicma", "Santiago de Tantaranche", "Santo Domingo de los Olleros"],
-        "Huaura": ["Huacho", "Ampur", "Calango", "Carquín", "Chancayllo", "Don Martin", "El Carrión", "Huaca", "Huaman", "Huaura", "Ica", "Launi", "Leonor Ordóñez", "Limpe", "Paccho", "Pampan", "Quinches", "Sayán", "Supe", "Supe Puerto"],
-        "Oyon": ["Oyon", "Ambar", "Caujul", "Cochamarca", "Colpas", "Huancapon", "Minahuan", "Oyon", "Pachangara", "Quinches", "Rag", "Shilca", "Yurac"],
-        "Yauyos": ["Yauyos", "Alis", "Ate", "Awton", "Cata", "Chocos", "Cusco", "Huantan", "Huayaringa", "Langa", "Laraos", "Leonor Ordóñez", "Lincha", "Made", "Mariatana", "Miraflores", "Omas", "Putin", "Quinches", "San Juan de Iris", "Santa Cruz de Alpomarca", "Santiago de Tantaranche", "Santo Domingo de los Olleros", "Tupe", "Viñac", "Yauyos"]
-    },
-    "Loreto": {
-        "Maynas": ["Iquitos", "Belén", "Punchana", "San Juan", "Teniente Manuel Clavero"],
-        "Alto Amazonas": ["Yurimaguas", "Lago", "Nauta", "Roberto Alencar"],
-        "Loreto": ["Nauta", "Capaná", "Echarate", "Indiana"],
-        "Mariscal Ramón Castilla": ["Caballococha", "Pebas", "San Juan"],
-        "Requena": ["Requena", "Alto Amazonas", "Capena", "Damas", "Francisco"],
-        "Ucayali": ["Pucallpa", "Contamana", "Callería", "Manantay", "Campoverde"]
-    },
-    "Madre de Dios": {
-        "Tambopata": ["Tambopata", "Fitzcarrald", "Puerto Maldonado", "Rollap"],
-        "Manú": ["Manú", "Iñapari", "Salvación", "Boca Manú"],
-        "Tahuamanu": ["Tahuamanu", "Iñapari", "Río"]
-    },
-    "Moquegua": {
-        "Mariscal Nieto": ["Moquegua", "Carumas", "El Al", "San Cristóbal", "Torata"],
-        "General Sánchez Cerro": ["Moquegua", "Chinas", "Ilo", "La Capilla", "Los Andes", "Quinistaquillas"],
-        "Ilo": ["Ilo", "Chinas", "El Choro", "La Capilla", "Pacocha", "Puerto"]
-    },
-    "Pasco": {
-        "Pasco": ["Cerro de Pasco", "Chaipián", "Huachón", "Huariaca", "Huasta", "Huayllay", "Ninacaca", "Pallanchacra", "Paucar", "San Pedro de P", "Simón Bolívar", "Ticllacocha", "Vitoc"],
-        "Oxapampa": ["Oxapampa", "Chontabamba", "Iscozacin", "Mazamari", "Pampa", "Pichanaqui", "Puerto", "San Fernando", "Villa Rica"],
-        "Daniel Alcides Carrión": ["Daniel Alcides Carrión", "Chacayan", "Gamal", "Huancayo", "Paucartambo"]
-    },
-    "Piura": {
-        "Piura": ["Piura", "26 de Octubre", "Catacaos", "Cura Mori", "El Tallán", "La Arena", "La Unión", "Las Lomas", "Tambo Grande"],
-        "Ayabaca": ["Ayabaca", "Frias", "Lagunas", "Pampa", "San Juan de la Virgin"],
-        "Huancabamba": ["Huancabamba", "Sondor", "Tabaconas"],
-        "Morropón": ["Chiclayo", "Buenos Aires", "Chalaco", "La Par", "Santa Catalina"],
-        "Paita": ["Paita", "Amotape", "Arenal", "La Huaca", "Tambo"],
-        "Sullana": ["Sullana", "Bellavista", "Marcavelica", "Quere"],
-        "Talara": ["Talara", "Arenal", "El Alto", "La Brea", "Máncora", "Quere"]
-    },
-    "Puno": {
-        "Puno": ["Puno", "Acora", "Amantani", "Atuncolla", "Capachica", "Isla Taquile", "Isla Uros", "Juli", "Pichacani", "Puntillo", "Tiquillaca", "Tito"],
-        "Azángaro": ["Azángaro", "Achaya", "Arapa", "Caminaca", "Chupa", "Muñequi", "Potoni", "Samán", "San Antonio", "San José", "Santiago de Pupuja"],
-        "San Román": ["Juliaca", "Capazo", "Chillía", "Desaguadero", "Huacullani", "Kelluyo", "Pikillalla", "San Antonio", "Tinque"],
-        "Chucuito": ["Chucuito", "Puno", "Ilo", "Ispaca"],
-        "El Collao": ["Ilave", "Conduriri", "Huacullani", "Puno", "Santa Rosa"],
-        "Melgar": ["Ayaviri", "Anta", "Cuyuchí", "Llalli", "Macari", "San Antonio de P", "San Juan de P"]
-    },
-    "San Martín": {
-        "Tarapoto": ["Tarapoto", "Alberto Leve", "Caynarach", "Chazuta", "El Porvenir", "Huembo", "Morales", "Papaplaya", "San Antonio"],
-        "Moyobamba": ["Moyobamba", "Calzadas", "Cuñumbu", "Huicunda", "Moyobamba", "NARANJILLO", "Pacara", "Shant", "Sión"],
-        "Bellavista": ["Bellavista", "Caspizapa", "Shapumba", "Tingo"],
-        "Mariscal Cáceres": ["Campo Verde", "Cumbitoto", "Huallaga", "Pimentel", "San José"],
-        "Rioja": ["Rioja", "Awajun", "El Dorado", "Fray Martín", "Pijahuan", "Shapaja"],
-        "Lamas": ["Lamas", "Alto Bia", "Cañopot", "Chazuta", "El Dorado", "Huicunda", "Papaplaya", "Rumizapa"],
-        "Tocache": ["Cascayán", "Naranjal", "Papaplaya", "Pichanaki", "Polvora", "Shunte"]
-    },
-    "Tacna": {
-        "Tacna": ["Tacna", "Alto de la Ciudad", "Beti", "Cañapa", "Ciudad Nueva", "Copa", "Ite", "La Yarada", "Los Andes", "Pocollay", "Sampalpuente", "Santa Rosa"],
-        "Tarata": ["Tarata", "Cajía", "Estique", "Estique Pueblo", "Huanuni", "Ite", "Labral", "Mollagata", "Sucre"],
-        "Jorge Basadre": ["Jorge Basadre", "Ilabaya", "Ite", "Locumba", "Sama"],
-        "Candarave": ["Candarave", "Cañapa", "Ite", "Kallapuma", "Sayllapaya", "Toquepala"]
-    },
-    "Tumbes": {
-        "Tumbes": ["Tumbes", "Corrales", "La Cruz", "Pimentel", "San Juan de la Virgin"],
-        "Contralmirante Villar": ["Contralmirante Toro", "Canoas", "Casitas", "La Brea", "Pimentel"],
-        "Zarumilla": ["Zarumilla", "Acapulco", "Garita", "La", "Matapalo", "Papayal"]
-    },
-    "Ucayali": {
-        "Callería": ["Pucallpa", "Campoverde", "Iparia", "Manantay", "Y"],
-        "Atalaya": ["Atalaya", "Daimur", "Raymondi", "Sepahua", "Tahuania"],
-        "Padre Abad": ["Padre Abad", "Bambamarca", "Contamana", "Iparia", "San Alejandro"],
-        "Coronel Portillo": ["Pucallpa", "Bambamarca", "Campo Verde", "Iparia", "Manantay"]
-    }
-}
-
-const defaultDepartamentos = Object.keys(UBIGEO)
-
 export default function CheckoutPage() {
     const router = useRouter()
     const [step, setStep] = useState(1)
@@ -195,6 +63,11 @@ export default function CheckoutPage() {
     const [error, setError] = useState("")
     const [items, setItems] = useState<CarritoItem[]>([])
     const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [indicaciones, setIndicaciones] = useState<Record<string, string>>({})
+    const [popupItem, setPopupItem] = useState<CarritoItem | null>(null)
+    const [savingId, setSavingId] = useState<string | null>(null)
+    const [indicacionToDelete, setIndicacionToDelete] = useState<string | null>(null)
+    const [successModal, setSuccessModal] = useState<{ show: boolean; message: string; orderNumber?: string }>({ show: false, message: "" })
     const [tiendas, setTiendas] = useState<{ id: string, nombre: string, direccion: string }[]>([])
     const [data, setData] = useState<CheckoutData>({
         tipoDocumento: "",
@@ -222,10 +95,25 @@ export default function CheckoutPage() {
     const [pedidoCreado, setPedidoCreado] = useState<any>(null)
     const [showMetrajePopup, setShowMetrajePopup] = useState(false)
     const [showPaymentModal, setShowPaymentModal] = useState(false)
+    const [showAyudaOperacion, setShowAyudaOperacion] = useState(false)
     const [pedidoId, setPedidoId] = useState<string | null>(null)
     const [continuarPedido, setContinuarPedido] = useState<any>(null)
 
     const metrosPorPieza = 50
+
+    // Actualizar pedido cuando el cliente llegue al paso 4
+    useEffect(() => {
+        if (step === 4 && continuarPedido?.id) {
+            fetch(`/api/pedidos/${continuarPedido.id}`, { credentials: "include" })
+                .then(res => res.json())
+                .then(json => {
+                    if (json.success && json.pedido) {
+                        setContinuarPedido(json.pedido)
+                    }
+                })
+                .catch(console.error)
+        }
+    }, [step, continuarPedido?.id])
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search)
@@ -320,10 +208,42 @@ export default function CheckoutPage() {
                     }
                 })
                 setItems(itemsConPrecio)
+
+                // Initialize indicaciones from fetched items
+                const initIndicaciones: Record<string, string> = {}
+                    ; (json.items || []).forEach((item: any) => {
+                        initIndicaciones[item.id] = item.indicacionesCorte || ""
+                    })
+                setIndicaciones(initIndicaciones)
             }
         } catch (e) {
             console.error("Error fetching cart:", e)
         }
+    }
+
+    const guardarIndicacion = async (itemId: string) => {
+        setSavingId(itemId)
+        try {
+            await fetch("/api/carrito", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "actualizarIndicaciones",
+                    carritoId: itemId,
+                    indicacionesCorte: indicaciones[itemId] || null
+                }),
+                credentials: "include"
+            })
+        } catch (e) {
+            console.error("Error:", e)
+        } finally {
+            setSavingId(null)
+        }
+    }
+
+    const handleIndicacionChange = (itemId: string, value: string) => {
+        const trimmed = value.slice(0, 200)
+        setIndicaciones(prev => ({ ...prev, [itemId]: trimmed }))
     }
 
     const fetchTiendas = async () => {
@@ -347,8 +267,11 @@ export default function CheckoutPage() {
     }, [items])
 
     const calcularCostoEnvio = useCallback(() => {
-        if (data.metodoEnvio === "retiro") return 0
+        if (data.metodoEnvio === "tienda" || data.metodoEnvio === "retiro") return 0
         const subtotal = calcularSubtotal()
+        if (subtotal >= 9000) return 50
+        if (subtotal >= 7000) return 40
+        if (subtotal >= 5000) return 35
         if (subtotal >= 3000) return 30
         if (subtotal >= 1500) return 20
         if (subtotal >= 500) return 15
@@ -581,7 +504,8 @@ export default function CheckoutPage() {
                 productoId: item.producto.id,
                 cantidad: item.cantidad,
                 tipo: item.tipo,
-                precio: item.producto.precio
+                precio: item.producto.precio,
+                indicacionesCorte: item.indicacionesCorte || null
             }))
 
             const res = await fetch("/api/pedidos", {
@@ -612,8 +536,11 @@ export default function CheckoutPage() {
             const json = await res.json()
 
             if (json.success) {
-                alert(json.mensaje || "Orden de compra creada correctamente. Pendiente de recibir metraje de piezas.")
-                router.push("/dashboard/pedidos")
+                setSuccessModal({
+                    show: true,
+                    message: json.mensaje || "Orden de compra creada correctamente. Piezas en proceso de metraje.",
+                    orderNumber: json.pedido?.numeroOrden
+                })
             } else {
                 setError(json.error || "Error al crear pedido")
             }
@@ -659,7 +586,7 @@ export default function CheckoutPage() {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    estado: "confirmado",
+                    estado: "pendiente",
                     numeroOperacion: data.numeroOperacion
                 }),
                 credentials: "include"
@@ -697,7 +624,7 @@ export default function CheckoutPage() {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        estado: "confirmado",
+                        estado: "pendiente",
                         numeroOperacion: data.numeroOperacion
                     }),
                     credentials: "include"
@@ -717,7 +644,8 @@ export default function CheckoutPage() {
                     productoId: item.producto.id,
                     cantidad: item.cantidad,
                     tipo: item.tipo,
-                    precio: item.producto.precio
+                    precio: item.producto.precio,
+                    indicacionesCorte: item.indicacionesCorte || null
                 }))
 
                 const res = await fetch("/api/pedidos", {
@@ -741,7 +669,7 @@ export default function CheckoutPage() {
                         nombreRecibe: data.nombreRecibe || null,
                         celularRecibe: data.celularRecibe || null,
                         numeroOperacion: data.numeroOperacion,
-                        estado: "confirmado",
+                        estado: "pendiente",
                         items: itemsParaApi
                     }),
                     credentials: "include"
@@ -915,6 +843,39 @@ export default function CheckoutPage() {
                                                         <Trash2 className="h-5 w-5" />
                                                     </button>
                                                 </div>
+
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    {indicaciones[item.id] ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => setPopupItem(item)}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
+                                                            >
+                                                                <FileText className="h-4 w-4" />
+                                                                Ver indicación
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.preventDefault()
+                                                                    e.stopPropagation()
+                                                                    console.log("Click eliminar para item:", item.id)
+                                                                    setIndicacionToDelete(item.id)
+                                                                }}
+                                                                className="text-xs text-red-500 hover:text-red-700"
+                                                            >
+                                                                Eliminar
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setPopupItem(item)}
+                                                            className="flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded border border-dashed border-blue-300"
+                                                        >
+                                                            <Plus className="h-4 w-4" />
+                                                            Añadir indicaciones de corte
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         )
                                     })}
@@ -959,7 +920,7 @@ export default function CheckoutPage() {
                                     <select
                                         value={data.tipoDocumento}
                                         onChange={e => handleInputChange("tipoDocumento", e.target.value)}
-                                        className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                        className="w-full border-1 border-black rounded-lg px-3 py-2 text-black"
                                     >
                                         <option value="">Seleccionar</option>
                                         <option value="dni">DNI</option>
@@ -981,7 +942,7 @@ export default function CheckoutPage() {
                                             handleInputChange("numeroDoc", filtered)
                                         }}
                                         maxLength={data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15}
-                                        className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                        className="w-full border-1 border-black rounded-lg px-3 py-2 text-black"
                                         placeholder={data.tipoDocumento === "ruc" ? "11 dígitos" : data.tipoDocumento === "dni" ? "8 dígitos" : "15 dígitos"}
                                     />
                                 </div>
@@ -999,7 +960,7 @@ export default function CheckoutPage() {
                                                 handleInputChange("nombreFactura", filtered)
                                             }}
                                             maxLength={50}
-                                            className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                            className="w-full border-1 border-black rounded-lg px-3 py-2 text-black"
                                             placeholder="Nombre completo"
                                         />
                                     </div>
@@ -1018,7 +979,7 @@ export default function CheckoutPage() {
                                                 handleInputChange("nombreFactura", filtered)
                                             }}
                                             maxLength={80}
-                                            className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                            className="w-full border-1 border-black rounded-lg px-3 py-2 text-black"
                                             placeholder="Razón social"
                                         />
                                     </div>
@@ -1036,60 +997,56 @@ export default function CheckoutPage() {
                                             handleInputChange("direccion", filtered)
                                         }}
                                         maxLength={80}
-                                        className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                        className="w-full border-1 border-black rounded-lg px-3 py-2 text-black"
                                         placeholder="Dirección de facturación"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-black mb-1">Departamento (opcional)</label>
-                                    <select
-                                        value={data.departamento}
-                                        onChange={e => {
-                                            handleInputChange("departamento", e.target.value)
-                                            handleInputChange("provincia", "")
-                                            handleInputChange("distrito", "")
-                                        }}
-                                        className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
-                                    >
-                                        <option value="">Seleccionar</option>
-                                        {Object.keys(UBIGEO).map(dep => (
-                                            <option key={dep} value={dep}>{dep}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                {data.departamento && UBIGEO[data.departamento] && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-black mb-1">Provincia (opcional)</label>
+                                    <label className="block text-sm font-medium text-black mb-1">
+                                        Departamento / Provincia / Distrito
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={data.departamento}
+                                            onChange={e => {
+                                                handleInputChange("departamento", e.target.value)
+                                                handleInputChange("provincia", "")
+                                                handleInputChange("distrito", "")
+                                            }}
+                                            className="flex-1 border-1 border-black rounded-lg px-3 py-2 text-black"
+                                        >
+                                            <option value="">Seleccione</option>
+                                            {Object.keys(UBIGEO).map(dep => (
+                                                <option key={dep} value={dep}>{dep}</option>
+                                            ))}
+                                        </select>
                                         <select
                                             value={data.provincia}
                                             onChange={e => {
                                                 handleInputChange("provincia", e.target.value)
                                                 handleInputChange("distrito", "")
                                             }}
-                                            className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                            disabled={!data.departamento}
+                                            className="flex-1 border-1 border-black rounded-lg px-3 py-2 text-black disabled:bg-slate-100"
                                         >
-                                            <option value="">Seleccionar</option>
-                                            {Object.keys(UBIGEO[data.departamento] || {}).map(prov => (
+                                            <option value="">Seleccione</option>
+                                            {data.departamento && UBIGEO[data.departamento] && Object.keys(UBIGEO[data.departamento] || {}).map(prov => (
                                                 <option key={prov} value={prov}>{prov}</option>
                                             ))}
                                         </select>
-                                    </div>
-                                )}
-                                {data.departamento && data.provincia && UBIGEO[data.departamento]?.[data.provincia] && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-black mb-1">Distrito (opcional)</label>
                                         <select
                                             value={data.distrito}
                                             onChange={e => handleInputChange("distrito", e.target.value)}
-                                            className="w-full border-2 border-black rounded-lg px-3 py-2 text-black"
+                                            disabled={!data.provincia}
+                                            className="flex-1 border-1 border-black rounded-lg px-3 py-2 text-black disabled:bg-slate-100"
                                         >
-                                            <option value="">Seleccionar</option>
-                                            {(UBIGEO[data.departamento]?.[data.provincia] || []).map(dist => (
+                                            <option value="">Seleccione</option>
+                                            {data.departamento && data.provincia && UBIGEO[data.departamento]?.[data.provincia] && (UBIGEO[data.departamento]?.[data.provincia] || []).map(dist => (
                                                 <option key={dist} value={dist}>{dist}</option>
                                             ))}
                                         </select>
                                     </div>
-                                )}
+                                </div>
                                 <div className="flex gap-4 mt-6">
                                     <Button onClick={() => setStep(1)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
                                     <Button onClick={() => setStep(3)} disabled={!validarPaso(2)} className="flex-1 bg-green-600 text-white">Continuar</Button>
@@ -1112,12 +1069,12 @@ export default function CheckoutPage() {
                                 </button>
 
                                 {data.metodoEnvio === "tienda" && (
-                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg">
+                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg border-2 border-slate-200">
                                         <p className="text-sm font-medium text-black mb-2">Selecciona la tienda:</p>
                                         <select
                                             value={data.tiendaId || ""}
                                             onChange={(e) => handleInputChange("tiendaId", e.target.value)}
-                                            className="w-full p-3 border rounded-lg text-black"
+                                            className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
                                         >
                                             <option value="">Seleccionar tienda...</option>
                                             {tiendas.map((tienda) => (
@@ -1139,13 +1096,13 @@ export default function CheckoutPage() {
                                 </button>
 
                                 {data.metodoEnvio === "agencia" && (
-                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-4">
+                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-4 border-2 border-slate-200">
                                         <div>
                                             <p className="text-sm font-medium text-black mb-2">Selecciona agencia:</p>
                                             <select
                                                 value={data.agencia || ""}
                                                 onChange={(e) => handleInputChange("agencia", e.target.value)}
-                                                className="w-full p-3 border rounded-lg text-black"
+                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
                                             >
                                                 <option value="">Seleccionar agencia...</option>
                                                 <option value="shalom">Shalom</option>
@@ -1162,7 +1119,7 @@ export default function CheckoutPage() {
                                                 placeholder="Nombre de la agencia"
                                                 value={data.agenciaOtro || ""}
                                                 onChange={(e) => handleInputChange("agenciaOtro", e.target.value)}
-                                                className="w-full p-3 border rounded-lg text-black"
+                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                             />
                                         )}
                                         <div>
@@ -1170,7 +1127,7 @@ export default function CheckoutPage() {
                                             <select
                                                 value={data.tipoEnvio || "mismapersona"}
                                                 onChange={(e) => handleInputChange("tipoEnvio", e.target.value)}
-                                                className="w-full p-3 border rounded-lg text-black"
+                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
                                             >
                                                 <option value="mismapersona">Yo mismo</option>
                                                 <option value="otropersona">Otra persona</option>
@@ -1183,7 +1140,7 @@ export default function CheckoutPage() {
                                                     placeholder="DNI (8 dígitos)"
                                                     value={data.dniRecibe || ""}
                                                     onChange={(e) => handleInputChange("dniRecibe", e.target.value.replace(/\D/g, "").slice(0, 8))}
-                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                     maxLength={8}
                                                 />
                                                 <input
@@ -1191,14 +1148,14 @@ export default function CheckoutPage() {
                                                     placeholder="Nombre completo"
                                                     value={data.nombreRecibe || ""}
                                                     onChange={(e) => handleInputChange("nombreRecibe", e.target.value)}
-                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                 />
                                                 <input
                                                     type="text"
                                                     placeholder="Celular (opcional)"
                                                     value={data.celularRecibe || ""}
                                                     onChange={(e) => handleInputChange("celularRecibe", e.target.value.replace(/\D/g, "").slice(0, 9))}
-                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                     maxLength={9}
                                                 />
                                             </div>
@@ -1216,13 +1173,13 @@ export default function CheckoutPage() {
                                 </button>
 
                                 {data.metodoEnvio === "delivery" && (
-                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-4">
+                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-4 border-2 border-slate-200">
                                         <div>
                                             <p className="text-sm font-medium text-black mb-2">Tipo de delivery:</p>
                                             <select
                                                 value={data.delivery || ""}
                                                 onChange={(e) => handleInputChange("delivery", e.target.value)}
-                                                className="w-full p-3 border rounded-lg text-black"
+                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
                                             >
                                                 <option value="">Seleccionar...</option>
                                                 <option value="olva">Olva</option>
@@ -1236,7 +1193,7 @@ export default function CheckoutPage() {
                                                 placeholder="Nombre del delivery"
                                                 value={data.deliveryOtro || ""}
                                                 onChange={(e) => handleInputChange("deliveryOtro", e.target.value)}
-                                                className="w-full p-3 border rounded-lg text-black"
+                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                             />
                                         )}
                                         <div>
@@ -1244,7 +1201,7 @@ export default function CheckoutPage() {
                                             <select
                                                 value={data.tipoEnvio || "mismapersona"}
                                                 onChange={(e) => handleInputChange("tipoEnvio", e.target.value)}
-                                                className="w-full p-3 border rounded-lg text-black"
+                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
                                             >
                                                 <option value="mismapersona">Yo mismo</option>
                                                 <option value="otropersona">Otra persona</option>
@@ -1257,7 +1214,7 @@ export default function CheckoutPage() {
                                                     placeholder="DNI (8 dígitos)"
                                                     value={data.dniRecibe || ""}
                                                     onChange={(e) => handleInputChange("dniRecibe", e.target.value.replace(/\D/g, "").slice(0, 8))}
-                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                     maxLength={8}
                                                 />
                                                 <input
@@ -1265,14 +1222,14 @@ export default function CheckoutPage() {
                                                     placeholder="Nombre completo"
                                                     value={data.nombreRecibe || ""}
                                                     onChange={(e) => handleInputChange("nombreRecibe", e.target.value)}
-                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                 />
                                                 <input
                                                     type="text"
                                                     placeholder="Celular (opcional)"
                                                     value={data.celularRecibe || ""}
                                                     onChange={(e) => handleInputChange("celularRecibe", e.target.value.replace(/\D/g, "").slice(0, 9))}
-                                                    className="w-full p-3 border rounded-lg text-black"
+                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                     maxLength={9}
                                                 />
                                             </div>
@@ -1294,39 +1251,8 @@ export default function CheckoutPage() {
 
                             {metrajeConfirmado && continuarPedido ? (
                                 <div className="mb-4">
-                                    <div className="bg-green-50 border-2 border-green-400 p-4 rounded-lg mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <Check className="h-5 w-5 text-green-600" />
-                                            <p className="font-bold text-green-800">¡Metraje Confirmado!</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="border-2 border-black rounded-lg p-4">
-                                        <p className="font-bold text-black mb-3">Artículos:</p>
-                                        <div className="space-y-2">
-                                            {continuarPedido.pedidoDetalle?.map((detalle: any, idx: number) => {
-                                                const subtotalporItem = detalle.metraje ? detalle.metraje * detalle.precio : detalle.cantidad * detalle.precio
-                                                return (
-                                                    <div key={idx} className="flex justify-between text-sm">
-                                                        <div className="text-black">
-                                                            <p className="font-medium">{detalle.producto?.nombre || `Producto ${idx + 1}`}</p>
-                                                            <p className="text-xs text-gray-600">
-                                                                {detalle.metraje
-                                                                    ? `${detalle.metraje}m × S/ ${Number(detalle.precio).toFixed(2)}/m`
-                                                                    : `${detalle.cantidad} ${detalle.tipo === "pieza" ? "pieza(s)" : "m"} × S/ ${Number(detalle.precio).toFixed(2)}/m`
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                        <span className="text-black font-medium">S/ {subtotalporItem.toFixed(2)}</span>
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* En el Resumen de Pago (Paso 4), antes del cálculo final */}
                                     <div className="border border-slate-300 bg-slate-50 p-4 rounded-lg mt-6 text-sm">
-                                        <h3 className="font-bold text-black mb-3">Resumen por Producto</h3>
+                                        <h3 className="font-bold text-black mb-3">Artículos del pedido</h3>
                                         <div className="space-y-3">
                                             {continuarPedido.pedidoDetalle?.map((detalle: any, index: number) => {
                                                 const subtotalporItem = detalle.metraje
@@ -1366,7 +1292,18 @@ export default function CheckoutPage() {
                                     <div className="bg-slate-50 p-4 rounded-lg mt-4 text-sm">
                                         <div className="flex justify-between mb-1">
                                             <span className="text-black">Subtotal:</span>
-                                            <span className="text-black">S/ {Number(continuarPedido.subtotal || 0).toFixed(2)}</span>
+                                            <span className="text-black">S/ {(() => {
+                                                const detalles = continuarPedido.pedidoDetalle || []
+                                                return detalles.reduce((sum: number, d: any) => {
+                                                    const metraje = d.metraje || 0
+                                                    const cantidad = d.cantidad || 0
+                                                    const precio = Number(d.precio) || 0
+                                                    if (d.tipo === "pieza") {
+                                                        return sum + (precio * metraje)
+                                                    }
+                                                    return sum + (precio * cantidad)
+                                                }, 0)
+                                            })().toFixed(2)}</span>
                                         </div>
                                         {continuarPedido.metodoEnvio && continuarPedido.metodoEnvio !== "retiro" && (
                                             <div className="flex justify-between mb-1">
@@ -1397,12 +1334,22 @@ export default function CheckoutPage() {
                                 </div>
                             ) : tienePiezasPendientes ? (
                                 <div className="mb-4">
-                                    <div className="bg-amber-50 border-2 border-amber-400 p-4 rounded-lg mb-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Clock className="h-5 w-5 text-amber-600" />
-                                            <p className="font-bold text-amber-800">Tu pedido contiene piezas que requieren metraje exacto</p>
+                                    <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-xl p-5 mb-4 shadow-sm">
+                                        <div className="flex items-start gap-3">
+                                            <div className="bg-amber-100 p-2 rounded-full">
+                                                <Clock className="h-6 w-6 text-amber-600" />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-amber-900 text-lg">Tu pedido requiere revisión de metraje</p>
+                                                <p className="text-sm text-amber-700 mt-1">
+                                                    Tus piezas necesitan ser medidas con precisión. Haz clic en <span className="font-semibold">"Agendar pedido"</span> para programar la revisión.
+                                                </p>
+                                            </div>
                                         </div>
-                                        <p className="text-sm text-amber-700">Haz click en 'Agendar pedido' para agendar revisión de piezas</p>
+                                        <div className="mt-3 flex items-center gap-2 text-xs text-amber-600">
+                                            <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                                            <span>Pending de confirmación</span>
+                                        </div>
                                     </div>
 
                                     <div className="border-2 border-black rounded-lg p-4">
@@ -1570,7 +1517,17 @@ export default function CheckoutPage() {
                         </div>
 
                         <div className="mb-4">
-                            <label className="block text-sm font-medium mb-1 text-black">Número de operación:</label>
+                            <label className="block text-sm font-medium mb-1 text-black flex items-center gap-2">
+                                Número de operación:
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAyudaOperacion(true)}
+                                    className="text-blue-500 hover:text-blue-700"
+                                    title="Ver qué es el número de operación"
+                                >
+                                    <HelpCircle className="h-4 w-4" />
+                                </button>
+                            </label>
                             <input
                                 type="text"
                                 value={data.numeroOperacion}
@@ -1596,6 +1553,25 @@ export default function CheckoutPage() {
                                 {loading ? "Procesando..." : "Confirmar Pedido"}
                             </Button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showAyudaOperacion && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setShowAyudaOperacion(false)}>
+                    <div className="relative max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            onClick={() => setShowAyudaOperacion(false)}
+                            className="absolute -top-10 right-0 text-white hover:text-gray-200 font-bold text-lg flex items-center gap-1"
+                        >
+                            <X className="h-5 w-5" />
+                            Cerrar
+                        </button>
+                        <img
+                            src="/images/yape_info2.jpg"
+                            alt="Cómo encontrar el número de operación"
+                            className="w-full rounded-lg shadow-2xl"
+                        />
                     </div>
                 </div>
             )}
@@ -1706,6 +1682,174 @@ export default function CheckoutPage() {
                             >
                                 Sí, eliminar
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {popupItem && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-slate-900">Indicaciones de corte</h3>
+                            <button
+                                onClick={() => setPopupItem(null)}
+                                className="p-2 text-slate-500 hover:text-slate-700 rounded"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3 mb-4">
+                            <div>
+                                <p className="text-sm text-slate-500">Producto</p>
+                                <p className="font-medium text-slate-900">{popupItem.producto.nombre}</p>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <div>
+                                    <p className="text-sm text-slate-500">Tipo</p>
+                                    <p className="font-medium text-slate-900">{popupItem.tipoLabel}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Cantidad</p>
+                                    <p className="font-medium text-slate-900">{popupItem.cantidad} {popupItem.tipo === "pieza" ? "pzs" : "m"}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className="text-sm font-medium text-slate-700 mb-2">Indicaciones de corte</p>
+                                <textarea
+                                    value={indicaciones[popupItem.id] || ""}
+                                    onChange={(e) => {
+                                        const value = e.target.value.slice(0, 200)
+                                        setIndicaciones(prev => ({ ...prev, [popupItem.id]: value }))
+                                    }}
+                                    maxLength={200}
+                                    placeholder="Ej: Cortar a 2.5 metros, necesito 3 piezas de 1m cada una..."
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm text-slate-900"
+                                    rows={4}
+                                />
+                                <p className="text-xs text-slate-400 mt-1">{(indicaciones[popupItem.id] || "").length}/200 caracteres</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <Button
+                                onClick={async () => {
+                                    await guardarIndicacion(popupItem.id)
+                                    setPopupItem(null)
+                                }}
+                                className="flex-1 bg-green-600 hover:bg-green-700"
+                            >
+                                Guardar
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setPopupItem(null)}
+                            >
+                                Cancelar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {indicacionToDelete && (
+                <div
+                    className="fixed inset-0 flex items-center justify-center z-[100]"
+                    style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
+                    onClick={() => setIndicacionToDelete(null)}
+                >
+                    <div
+                        className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="text-center mb-4">
+                            <FileText className="h-12 w-12 text-amber-500 mx-auto mb-2" />
+                            <p className="text-lg font-bold text-slate-900">¿Eliminar indicación de corte?</p>
+                            <p className="text-slate-600 mt-2">
+                                La indicación para este producto será eliminada. Esta acción no se puede deshacer.
+                            </p>
+                        </div>
+                        <div className="flex justify-center gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIndicacionToDelete(null)}
+                                className="border-slate-300 text-slate-700"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={async () => {
+                                    console.log("Confirmando eliminación...")
+                                    // Actualizar estado local
+                                    setIndicaciones(prev => ({ ...prev, [indicacionToDelete]: "" }))
+                                    // Llamar al API directamente con null para eliminar
+                                    await fetch("/api/carrito", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            action: "actualizarIndicaciones",
+                                            carritoId: indicacionToDelete,
+                                            indicacionesCorte: null
+                                        }),
+                                        credentials: "include"
+                                    })
+                                    setIndicacionToDelete(null)
+                                }}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                Sí, eliminar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {successModal.show && (
+                <div
+                    className="fixed inset-0 flex items-center justify-center z-50"
+                    style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+                    onClick={() => {
+                        setSuccessModal({ show: false, message: "" })
+                        router.push("/dashboard/pedidos")
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl transform scale-100"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Check className="h-10 w-10 text-green-600" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                                ¡Pedido Agendado!
+                            </h2>
+                            {successModal.orderNumber && (
+                                <p className="text-sm text-slate-500 mb-4">
+                                    Orden: <span className="font-semibold text-slate-700">{successModal.orderNumber}</span>
+                                </p>
+                            )}
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                                <p className="text-amber-800 text-sm">
+                                    <Clock className="inline h-4 w-4 mr-1" />
+                                    Piezas en proceso de metraje
+                                </p>
+                                <p className="text-amber-600 text-xs mt-1">
+                                    Te contactaremos pronto para confirmar los detalles.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setSuccessModal({ show: false, message: "" })
+                                    router.push("/dashboard/pedidos")
+                                }}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+                            >
+                                Ver mis pedidos
+                            </button>
                         </div>
                     </div>
                 </div>

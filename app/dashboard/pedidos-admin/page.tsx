@@ -10,10 +10,10 @@ import { PedidoAccordion } from "./accordion"
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
     metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800" },
-    pendiente: { label: "Pendiente", color: "bg-blue-100", colorTexto: "text-blue-800" },
-    confirmado: { label: "Confirmado", color: "bg-blue-200", colorTexto: "text-blue-900" },
-    rechazado: { label: "Rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
-    completado: { label: "Completado", color: "bg-green-100", colorTexto: "text-green-800" },
+    pendiente: { label: "Pago en revisión", color: "bg-blue-100", colorTexto: "text-blue-800" },
+    confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900" },
+    rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
+    completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800" },
 }
 
 const AGENCIA_LABELS: Record<string, string> = {
@@ -53,6 +53,7 @@ export default async function PedidosAdminPage() {
     if (!session) redirect("/login")
 
     const role = (session.user as any)?.role || "cliente"
+    const userId = session.user.id
     if (!["admin", "empleado"].includes(role)) redirect("/dashboard")
 
     const pedidos = await getPedidos()
@@ -128,7 +129,7 @@ export default async function PedidosAdminPage() {
                         <p className="text-slate-500">Los pedidos aparecerán aquí cuando los clientes realicen compras.</p>
                     </div>
                 ) : (
-                    <PedidoAccordion pedidos={pedidos as any} />
+                    <PedidoAccordion pedidos={pedidos as any} role={role} userId={userId} />
                 )}
             </div>
         </div>

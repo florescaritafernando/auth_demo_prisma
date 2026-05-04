@@ -246,6 +246,20 @@ const metrosPorPieza = 50
                 return NextResponse.json({ success: true })
             }
 
+            case "actualizarIndicaciones": {
+                const { indicacionesCorte } = body
+                if (!carritoId) {
+                    return NextResponse.json({ success: false, error: "ID requerido" }, { status: 400 })
+                }
+
+                await prisma.carrito.update({
+                    where: { id: carritoId },
+                    data: { indicacionesCorte: indicacionesCorte || null }
+                })
+
+                return NextResponse.json({ success: true })
+            }
+
             case "checkout": {
                 if (!body || typeof body !== "object") {
                     return NextResponse.json({ success: false, error: "Datos requeridos" }, { status: 400 })

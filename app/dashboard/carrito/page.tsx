@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ShoppingCart, ArrowLeft, ArrowRight, Plus, Minus, Trash2, X } from "lucide-react"
+import { ShoppingCart, ArrowLeft, ArrowRight, Plus, Minus, Trash2, X, Pencil, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface Stock {
@@ -29,6 +29,7 @@ interface CarritoItem {
     cantidadMetros: number
     tipoLabel: string
     metrosPorPieza: number
+    indicacionesCorte?: string | null
 }
 
 export default function CarritoPage() {
@@ -37,8 +38,10 @@ export default function CarritoPage() {
     const [items, setItems] = useState<CarritoItem[]>([])
     const [total, setTotal] = useState(0)
     const [deletingId, setDeletingId] = useState<string | null>(null)
-    const [editandoId, setEditandoId] = useState<string | null>(null)
-    const [cantidadEdit, setCantidadEdit] = useState(1)
+    const [indicaciones, setIndicaciones] = useState<Record<string, string>>({})
+    const [popupItem, setPopupItem] = useState<CarritoItem | null>(null)
+    const [savingId, setSavingId] = useState<string | null>(null)
+    const [indicacionToDelete, setIndicacionToDelete] = useState<string | null>(null)
 
     useEffect(() => {
         fetchCarrito()
@@ -51,12 +54,43 @@ export default function CarritoPage() {
             if (json.success) {
                 setItems(json.items || [])
                 setTotal(json.total || 0)
+                // Initialize indicaciones from fetched items
+                const initIndicaciones: Record<string, string> = {}
+                ;(json.items || []).forEach((item: CarritoItem) => {
+                    initIndicaciones[item.id] = item.indicacionesCorte || ""
+                })
+                setIndicaciones(initIndicaciones)
             }
         } catch (e) {
             console.error("Error:", e)
         } finally {
             setLoading(false)
         }
+    }
+
+    const guardarIndicacion = async (itemId: string) => {
+        setSavingId(itemId)
+        try {
+            await fetch("/api/carrito", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "actualizarIndicaciones", 
+                    carritoId: itemId, 
+                    indicacionesCorte: indicaciones[itemId] || null 
+                }),
+                credentials: "include"
+            })
+        } catch (e) {
+            console.error("Error:", e)
+        } finally {
+            setSavingId(null)
+        }
+    }
+
+    const handleIndicacionChange = (itemId: string, value: string) => {
+        const trimmed = value.slice(0, 200)
+        setIndicaciones(prev => ({ ...prev, [itemId]: trimmed }))
     }
 
     const actualizarCantidad = async (itemId: string, nuevaCantidad: number, tipo: string) => {
@@ -195,41 +229,76 @@ export default function CarritoPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
-                                        <div className="flex items-center gap-2">
+                                    <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                {item.tipo === "pieza" && (
+                                                    <button
+                                                        onClick={() => actualizarCantidad(item.id, item.cantidad - 1, item.tipo)}
+                                                        disabled={item.cantidad <= 1}
+                                                        className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                                                    >
+                                                        <Minus className="h-4 w-4 text-slate-700" />
+                                                    </button>
+                                                )}
+                                                <input
+                                                    type="number"
+                                                    step={item.tipo === "pieza" ? "1" : "0.1"}
+                                                    min={item.tipo === "pieza" ? "1" : "0.1"}
+                                                    value={item.cantidad}
+                                                    onChange={(e) => {
+                                                        const raw = parseFloat(e.target.value)
+                                                        const value = item.tipo === "pieza" ? Math.floor(raw) || 1 : (raw || 1)
+                                                        const minVal = item.tipo === "pieza" ? 1 : 1
+                                                        if (value >= minVal) actualizarCantidad(item.id, value, item.tipo)
+                                                    }}
+                                                    className="w-20 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900"
+                                                />
+                                                {item.tipo === "pieza" && (
+                                                    <button
+                                                        onClick={() => actualizarCantidad(item.id, item.cantidad + 1, item.tipo)}
+                                                        className="p-2 bg-slate-100 rounded hover:bg-slate-200"
+                                                    >
+                                                        <Plus className="h-4 w-4 text-slate-700" />
+                                                    </button>
+                                                )}
+                                                {item.tipo !== "pieza" && <span className="text-sm text-slate-500">m</span>}
+                                            </div>
                                             <button
-                                                onClick={() => actualizarCantidad(item.id, item.tipo === "pieza" ? item.cantidad - 1 : item.cantidad - 0.01, item.tipo)}
-                                                disabled={item.tipo === "pieza" ? item.cantidad <= 1 : item.cantidad <= 0.01}
-                                                className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                                                onClick={() => eliminarItem(item.id, item.producto.nombre)}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded"
                                             >
-                                                <Minus className="h-4 w-4 text-slate-700" />
-                                            </button>
-                                            <input
-                                                type="number"
-                                                step={item.tipo === "pieza" ? "1" : "0.01"}
-                                                min={item.tipo === "pieza" ? "1" : "0.01"}
-                                                value={item.cantidad}
-                                                onChange={(e) => {
-                                                    const raw = parseFloat(e.target.value)
-                                                    const value = item.tipo === "pieza" ? Math.floor(raw) || 1 : (raw || 0.01)
-                                                    const minVal = item.tipo === "pieza" ? 1 : 0.01
-                                                    if (value >= minVal) actualizarCantidad(item.id, value, item.tipo)
-                                                }}
-                                                className="w-20 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900"
-                                            />
-                                            <button
-                                                onClick={() => actualizarCantidad(item.id, item.tipo === "pieza" ? item.cantidad + 1 : item.cantidad + 0.01, item.tipo)}
-                                                className="p-2 bg-slate-100 rounded hover:bg-slate-200"
-                                            >
-                                                <Plus className="h-4 w-4 text-slate-700" />
+                                                <Trash2 className="h-5 w-5" />
                                             </button>
                                         </div>
-                                        <button
-                                            onClick={() => eliminarItem(item.id, item.producto.nombre)}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                        >
-                                            <Trash2 className="h-5 w-5" />
-                                        </button>
+
+                                        <div className="flex items-center gap-2 mt-2">
+                                            {indicaciones[item.id] ? (
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => setPopupItem(item)}
+                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
+                                                    >
+                                                        <FileText className="h-4 w-4" />
+                                                        Ver indicación
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setIndicacionToDelete(item.id)}
+                                                        className="text-xs text-red-500 hover:text-red-700"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setPopupItem(item)}
+                                                    className="flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded border border-dashed border-blue-300"
+                                                >
+                                                    <Plus className="h-4 w-4" />
+                                                    Añadir indicaciones de corte
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             )
@@ -281,6 +350,126 @@ export default function CarritoPage() {
                             </Button>
                             <Button
                                 onClick={confirmarEliminar}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                Sí, eliminar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {popupItem && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-slate-900">Indicaciones de corte</h3>
+                            <button
+                                onClick={() => setPopupItem(null)}
+                                className="p-2 text-slate-500 hover:text-slate-700 rounded"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-3 mb-4">
+                            <div>
+                                <p className="text-sm text-slate-500">Producto</p>
+                                <p className="font-medium text-slate-900">{popupItem.producto.nombre}</p>
+                            </div>
+                            
+                            <div className="flex gap-4">
+                                <div>
+                                    <p className="text-sm text-slate-500">Tipo</p>
+                                    <p className="font-medium text-slate-900">{popupItem.tipoLabel}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Cantidad</p>
+                                    <p className="font-medium text-slate-900">{popupItem.cantidad} {popupItem.tipo === "pieza" ? "pzs" : "m"}</p>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <p className="text-sm font-medium text-slate-700 mb-2">Indicaciones de corte</p>
+                                <textarea
+                                    value={indicaciones[popupItem.id] || ""}
+                                    onChange={(e) => {
+                                        const value = e.target.value.slice(0, 200)
+                                        setIndicaciones(prev => ({ ...prev, [popupItem.id]: value }))
+                                    }}
+                                    maxLength={200}
+                                    placeholder="Ej: Cortar a 2.5 metros, necesito 3 piezas de 1m cada una..."
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm text-slate-900"
+                                    rows={4}
+                                />
+                                <p className="text-xs text-slate-400 mt-1">{(indicaciones[popupItem.id] || "").length}/200 caracteres</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex gap-3">
+                            <Button
+                                onClick={async () => {
+                                    await guardarIndicacion(popupItem.id)
+                                    setPopupItem(null)
+                                }}
+                                className="flex-1 bg-green-600 hover:bg-green-700"
+                            >
+                                Guardar
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setPopupItem(null)}
+                            >
+                                Cancelar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {indicacionToDelete && (
+                <div 
+                    className="fixed inset-0 flex items-center justify-center z-[100]"
+                    style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
+                    onClick={() => setIndicacionToDelete(null)}
+                >
+                    <div 
+                        className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="text-center mb-4">
+                            <FileText className="h-12 w-12 text-amber-500 mx-auto mb-2" />
+                            <p className="text-lg font-bold text-slate-900">¿Eliminar indicación de corte?</p>
+                            <p className="text-slate-600 mt-2">
+                                La indicación para este producto será eliminada. Esta acción no se puede deshacer.
+                            </p>
+                        </div>
+                        <div className="flex justify-center gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIndicacionToDelete(null)}
+                                className="border-slate-300 text-slate-700"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={async () => {
+                                    console.log("Confirmando eliminación...")
+                                    // Actualizar estado local
+                                    setIndicaciones(prev => ({ ...prev, [indicacionToDelete]: "" }))
+                                    // Llamar al API directamente con null para eliminar
+                                    await fetch("/api/carrito", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ 
+                                            action: "actualizarIndicaciones", 
+                                            carritoId: indicacionToDelete, 
+                                            indicacionesCorte: null 
+                                        }),
+                                        credentials: "include"
+                                    })
+                                    setIndicacionToDelete(null)
+                                }}
                                 className="bg-red-600 hover:bg-red-700"
                             >
                                 Sí, eliminar

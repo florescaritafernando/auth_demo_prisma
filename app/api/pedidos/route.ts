@@ -161,7 +161,8 @@ export async function POST(request: NextRequest) {
                         productoId: item.productoId,
                         cantidad: item.cantidad,
                         tipo: item.tipo,
-                        precio: item.precio
+                        precio: item.precio,
+                        indicacionesCorte: item.indicacionesCorte || null
                     }))
                 }
             },
@@ -210,7 +211,8 @@ export async function POST(request: NextRequest) {
 function calculateCostoEnvio(items: any[], metodoEnvio?: string): number {
     if (metodoEnvio === "tienda" || metodoEnvio === "retiro") return 0
     const subtotal = calculateTotal(items)
-    if (subtotal >= 6000) return 40
+    if (subtotal >= 9000) return 50
+    if (subtotal >= 7000) return 40
     if (subtotal >= 5000) return 35
     if (subtotal >= 3000) return 30
     if (subtotal >= 1500) return 20

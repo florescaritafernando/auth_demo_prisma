@@ -4,13 +4,13 @@ import prisma from "@/lib/prisma"
 import { auth, enviarEmail } from "@/lib/auth"
 
 function calculateCostoEnvio(subtotal: number, metodoEnvio?: string | null): number {
-    if (!metodoEnvio || metodoEnvio === "retiro") return 0
-    if (metodoEnvio === "agencia") {
-        if (subtotal >= 3000) return 30
-        if (subtotal >= 1500) return 20
-        if (subtotal >= 500) return 15
-        return 10
-    }
+    if (!metodoEnvio || metodoEnvio === "tienda" || metodoEnvio === "retiro") return 0
+    if (subtotal >= 9000) return 50
+    if (subtotal >= 7000) return 40
+    if (subtotal >= 5000) return 35
+    if (subtotal >= 3000) return 30
+    if (subtotal >= 1500) return 20
+    if (subtotal >= 500) return 15
     return 10
 }
 
@@ -86,7 +86,7 @@ export async function PATCH(
             return NextResponse.json({ success: false, error: "Datos inválidos" }, { status: 400 })
         }
 
-        const { estado, metraje_items, numeroOperacion, motivoRechazo } = body
+        const { estado, metraje_items, numeroOperacion, motivoRechazo, costoEnvio } = body
 
         const estadosValidos = ["metraje_en_proceso", "metraje_confirmado", "pendiente", "confirmado", "rechazado", "completado"]
         
@@ -114,27 +114,22 @@ const isAdmin = userRole === "admin"
 
         // Validar permisos por rol
         if (isAdmin) {
-            // Admin puede todo
-        } else if (isEmpleado) {
-            // Empleado solo puede si está delegado
-            if (!isDelegado) {
-                return NextResponse.json({ success: false, error: "No tienes este pedido asignado" }, { status: 403 })
+            // Admin puede todo pero no puede rechazar pedidos confirmados o completados
+            if (estado === "rechazado" && (existingPedido.estado === "confirmado" || existingPedido.estado === "completado")) {
+                return NextResponse.json({ success: false, error: "No puedes rechazar un pedido con pago confirmado o completado" }, { status: 400 })
             }
-            
-            // Empleado: puede actualizar metraje
-            if (metrajeItemsArray) {
-                // OK - puede agregar metraje
-            } else if (estado === "rechazado") {
+        } else if (isEmpleado) {
+            // Empleado puede rechazar pedidos o actualizar metraje sin restricción de delegación
+            if (estado === "rechazado") {
+                if (existingPedido.estado === "confirmado" || existingPedido.estado === "completado") {
+                    return NextResponse.json({ success: false, error: "No puedes rechazar un pedido con pago confirmado o completado" }, { status: 400 })
+                }
                 if (!motivoRechazo || motivoRechazo.length < 5) {
                     return NextResponse.json({ success: false, error: "Motivo de rechazo requerido (mín. 5 caracteres)" }, { status: 400 })
                 }
                 if (motivoRechazo.length > 100) {
                     return NextResponse.json({ success: false, error: "Motivo máximo 100 caracteres" }, { status: 400 })
                 }
-            } else if (estado && !["metraje_confirmado", "pendiente"].includes(estado)) {
-                return NextResponse.json({ success: false, error: "No puedes cambiar a este estado" }, { status: 403 })
-            } else if (!estado && !metrajeItemsArray) {
-                return NextResponse.json({ success: false, error: "No hay cambios para realizar" }, { status: 400 })
             }
         } else if (isOwner) {
             // Cliente puede agregar numeroOperacion para finalizar compra
@@ -153,19 +148,87 @@ const isAdmin = userRole === "admin"
         if (estado) updateData.estado = estado
         if (numeroOperacion) updateData.numeroOperacion = numeroOperacion
         if (motivoRechazo && estado === "rechazado") updateData.motivoRechazo = motivoRechazo
+        if (costoEnvio !== undefined && (isAdmin || isEmpleado)) {
+            if (typeof costoEnvio === "number" && costoEnvio >= 0) {
+                // Si solo se actualiza costoEnvio, recalcular total = subtotal + costoEnvio
+                const pedidoActual = await prisma.pedido.findUnique({
+                    where: { id },
+                    include: { pedidoDetalle: { include: { etiquetas: true } } }
+                })
+                
+                if (pedidoActual && !metrajeItemsArray) {
+                    let subtotal = 0
+                    for (const detalle of pedidoActual.pedidoDetalle) {
+                        if (detalle.tipo === "pieza") {
+                            const metrajeTotal = detalle.etiquetas.reduce((sum, e) => sum + e.valor, 0)
+                            subtotal += Number(detalle.precio) * metrajeTotal
+                        } else {
+                            subtotal += Number(detalle.precio) * detalle.cantidad
+                        }
+                    }
+                    updateData.costoEnvio = costoEnvio
+                    updateData.total = subtotal + costoEnvio
+                } else {
+                    updateData.costoEnvio = costoEnvio
+                }
+            }
+        }
         
         const pedido = await prisma.pedido.update({
             where: { id },
             data: updateData
         })
 
+        // Notificar cuando el cliente completa el pago (estado = pendiente)
+        console.log("=== NOTIFICANDO PAGO PENDIENTE ===", { estado, numeroOperacion, pedidoId: id, delegados: pedido.delegadoId })
+        if (estado === "pendiente" && numeroOperacion) {
+            // Notificar al empleado asignado si existe
+            if (pedido.delegadoId) {
+                console.log("Notificando al empleado:", pedido.delegadoId)
+                await prisma.notificacion.create({
+                    data: {
+                        userId: pedido.delegadoId,
+                        tipo: "pedido_pago",
+                        titulo: "Pago en revisión",
+                        mensaje: `El cliente del pedido ${pedido.numeroOrden} ha completado el pago. Número de operación: ${numeroOperacion}. Por favor, verifica el pago.`,
+                        pedidoId: id
+                    }
+                })
+            }
+
+            // Notificar a todos los administradores
+            const admins = await prisma.user.findMany({
+                where: { role: "admin" },
+                select: { id: true }
+            })
+            console.log("Administradores encontrados:", admins.length)
+
+            for (const admin of admins) {
+                console.log("Notificando al admin:", admin.id)
+                await prisma.notificacion.create({
+                    data: {
+                        userId: admin.id,
+                        tipo: "pedido_pago",
+                        titulo: "Pago en revisión",
+                        mensaje: `El cliente del pedido ${pedido.numeroOrden} ha completado el pago. Número de operación: ${numeroOperacion}. Por favor, verifica el pago.`,
+                        pedidoId: id
+                    }
+                })
+            }
+            console.log("=== FIN NOTIFICACION PAGO ===")
+        }
+
         if (estado === "rechazado") {
+            const mensajeRechazo = pedido.motivoRechazo 
+                ? `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Motivo: ${pedido.motivoRechazo}`
+                : `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Por favor, contacta con nuestro equipo al WhatsApp para más información.`
+            
             await prisma.notificacion.create({
                 data: {
                     userId: pedido.userId,
                     tipo: "pedido_estado",
                     titulo: "Pedido rechazado",
-                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Por favor, contacta con nuestro equipo al WhatsApp para más información.`,
+                    mensaje: mensajeRechazo,
                     pedidoId: id
                 }
             })
@@ -231,7 +294,6 @@ const isAdmin = userRole === "admin"
                     where: { id: detalle.id },
                     data: { 
                         metraje: metrajeTotal,
-                        cantidad: Math.ceil(metrajeTotal / 50),
                         precio: precioBase
                     }
                 })
@@ -258,20 +320,32 @@ const isAdmin = userRole === "admin"
             })
             
             if (pedido.estado === "metraje_en_proceso") {
-                await prisma.pedido.update({
-                    where: { id },
-                    data: { estado: "metraje_confirmado" }
+                // Validar que todos los detalles tipo pieza tengan etiquetas completas
+                const piezaDetalles = await prisma.pedidoDetalle.findMany({
+                    where: { pedidoId: id, tipo: "pieza" },
+                    include: { etiquetas: true }
                 })
                 
-                await prisma.notificacion.create({
-                    data: {
-                        userId: pedido.userId,
-                        tipo: "metraje_confirmado",
-                        titulo: "Metraje confirmado",
-                        mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado y el precio final es S/ ${nuevoTotal.toFixed(2)}. Puedes continuar con el pago.`,
-                        pedidoId: id
-                    }
-                })
+                const todasPiezasCompletas = piezaDetalles.every(d => 
+                    d.etiquetas.length === d.cantidad
+                )
+                
+                if (todasPiezasCompletas) {
+                    await prisma.pedido.update({
+                        where: { id },
+                        data: { estado: "metraje_confirmado" }
+                    })
+                    
+                    await prisma.notificacion.create({
+                        data: {
+                            userId: pedido.userId,
+                            tipo: "metraje_confirmado",
+                            titulo: "Metraje confirmado",
+                            mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado y el precio final es S/ ${nuevoTotal.toFixed(2)}. Puedes continuar con el pago.`,
+                            pedidoId: id
+                        }
+                    })
+                }
             }
 } else if (estado === "metraje_confirmado" && existingPedido.estado === "metraje_en_proceso") {
             const piezaDetalles = await prisma.pedidoDetalle.findMany({
