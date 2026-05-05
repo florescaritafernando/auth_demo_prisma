@@ -13,7 +13,11 @@ interface Particula {
     visible: boolean
 }
 
-export function CarritoParticulas() {
+interface Props {
+    showFloatingCart?: boolean
+}
+
+export function CarritoParticulas({ showFloatingCart = false }: Props) {
     const [particulas, setParticulas] = useState<Particula[]>([])
     const [mounted, setMounted] = useState(false)
 
@@ -26,10 +30,14 @@ export function CarritoParticulas() {
 
         const handleEvento = (e: CustomEvent) => {
             const { x, y, productoId } = e.detail
-            const carrito = document.querySelector('[data-carrito-badge]')
+            
+            const selector = showFloatingCart 
+                ? '[data-carrito-badge-floating]' 
+                : '[data-carrito-badge]'
+            const carrito = document.querySelector(selector)
             
             if (!carrito) {
-                console.log("No se encontró el carrito")
+                console.log("No se encontró el carrito:", selector)
                 return
             }
 
@@ -53,7 +61,7 @@ export function CarritoParticulas() {
 
         window.addEventListener("carrito-particula", handleEvento as EventListener)
         return () => window.removeEventListener("carrito-particula", handleEvento as EventListener)
-    }, [mounted])
+    }, [mounted, showFloatingCart])
 
     const eliminarParticula = (id: number) => {
         setParticulas(prev => prev.filter(p => p.id !== id))

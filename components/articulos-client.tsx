@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Search, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search } from "lucide-react"
+import { Pagination } from "@/components/ui/pagination"
 import { BotonNuevoProducto, BotonEliminarProducto } from "@/components/nuevo-producto-button"
 import { BotonVerStock } from "@/components/stock-detail-button"
 import { BotonEditarProducto } from "@/components/editar-producto-button"
@@ -140,50 +141,15 @@ export function ArticulosClient({ initialProductos }: Props) {
                     </div>
                 </div>
 
-                <div className="mt-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <span>Mostrar</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value))
-                                setCurrentPage(1)
-                            }}
-                            className="border rounded px-2 py-1"
-                        >
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
-                        <span>por pagina</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-500">
-                            Pagina {currentPage} de {totalPages || 1}
-                        </span>
-                        <div className="flex gap-1">
-                            <button
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="p-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-                            <button
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage >= totalPages}
-                                className="p-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-2 text-sm text-slate-500 text-center">
-                    Mostrando {startIdx + 1}-{Math.min(startIdx + pageSize, filtered.length)} de {filtered.length} articulos
-                </div>
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    itemsPerPage={pageSize}
+                    totalItems={filtered.length}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={setPageSize}
+                    itemLabel="articulos"
+                />
             </div>
         </div>
     )

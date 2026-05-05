@@ -9,7 +9,7 @@ interface Notificacion {
     titulo: string
     mensaje: string
     leida: boolean
-    pedido: { numeroOrden: string } | null
+    pedido: { numeroOrden: string; total: number } | null
 }
 
 interface Props {
@@ -36,7 +36,7 @@ export function AlertaNotificacion({ onClose }: Props) {
                 console.error("Error fetching notificacion:", e)
             }
         }
-        
+
         fetchNotif()
     }, [])
 
@@ -69,7 +69,7 @@ export function AlertaNotificacion({ onClose }: Props) {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                             <h3 className="font-bold text-green-800">{notificacion.titulo}</h3>
-                            <button 
+                            <button
                                 onClick={cerrar}
                                 className="text-green-600 hover:text-green-800 p-1"
                             >
@@ -82,6 +82,11 @@ export function AlertaNotificacion({ onClose }: Props) {
                         {notificacion.pedido && (
                             <p className="text-xs text-green-600 mt-2">
                                 Pedido: {notificacion.pedido.numeroOrden}
+                            </p>
+                        )}
+                        {notificacion.pedido && (
+                            <p className="text-xs text-green-600 mt-2">
+                                Total: S/{notificacion.pedido.total.toFixed(2)}
                             </p>
                         )}
                     </div>

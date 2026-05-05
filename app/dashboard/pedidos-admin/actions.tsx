@@ -35,7 +35,7 @@ interface Pedido {
     metodoEnvio: string | null
     total: number
     pedidoDetalle: DetalleItem[]
-    delegated: { id: string; name: string | null } | null
+    delegados: { id: string; userId: string; user: { id: string; name: string | null; email: string | null } }[]
 }
 
 interface Props {
@@ -70,7 +70,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const [costoEnvioManual, setCostoEnvioManual] = useState<string>(String(pedido.costoEnvio || 0))
     const [guardandoCosto, setGuardandoCosto] = useState(false)
 
-    const puedeEditar = role === "admin" || (role === "empleado" && pedido.delegated?.id === userId)
+    const puedeEditar = role === "admin" || (role === "empleado" && pedido.delegados?.some(d => d.userId === userId))
 
     const piezaDetails = pedido.pedidoDetalle.filter(d => d.tipo === "pieza")
     const tienePiezas = piezaDetails.length > 0
@@ -362,12 +362,42 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="flex-1">
-                            <p className="text-sm font-medium text-slate-700">Costo de envío:</p>
-                            <p className="text-xs text-slate-500">
-                                Método: {pedido.metodoEnvio === "tienda" ? "Retiro en tienda" : pedido.metodoEnvio === "agencia" ? "Agencia" : pedido.metodoEnvio === "delivery" ? "Delivery" : "No especificado"}
-                            </p>
+                            {role === "empleado" && (() => {
+                                const yaAsignado = pedido.delegados?.some(d => d.userId === userId)
+                                return (
+                                    <Button
+                                        size="sm"
+                                        disabled={yaAsignado}
+                                        onClick={async () => {
+                                            if (yaAsignado) return
+                                            try {
+                                                const res = await fetch(`/api/pedidos/${pedido.id}/delegar`, {
+                                                    method: "POST",
+                                                    credentials: "include"
+                                                })
+                                                const json = await res.json()
+                                                if (json.success) {
+                                                    window.location.reload()
+                                                } else {
+                                                    alert(json.error || "Error al tomar pedido")
+                                                }
+                                            } catch (e) {
+                                                console.error(e)
+                                                alert("Error al tomar pedido")
+                                            }
+                                        }}
+                                        className={`mb-2 ${yaAsignado 
+                                            ? "bg-green-500 text-white cursor-not-allowed" 
+                                            : "bg-blue-600 hover:bg-blue-700 text-white"}`}
+                                    >
+                                        <UserPlus className="h-4 w-4 mr-1" />
+                                        {yaAsignado ? "Asignado" : "Tomar Pedido"}
+                                    </Button>
+                                )
+                            })()}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-medium text-slate-700">Costo de envío:</span>
                             <Button
                                 size="sm"
                                 variant="outline"

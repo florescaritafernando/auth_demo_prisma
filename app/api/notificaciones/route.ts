@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         const notificaciones = await prisma.notificacion.findMany({
             where: whereClause,
             include: {
-                pedido: { select: { numeroOrden: true, estado: true } }
+                pedido: { select: { numeroOrden: true, estado: true, total: true } }
             },
             orderBy: { createdAt: "desc" },
             take: isUltima ? 1 : undefined

@@ -13,32 +13,33 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String   @id
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean  @default(false)
   image         String?
-  role          String    @default("cliente")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  role          String   @default("cliente")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   // Datos de facturación persistentes
-  tipoDocumento String?   // "dni" | "ruc" | "ce"
-  numeroDoc  String?
-  direccion  String?
-  celular   String?   // Teléfono de uso general
-  
-  sessions      Session[]
-  accounts     Account[]
-  carrito      Carrito[]
-  pedidos      Pedido[]
-  reclamos     Reclamo[]
-notificaciones Notificacion[]
-  tiendas      Tienda[]
-  almacenes    Almacen[]
-pedidosDelegados Pedido[]    @relation("PedidoDelegado")
-  favoritos       Favorito[]
-  
+  tipoDocumento String? // "dni" | "ruc" | "ce"
+  numeroDoc     String?
+  direccion     String?
+  celular       String? // Teléfono de uso general
+
+  sessions         Session[]
+  accounts         Account[]
+  carrito          Carrito[]
+  pedidos          Pedido[]
+  reclamos         Reclamo[]
+  notificaciones   Notificacion[]
+  metrajeEtiquetas MetrajeEtiqueta[]
+  tiendas          Tienda[]
+  almacenes        Almacen[]
+  pedidosDelegados PedidoDelegado[]
+  favoritos        Favorito[]
+
   @@unique([email])
   @@map("user")
 }
@@ -74,7 +75,7 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
-  
+
   @@index([userId])
   @@map("account")
 }
@@ -92,48 +93,48 @@ model Verification {
 }
 
 model Producto {
-  id           String    @id @default(cuid())
-  nombre      String    @unique
-  categoria   String    @default("MANCHESTER SUITING")
-  descripcion String?
-  precio      Float
-  imagen     String?
-  proveedorId String?
-  activo     Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  carrito     Carrito[]
+  id            String          @id @default(cuid())
+  nombre        String          @unique
+  categoria     String          @default("MANCHESTER SUITING")
+  descripcion   String?
+  precio        Float
+  imagen        String?
+  proveedorId   String?
+  activo        Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  carrito       Carrito[]
   pedidoDetalle PedidoDetalle[]
-  stocks      ProductoStock[]
-  favoritos   Favorito[]
+  stocks        ProductoStock[]
+  favoritos     Favorito[]
 
   @@map("producto")
 }
 
 model Almacen {
-  id          String    @id @default(cuid())
-  nombre      String
-  direccion   String
-  telefono    String?
+  id            String          @id @default(cuid())
+  nombre        String
+  direccion     String
+  telefono      String?
   responsableId String?
-  ciudad     String?
-  activo     Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now())
-  responsable User?    @relation(fields: [responsableId], references: [id])
-  stocks     ProductoStock[]
+  ciudad        String?
+  activo        Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
+  responsable   User?           @relation(fields: [responsableId], references: [id])
+  stocks        ProductoStock[]
 
   @@index([responsableId])
   @@map("almacen")
 }
 
 model ProductoStock {
-  id          String   @id @default(cuid())
-  productoId  String
-  almacenId   String
+  id         String   @id @default(cuid())
+  productoId String
+  almacenId  String
   stock      Int      @default(0)
-  producto   Producto  @relation(fields: [productoId], references: [id], onDelete: Cascade)
-  almacen   Almacen   @relation(fields: [almacenId], references: [id], onDelete: Cascade)
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  almacen    Almacen  @relation(fields: [almacenId], references: [id], onDelete: Cascade)
 
   @@unique([productoId, almacenId])
   @@map("producto_stock")
@@ -155,10 +156,10 @@ model Favorito {
 model Carrito {
   id                String   @id @default(cuid())
   userId            String
-  productoId         String
+  productoId        String
   cantidad          Float    @default(1)
   tipo              String   @default("metros") // "metros" or "pieza"
-  indicacionesCorte String?  // Indicaciones de corte (máx 200 caracteres)
+  indicacionesCorte String? // Indicaciones de corte (máx 200 caracteres)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -170,52 +171,51 @@ model Carrito {
 }
 
 model Pedido {
-  id           String        @id @default(cuid())
-  userId        String
-  numeroOrden  String       @unique   // "ORD-2026-0001"
-  estado       String        @default("metraje_en_proceso")  
+  id          String @id @default(cuid())
+  userId      String
+  numeroOrden String @unique // "ORD-2026-0001"
+  estado      String @default("metraje_en_proceso")
   // Estados: metraje_en_proceso | metraje_confirmado | pendiente | confirmado | completado
-  total        Float
-  
+  total       Float
+
   // Datos de facturación
-  tipoDocumento String?      // "dni" | "ruc" | "ce"
-  numeroDoc   String?
+  tipoDocumento String? // "dni" | "ruc" | "ce"
+  numeroDoc     String?
   nombreFactura String?
-  direccion  String?
-  
+  direccion     String?
+
   // Método de envío
-  metodoEnvio  String?     // "tienda" | "agencia" | "delivery"
-  tiendaId   String?
-  tienda    Tienda?    @relation(fields: [tiendaId], references: [id])
-  tipoEnvio  String?     // "mismapersona" | "otropersona" (para agencia/delivery)
-  agencia    String?     // "shalom" | "flores" | "marvisur" | "otros"
-  agenciaOtro String?
-  delivery   String?     // "olva" | "safexpress" | "otros"
+  metodoEnvio  String? // "tienda" | "agencia" | "delivery"
+  tiendaId     String?
+  tienda       Tienda? @relation(fields: [tiendaId], references: [id])
+  tipoEnvio    String? // "mismapersona" | "otropersona" (para agencia/delivery)
+  agencia      String? // "shalom" | "flores" | "marvisur" | "otros"
+  agenciaOtro  String?
+  delivery     String? // "olva" | "safexpress" | "otros"
   deliveryOtro String?
   departamento String?
   provincia    String?
   distrito     String?
-  costoEnvio  Float       @default(0)
-  
+  costoEnvio   Float   @default(0)
+
   // Datos de quien recibe (para otra persona)
-  dniRecibe   String?
-  nombreRecibe String?
+  dniRecibe     String?
+  nombreRecibe  String?
   celularRecibe String?
-  
+
   // Pago
   numeroOperacion String?
-  notas       String?
-  
+  notas           String?
+
   // Delegación y seguimiento
-  delegadoId    String?    // ID del empleado asignado
-  delegado    User?     @relation("PedidoDelegado", fields: [delegadoId], references: [id])
-  motivoRechazo String?   // Motivo cuando se rechaza
-  
-  createdAt   DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pedidoDetalle PedidoDetalle[]
-  reclamos  Reclamo[]
+  motivoRechazo String? // Motivo cuando se rechaza
+  delegados     PedidoDelegado[]
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedidoDetalle  PedidoDetalle[]
+  reclamos       Reclamo[]
   notificaciones Notificacion[]
 
   @@index([userId])
@@ -223,45 +223,48 @@ model Pedido {
 }
 
 model PedidoDetalle {
-  id          String   @id @default(cuid())
-  pedidoId    String
-  productoId String
-  cantidad   Float    // Cantidad original (piezas o metros)
-  tipo        String   @default("metros")  // "metros" | "pieza"
-  metraje    Float?   // Metraje exacto en metros (cuando admin_edita)
+  id                String            @id @default(cuid())
+  pedidoId          String
+  productoId        String
+  cantidad          Float // Cantidad original (piezas o metros)
+  tipo              String            @default("metros") // "metros" | "pieza"
+  metraje           Float? // Metraje exacto en metros (cuando admin_edita)
   precio            Float
-  indicacionesCorte String?  // Indicaciones de corte para este item (máx 200 caracteres)
-  pedido            Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  producto   Producto @relation(fields: [productoId], references: [id])
-  etiquetas  MetrajeEtiqueta[]
+  indicacionesCorte String? // Indicaciones de corte para este item (máx 200 caracteres)
+  pedido            Pedido            @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto          Producto          @relation(fields: [productoId], references: [id])
+  etiquetas         MetrajeEtiqueta[]
 
   @@index([pedidoId])
   @@map("pedido_detalle")
 }
 
 model MetrajeEtiqueta {
-  id          String   @id @default(cuid())
-  detalleId   String
-  valor       Float
-  createdAt   DateTime @default(now())
-  detalle     PedidoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade)
-  
+  id        String        @id @default(cuid())
+  detalleId String
+  valor     Float
+  userId    String? // Usuario que crea la etiqueta de metraje
+  createdAt DateTime      @default(now())
+  detalle   PedidoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id])
+
   @@index([detalleId])
+  @@index([userId])
   @@map("metraje_etiqueta")
 }
 
 model Reclamo {
-  id         String   @id @default(cuid())
-  userId     String
-  pedidoId   String?
-  tipo      String
+  id          String   @id @default(cuid())
+  userId      String
+  pedidoId    String?
+  tipo        String
   descripcion String
-  estado    String   @default("pendiente")
-  respuesta String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pedido    Pedido?   @relation(fields: [pedidoId], references: [id])
+  estado      String   @default("pendiente")
+  respuesta   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedido      Pedido?  @relation(fields: [pedidoId], references: [id])
 
   @@index([userId])
   @@index([pedidoId])
@@ -269,16 +272,16 @@ model Reclamo {
 }
 
 model Notificacion {
-  id         String   @id @default(cuid())
-  userId     String
-  tipo       String   // "metraje_confirmado" | "pedido_estado" | "sistema"
-  titulo     String
-  mensaje    String
-  pedidoId   String?
-  leida      Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pedido     Pedido?  @relation(fields: [pedidoId], references: [id])
+  id        String   @id @default(cuid())
+  userId    String
+  tipo      String // "metraje_confirmado" | "pedido_estado" | "sistema" | "pedido"
+  titulo    String
+  mensaje   String
+  pedidoId  String?
+  leida     Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedido    Pedido?  @relation(fields: [pedidoId], references: [id])
 
   @@index([userId])
   @@index([userId, leida])
@@ -288,16 +291,31 @@ model Notificacion {
 model Tienda {
   id          String   @id @default(cuid())
   nombre      String
-  direccion  String
-  referencia String?
+  direccion   String
+  referencia  String?
   encargadoId String
-  activo     Boolean  @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now())
-  
-  encargado   User     @relation(fields: [encargadoId], references: [id])
-  pedidos     Pedido[]
-  
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  encargado User     @relation(fields: [encargadoId], references: [id])
+  pedidos   Pedido[]
+
   @@index([encargadoId])
   @@map("tienda")
+}
+
+model PedidoDelegado {
+  id        String   @id @default(cuid())
+  pedidoId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([pedidoId, userId]) // Un empleado solo puede ser asignado una vez por pedido
+  @@index([pedidoId])
+  @@index([userId])
+  @@map("pedido_delegado")
 }

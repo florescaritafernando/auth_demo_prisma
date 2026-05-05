@@ -24,14 +24,23 @@ export async function GET(request: NextRequest) {
                     pedidoDetalle: {
                         include: { producto: { select: { id: true, nombre: true, categoria: true } } }
                     },
-                    delegado: { select: { id: true, name: true } },
+                    delegados: {
+                        include: { user: { select: { id: true, name: true } } }
+                    },
                     tienda: true
                 },
                 orderBy: { createdAt: "desc" }
             })
         } else if (userRole === "empleado" && misPedidos) {
+            // Obtener los pedidos donde el empleado está asignado
+            const delegaciones = await prisma.pedidoDelegado.findMany({
+                where: { userId: session.user.id },
+                select: { pedidoId: true }
+            })
+            const pedidoIds = delegaciones.map(d => d.pedidoId)
+
             pedidos = await prisma.pedido.findMany({
-                where: { delegadoId: session.user.id },
+                where: { id: { in: pedidoIds } },
                 include: {
                     user: { select: { id: true, name: true, email: true } },
                     pedidoDetalle: {
@@ -192,7 +201,8 @@ export async function POST(request: NextRequest) {
                 userId: user.id,
                 titulo: "Nueva orden",
                 mensaje: `Nueva orden ${numeroOrden} por ${session.user.name || session.user.email}`,
-                tipo: "pedido"
+                tipo: "pedido",
+                pedidoId: pedido.id
             }))
         })
 

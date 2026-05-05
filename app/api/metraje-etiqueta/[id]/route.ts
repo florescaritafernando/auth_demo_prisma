@@ -93,7 +93,6 @@ export async function DELETE(
 function calculateCostoEnvio(subtotal: number, metodoEnvio?: string | null): number {
     if (!metodoEnvio || metodoEnvio === "retiro") return 0
     if (metodoEnvio === "agencia") {
-        if (subtotal >= 12000) return 60
         if (subtotal >= 9000) return 50
         if (subtotal >= 6000) return 40
         if (subtotal >= 4500) return 35

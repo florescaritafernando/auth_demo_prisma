@@ -2,10 +2,8 @@ import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
-import { Button } from "@/components/ui/button"
-import { Clock, CheckCircle, Package, XCircle, Truck, DollarSign, Package2, FileText, MapPin, Phone, CreditCard } from "lucide-react"
-import { AdminPedidoActions } from "./actions"
-import { PedidoAccordion } from "./accordion"
+import { Clock, CheckCircle, Package, XCircle, Truck } from "lucide-react"
+import { PedidosAdminClient } from "@/components/pedidos-admin-client"
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
@@ -14,13 +12,6 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: 
     confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900" },
     rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
     completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800" },
-}
-
-const AGENCIA_LABELS: Record<string, string> = {
-    shalom: "SHALOM",
-    flores: "FLORES",
-    marvisur: "MARVISUR",
-    otros: "OTROS"
 }
 
 async function getPedidos() {
@@ -35,7 +26,9 @@ async function getPedidos() {
                     }
                 },
                 tienda: { select: { id: true, nombre: true, direccion: true } },
-                delegado: { select: { id: true, name: true } }
+                delegados: { 
+                    include: { user: { select: { id: true, name: true, email: true } } }
+                }
             },
             orderBy: { createdAt: "desc" }
         })
@@ -45,7 +38,21 @@ async function getPedidos() {
     }
 }
 
-export default async function PedidosAdminPage() {
+async function getEmpleados() {
+    try {
+        return await prisma.user.findMany({
+            where: { role: "empleado" },
+            select: { id: true, name: true, email: true },
+            orderBy: { name: "asc" }
+        })
+    } catch (e) {
+        console.error("Error fetching empleados:", e)
+        return []
+    }
+}
+
+export default async function PedidosAdminPage({ searchParams }: { searchParams: Promise<{ pedidoId?: string }> }) {
+    const params = await searchParams
     const session = await auth.api.getSession({
         headers: await headers()
     })
@@ -56,7 +63,7 @@ export default async function PedidosAdminPage() {
     const userId = session.user.id
     if (!["admin", "empleado"].includes(role)) redirect("/dashboard")
 
-    const pedidos = await getPedidos()
+    const [pedidos, empleados] = await Promise.all([getPedidos(), getEmpleados()])
 
     const stats = {
         metraje_en_proceso: pedidos.filter(p => p.estado === "metraje_en_proceso").length,
@@ -122,15 +129,13 @@ export default async function PedidosAdminPage() {
                     </div>
                 </div>
 
-                {pedidos.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-                        <Package className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                        <h2 className="text-xl font-semibold text-slate-700 mb-2">No hay pedidos aún</h2>
-                        <p className="text-slate-500">Los pedidos aparecerán aquí cuando los clientes realicen compras.</p>
-                    </div>
-                ) : (
-                    <PedidoAccordion pedidos={pedidos as any} role={role} userId={userId} />
-                )}
+                <PedidosAdminClient 
+                    pedidos={pedidos as any} 
+                    empleados={empleados as any}
+                    role={role}
+                    userId={userId}
+                    pedidoIdInicial={params.pedidoId}
+                />
             </div>
         </div>
     )

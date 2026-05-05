@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import { ChevronDown, ChevronUp, FileText, UserCheck, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Pagination } from "@/components/ui/pagination"
 import { AdminPedidoActions } from "./actions"
 
 interface DetalleItem {
@@ -40,7 +41,7 @@ interface Pedido {
     motivoRechazo: string | null
     createdAt: Date
     user: { id: string; name: string | null; email: string | null } | null
-    delegado: { id: string; name: string | null } | null
+    delegados: { id: string; userId: string; user: { id: string; name: string | null; email: string | null } }[]
     pedidoDetalle: DetalleItem[]
 }
 
@@ -70,10 +71,11 @@ interface Props {
     pedidos: Pedido[]
     role: string
     userId: string
+    pedidoIdInicial?: string
 }
 
-export function PedidoAccordion({ pedidos, role, userId }: Props) {
-    const [expandedId, setExpandedId] = useState<string | null>(null)
+export function PedidoAccordion({ pedidos, role, userId, pedidoIdInicial }: Props) {
+    const [expandedId, setExpandedId] = useState<string | null>(pedidoIdInicial || null)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [currentPage, setCurrentPage] = useState(1)
 
@@ -112,24 +114,6 @@ export function PedidoAccordion({ pedidos, role, userId }: Props) {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-                <p className="text-sm text-slate-600">
-                    Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, pedidos.length)} - {Math.min(currentPage * itemsPerPage, pedidos.length)} de {pedidos.length} pedidos
-                </p>
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-600">Mostrar:</span>
-                    <select
-                        value={itemsPerPage}
-                        onChange={e => handleItemsPerPageChange(Number(e.target.value))}
-                        className="border border-slate-300 rounded px-2 py-1 text-sm"
-                    >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                    </select>
-                </div>
-            </div>
-
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 {paginatedPedidos.map((pedido) => {
                     const tienePiezas = pedido.pedidoDetalle.some(d => d.tipo === "pieza")
@@ -153,8 +137,13 @@ export function PedidoAccordion({ pedidos, role, userId }: Props) {
                     const ocultarPrecio = pedido.estado === "metraje_en_proceso"
                     const isExpanded = expandedId === pedido.id
 
+                    const isPedidoResaltado = pedidoIdInicial && pedido.id === pedidoIdInicial && isExpanded
+
                     return (
-                        <div key={pedido.id} className="border-b border-slate-100 last:border-b-0">
+                        <div 
+                        key={pedido.id} 
+                        className={`border-b border-slate-100 last:border-b-0 transition-all duration-300 ${expandedId && expandedId !== pedido.id ? "blur-sm opacity-50 pointer-events-none" : ""} ${isPedidoResaltado ? "animate-pulse-ring" : ""}`}
+                    >
                             <div
                                 onClick={() => toggleExpand(pedido.id)}
                                 className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer"
@@ -194,11 +183,15 @@ export function PedidoAccordion({ pedidos, role, userId }: Props) {
                                                     )}
                                                 </>
                                             )}
-                                            {pedido.delegado ? (
-                                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
-                                                    <UserCheck className="h-3 w-3" />
-                                                    {pedido.delegado.name}
-                                                </span>
+                                            {pedido.delegados && pedido.delegados.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {pedido.delegados.map((d) => (
+                                                        <span key={d.id} className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
+                                                            <UserCheck className="h-3 w-3" />
+                                                            {d.user.name || d.user.email}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             ) : (
                                                 <Button
                                                     size="sm"
@@ -298,8 +291,8 @@ export function PedidoAccordion({ pedidos, role, userId }: Props) {
                                                     <span className="font-bold text-slate-900">{pedido.nombreFactura}</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-600">Nro. Operación:</span>
-                                                    <span className={`font-bold ${pedido.numeroOperacion === "012345678" ? "text-yellow-700" : "text-slate-900"}`}>
+                                                    <span className={`font-bold ${pedido.estado === "pendiente" ? "text-yellow-700" : "text-slate-600"}`}>Nro. Operación:</span>
+                                                    <span className={`font-bold ${pedido.estado === "pendiente" ? "text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded" : "text-slate-900"}`}>
                                                         {pedido.numeroOperacion || "No registrado"}
                                                     </span>
                                                 </div>
@@ -379,34 +372,6 @@ export function PedidoAccordion({ pedidos, role, userId }: Props) {
 
                                     <div className="mt-6 pt-4 border-t border-slate-200">
                                         <AdminPedidoActions pedido={pedido as any} role={role} userId={userId} />
-
-                                        {!pedido.delegado && (
-                                            <div className="mt-4">
-                                                <Button
-                                                    onClick={async () => {
-                                                        try {
-                                                            const res = await fetch(`/api/pedidos/${pedido.id}/delegar`, {
-                                                                method: "POST",
-                                                                credentials: "include"
-                                                            })
-                                                            const json = await res.json()
-                                                            if (json.success) {
-                                                                window.location.reload()
-                                                            } else {
-                                                                alert(json.error || "Error al tomar pedido")
-                                                            }
-                                                        } catch (e) {
-                                                            console.error(e)
-                                                            alert("Error al tomar pedido")
-                                                        }
-                                                    }}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                                >
-                                                    <UserPlus className="h-4 w-4 mr-2" />
-                                                    Tomar Pedido
-                                                </Button>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             )}
@@ -415,40 +380,15 @@ export function PedidoAccordion({ pedidos, role, userId }: Props) {
                 })}
             </div>
 
-            {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-4">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                    >
-                        Anterior
-                    </Button>
-                    <div className="flex items-center gap-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                            <button
-                                key={page}
-                                onClick={() => setCurrentPage(page)}
-                                className={`w-8 h-8 rounded text-sm font-medium ${currentPage === page
-                                    ? "bg-slate-900 text-white"
-                                    : "bg-white text-slate-600 hover:bg-slate-100"
-                                    } border border-slate-300`}
-                            >
-                                {page}
-                            </button>
-                        ))}
-                    </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                    >
-                        Siguiente
-                    </Button>
-                </div>
-            )}
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                totalItems={pedidos.length}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={handleItemsPerPageChange}
+                itemLabel="pedidos"
+            />
         </div>
     )
 }

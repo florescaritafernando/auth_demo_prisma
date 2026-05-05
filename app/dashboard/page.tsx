@@ -16,7 +16,6 @@ async function getProductos() {
                     include: { almacen: { select: { id: true, nombre: true, ciudad: true } } }
                 }
             },
-            take: 12,
         })
         return productos
     } catch {

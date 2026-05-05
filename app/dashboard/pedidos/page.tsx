@@ -16,7 +16,6 @@ async function getPedidos() {
 
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/pedidos`, {
 
-            //const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://landing-page-y-control-panel.onrender.com"}/api/pedidos`, {
             headers: { Cookie: allCookies || "" }
         })
 
@@ -42,7 +41,6 @@ export default async function PedidosPage() {
 
     return (
         <div className="p-6 md:p-10 font-sans">
-            <AlertaWrapper />
             <div className="max-w-5xl mx-auto">
                 <div className="mb-8 flex items-center justify-between">
                     <div>

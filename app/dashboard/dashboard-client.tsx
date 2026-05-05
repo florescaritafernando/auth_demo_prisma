@@ -7,6 +7,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
+import { Pagination } from "@/components/ui/pagination"
 import { CarritoBadge } from "@/components/carrito-badge"
 import { CarritoParticulas } from "@/components/carrito-particulas"
 import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle } from "lucide-react"
@@ -317,6 +318,8 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
         stock: "",
         soloFavoritos: false
     })
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(12)
 
     useEffect(() => {
         const handleScroll = () => {
@@ -498,16 +501,33 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                         </Button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {productosFiltrados.map((prod) => (
-                            <ProductoCard
-                                key={prod.id}
-                                producto={prod}
-                                esFavorito={favoritos.has(prod.id)}
-                                onToggleFavorito={toggleFavorito}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {productosFiltrados
+                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                .map((prod) => (
+                                    <ProductoCard
+                                        key={prod.id}
+                                        producto={prod}
+                                        esFavorito={favoritos.has(prod.id)}
+                                        onToggleFavorito={toggleFavorito}
+                                    />
+                                ))}
+                        </div>
+
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(productosFiltrados.length / itemsPerPage)}
+                            itemsPerPage={itemsPerPage}
+                            totalItems={productosFiltrados.length}
+                            onPageChange={setCurrentPage}
+                            onItemsPerPageChange={(value) => {
+                                setItemsPerPage(value)
+                                setCurrentPage(1)
+                            }}
+                            itemLabel="productos"
+                        />
+                    </>
                 )}
             </div>
 
@@ -522,33 +542,30 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                 />
             )}
 
-            <CarritoParticulas />
+            <CarritoParticulas showFloatingCart={isScrolled} />
 
             {isScrolled && (
-                <div className="fixed bottom-6 right-4 z-50 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="fixed bottom-24 right-4 z-50 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <Link href="/dashboard/carrito">
+                        <button data-carrito-badge-floating className="flex items-center justify-center h-12 w-12 bg-slate-900 text-white rounded-full shadow-2xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95">
+                            <div className="relative">
+                                <ShoppingCart className={`h-5 w-5 ${carritoCount > 0 ? "animate-bounce" : ""}`} />
+                                {carritoCount > 0 && (
+                                    <span className="absolute -top-4 -right-4 min-w-[1.25rem] h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1">
+                                        {carritoCount}
+                                    </span>
+                                )}
+                            </div>
+                        </button>
+                    </Link>
                     <button
                         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                        className="flex items-center right-0 justify-center h-12 w-12 bg-slate-800 text-white rounded-full shadow-xl hover:bg-slate-700 transition-all hover:scale-105 active:scale-95"
+                        className="flex items-center justify-center h-12 w-12 bg-slate-800 text-white rounded-full shadow-xl hover:bg-slate-700 transition-all hover:scale-105 active:scale-95"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                         </svg>
                     </button>
-                    <Link
-                        href="/dashboard/carrito"
-                    >
-                        <div className="relative flex items-center gap-2 px-10 py-3 pr-6 bg-slate-900 text-white rounded-full shadow-2xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95">
-                            <div className="relative">
-                                <ShoppingCart className="h-5 w-5 animate-bounce" />
-                                {carritoCount > 0 && (
-                                    <span className="absolute -top-1 -left-7 h-6 w-6 flex items-center justify-center bg-red-500 text-white text-md font-bold rounded-full">
-                                        {carritoCount}
-                                    </span>
-                                )}
-                            </div>
-                            <span className="font-semibold">Mi Carrito</span>
-                        </div>
-                    </Link>
                 </div>
             )}
         </div>

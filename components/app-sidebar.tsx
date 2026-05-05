@@ -98,7 +98,7 @@ export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
                     setNotificacionesRecientes(noLeidasList)
 
                     // Configurar queue de notificaciones para empleado/admin
-                    if (noLeidasList.length > 0 && role !== "cliente" && pathname !== "/dashboard/notificaciones") {
+                    if (noLeidasList.length > 0 && role !== "cliente" && pathname !== "/dashboard/notificaciones" && pathname !== "/dashboard/pedidos-admin") {
                         setNotificacionesQueue(noLeidasList)
                         setNotificacionActual(noLeidasList[0])
                         setShowPopup(true)
@@ -227,10 +227,17 @@ export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
                             <button onClick={() => {
                                 setFadeOut(true)
                                 setTimeout(() => {
-                                    setShowPopup(false)
-                                    setFadeOut(false)
-                                    setNotificacionesQueue(prev => prev.slice(1))
-                                    setNotificacionActual(null)
+                                    const restantes = notificacionesQueue.slice(1)
+                                    setNotificacionesQueue(restantes)
+                                    if (restantes.length > 0) {
+                                        setNotificacionActual(restantes[0])
+                                        setFadeOut(false)
+                                        setShowPopup(true)
+                                    } else {
+                                        setShowPopup(false)
+                                        setFadeOut(false)
+                                        setNotificacionActual(null)
+                                    }
                                 }, 500)
                             }} className="text-slate-400 hover:text-white">
                                 <X className="h-4 w-4" />

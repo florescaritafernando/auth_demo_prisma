@@ -21,7 +21,7 @@ export async function GET(
     try {
         const headersList = await headers()
         const session = await auth.api.getSession({ headers: headersList })
-        
+
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
         }
@@ -33,7 +33,7 @@ export async function GET(
             include: {
                 user: { select: { id: true, name: true, email: true } },
                 pedidoDetalle: {
-                    include: { 
+                    include: {
                         producto: true,
                         etiquetas: { orderBy: { createdAt: "asc" } }
                     }
@@ -46,7 +46,7 @@ export async function GET(
         }
 
         const userRole = (session.user as any)?.role || "cliente"
-        
+
         if (userRole !== "admin" && pedido.userId !== session.user.id) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 })
         }
@@ -65,7 +65,7 @@ export async function PATCH(
     try {
         const headersList = await headers()
         const session = await auth.api.getSession({ headers: headersList })
-        
+
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
         }
@@ -74,7 +74,7 @@ export async function PATCH(
 
         const contentType = request.headers.get("content-type") || ""
         let body: any
-        
+
         try {
             if (contentType.includes("application/json")) {
                 body = await request.json()
@@ -89,27 +89,32 @@ export async function PATCH(
         const { estado, metraje_items, numeroOperacion, motivoRechazo, costoEnvio } = body
 
         const estadosValidos = ["metraje_en_proceso", "metraje_confirmado", "pendiente", "confirmado", "rechazado", "completado"]
-        
+
         if (estado && !estadosValidos.includes(estado)) {
             return NextResponse.json({ success: false, error: "Estado inválido" }, { status: 400 })
         }
 
         const metrajeItemsArray = metraje_items ? (typeof metraje_items === "string" ? JSON.parse(metraje_items) : metraje_items) : null
-        
+
         const userRole = (session.user as any)?.role || "cliente"
-        
+
         const existingPedido = await prisma.pedido.findUnique({
             where: { id },
-            select: { userId: true, estado: true, delegadoId: true }
+            select: { userId: true, estado: true }
         })
-        
+
         if (!existingPedido) {
             return NextResponse.json({ success: false, error: "Pedido no encontrado" }, { status: 404 })
         }
 
-const isAdmin = userRole === "admin"
+        // Verificar si el empleado está asignado al pedido
+        const delegacion = await prisma.pedidoDelegado.findFirst({
+            where: { pedidoId: id, userId: session.user.id }
+        })
+
+        const isAdmin = userRole === "admin"
         const isEmpleado = userRole === "empleado"
-        const isDelegado = isEmpleado && existingPedido.delegadoId === session.user.id
+        const isDelegado = isEmpleado && delegacion !== null
         const isOwner = existingPedido.userId === session.user.id
 
         // Validar permisos por rol
@@ -143,7 +148,7 @@ const isAdmin = userRole === "admin"
         } else {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 })
         }
-            
+
         const updateData: any = {}
         if (estado) updateData.estado = estado
         if (numeroOperacion) updateData.numeroOperacion = numeroOperacion
@@ -155,7 +160,7 @@ const isAdmin = userRole === "admin"
                     where: { id },
                     include: { pedidoDetalle: { include: { etiquetas: true } } }
                 })
-                
+
                 if (pedidoActual && !metrajeItemsArray) {
                     let subtotal = 0
                     for (const detalle of pedidoActual.pedidoDetalle) {
@@ -173,21 +178,26 @@ const isAdmin = userRole === "admin"
                 }
             }
         }
-        
+
         const pedido = await prisma.pedido.update({
             where: { id },
             data: updateData
         })
 
         // Notificar cuando el cliente completa el pago (estado = pendiente)
-        console.log("=== NOTIFICANDO PAGO PENDIENTE ===", { estado, numeroOperacion, pedidoId: id, delegados: pedido.delegadoId })
+        console.log("=== NOTIFICANDO PAGO PENDIENTE ===", { estado, numeroOperacion, pedidoId: id })
         if (estado === "pendiente" && numeroOperacion) {
-            // Notificar al empleado asignado si existe
-            if (pedido.delegadoId) {
-                console.log("Notificando al empleado:", pedido.delegadoId)
+            // Notificar a los empleados asignados si existen
+            const delegados = await prisma.pedidoDelegado.findMany({
+                where: { pedidoId: id },
+                select: { userId: true }
+            })
+
+            for (const deleg of delegados) {
+                console.log("Notificando al empleado:", deleg.userId)
                 await prisma.notificacion.create({
                     data: {
-                        userId: pedido.delegadoId,
+                        userId: deleg.userId,
                         tipo: "pedido_pago",
                         titulo: "Pago en revisión",
                         mensaje: `El cliente del pedido ${pedido.numeroOrden} ha completado el pago. Número de operación: ${numeroOperacion}. Por favor, verifica el pago.`,
@@ -219,10 +229,10 @@ const isAdmin = userRole === "admin"
         }
 
         if (estado === "rechazado") {
-            const mensajeRechazo = pedido.motivoRechazo 
+            const mensajeRechazo = pedido.motivoRechazo
                 ? `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Motivo: ${pedido.motivoRechazo}`
                 : `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Por favor, contacta con nuestro equipo al WhatsApp para más información.`
-            
+
             await prisma.notificacion.create({
                 data: {
                     userId: pedido.userId,
@@ -232,14 +242,14 @@ const isAdmin = userRole === "admin"
                     pedidoId: id
                 }
             })
-            
+
             const usuario = await prisma.user.findUnique({
                 where: { id: pedido.userId },
                 select: { email: true, name: true }
             })
-            
+
             console.log("Intentando enviar correo a:", usuario?.email)
-            
+
             if (usuario?.email) {
                 const emailHtml = `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -267,131 +277,167 @@ const isAdmin = userRole === "admin"
         if (metrajeItemsArray && Array.isArray(metrajeItemsArray)) {
             for (const item of metrajeItemsArray) {
                 if (item.detalleId && item.metraje > 0) {
-                    await prisma.metrajeEtiqueta.create({
+await prisma.metrajeEtiqueta.create({
                         data: {
                             detalleId: item.detalleId,
-                            valor: item.metraje
+                            valor: item.metraje,
+                            userId: session.user.id
                         }
                     })
                 }
             }
-            
+
             let nuevoTotal = 0
-            
+
             const piezaDetalles = await prisma.pedidoDetalle.findMany({
                 where: { pedidoId: id, tipo: "pieza" },
-                include: { 
+                include: {
                     producto: true,
                     etiquetas: { select: { valor: true } }
                 }
             })
-            
+
             for (const detalle of piezaDetalles) {
                 const metrajeTotal = detalle.etiquetas.reduce((sum, e) => sum + e.valor, 0)
                 const precioBase = Number(detalle.producto.precio)
-                
+
                 await prisma.pedidoDetalle.update({
                     where: { id: detalle.id },
-                    data: { 
+                    data: {
                         metraje: metrajeTotal,
                         precio: precioBase
                     }
                 })
-                
+
                 nuevoTotal += precioBase * metrajeTotal
             }
-            
+
             const otrosDetalles = await prisma.pedidoDetalle.findMany({
                 where: { pedidoId: id, tipo: "metros" }
             })
-            
+
             for (const det of otrosDetalles) {
                 nuevoTotal += Number(det.precio) * det.cantidad
             }
-            
+
             const costoEnvio = calculateCostoEnvio(nuevoTotal, pedido.metodoEnvio || "agencia")
-            
+
             await prisma.pedido.update({
                 where: { id },
-                data: { 
+                data: {
                     total: nuevoTotal,
                     costoEnvio: costoEnvio
                 }
             })
-            
+
             if (pedido.estado === "metraje_en_proceso") {
                 // Validar que todos los detalles tipo pieza tengan etiquetas completas
                 const piezaDetalles = await prisma.pedidoDetalle.findMany({
                     where: { pedidoId: id, tipo: "pieza" },
                     include: { etiquetas: true }
                 })
-                
-                const todasPiezasCompletas = piezaDetalles.every(d => 
+
+                const todasPiezasCompletas = piezaDetalles.every(d =>
                     d.etiquetas.length === d.cantidad
                 )
-                
+
                 if (todasPiezasCompletas) {
+                    // Calcular nuevo total y costo de envío
+                    let totalProductos = 0
+                    for (const det of piezaDetalles) {
+                        const metrajeTotal = det.etiquetas.length > 0
+                            ? det.etiquetas.reduce((sum, e) => sum + e.valor, 0)
+                            : (det.metraje || 0)
+                        if (metrajeTotal > 0) {
+                            totalProductos += Number(det.precio) * metrajeTotal
+                        }
+                    }
+
+                    // Obtener los metros
+                    const metrosDetalles = await prisma.pedidoDetalle.findMany({
+                        where: { pedidoId: id, tipo: "metros" }
+                    })
+
+                    for (const det of metrosDetalles) {
+                        totalProductos += Number(det.precio) * det.cantidad
+                    }
+
+                    const costoEnvio = calculateCostoEnvio(totalProductos, pedido.metodoEnvio)
+                    const totalConEnvio = totalProductos + costoEnvio
+
                     await prisma.pedido.update({
                         where: { id },
-                        data: { estado: "metraje_confirmado" }
+                        data: {
+                            estado: "metraje_confirmado",
+                            total: totalConEnvio,
+                            costoEnvio: costoEnvio
+                        }
                     })
-                    
+
                     await prisma.notificacion.create({
                         data: {
                             userId: pedido.userId,
                             tipo: "metraje_confirmado",
                             titulo: "Metraje confirmado",
-                            mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado y el precio final es S/ ${nuevoTotal.toFixed(2)}. Puedes continuar con el pago.`,
+                            mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado. Puedes continuar con el pago.`,
                             pedidoId: id
                         }
                     })
+
                 }
             }
-} else if (estado === "metraje_confirmado" && existingPedido.estado === "metraje_en_proceso") {
+        } else if (estado === "metraje_confirmado" && existingPedido.estado === "metraje_en_proceso") {
             const piezaDetalles = await prisma.pedidoDetalle.findMany({
                 where: { pedidoId: id, tipo: "pieza" },
                 include: { etiquetas: { select: { valor: true } } }
             })
-            
-            let nuevoTotal = 0
+
+            let subtotalPiezas = 0
             for (const pieza of piezaDetalles) {
-                const metrajeTotal = pieza.etiquetas.length > 0 
+                const metrajeTotal = pieza.etiquetas.length > 0
                     ? pieza.etiquetas.reduce((sum, e) => sum + e.valor, 0)
                     : (pieza.metraje || 0)
                 if (metrajeTotal > 0) {
-                    nuevoTotal += Number(pieza.precio) * metrajeTotal
+                    subtotalPiezas += Number(pieza.precio) * metrajeTotal
                 }
             }
-            
+
             const metrosDetalles = await prisma.pedidoDetalle.findMany({
                 where: { pedidoId: id, tipo: "metros" }
             })
-            
+
+            let subtotalMetros = 0
             for (const det of metrosDetalles) {
-                nuevoTotal += Number(det.precio) * det.cantidad
+                subtotalMetros += Number(det.precio) * det.cantidad
             }
-            
-            const costoEnvio = calculateCostoEnvio(nuevoTotal, pedido.metodoEnvio)
-            
-            if (nuevoTotal > 0) {
+
+            const subtotal = subtotalPiezas + subtotalMetros
+
+            if (subtotal > 0) {
+                const costoEnvio = calculateCostoEnvio(subtotal, pedido.metodoEnvio)
+                const totalConEnvio = subtotal + costoEnvio
+
                 await prisma.pedido.update({
                     where: { id },
-                    data: { 
-                        total: nuevoTotal,
+                    data: {
+                        estado: "metraje_confirmado",
+                        total: totalConEnvio,
                         costoEnvio: costoEnvio
                     }
                 })
+
+                const pedidoActualizado = await prisma.pedido.findUnique({ where: { id } })
+
+                await prisma.notificacion.create({
+                    data: {
+                        userId: pedido.userId,
+                        tipo: "metraje_confirmado",
+                        titulo: "Metraje confirmado",
+                        mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado. Puedes continuar con el pago.`,
+                        pedidoId: id
+                    }
+                })
             }
-            
-            await prisma.notificacion.create({
-                data: {
-                    userId: pedido.userId,
-                    tipo: "metraje_confirmado",
-                    titulo: "Metraje confirmado",
-                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado y el precio final es S/ ${nuevoTotal.toFixed(2)}. Puedes continuar con el pago.`,
-                    pedidoId: id
-                }
-            })
         }
 
         return NextResponse.json({ success: true, pedido })
@@ -408,7 +454,7 @@ export async function DELETE(
     try {
         const headersList = await headers()
         const session = await auth.api.getSession({ headers: headersList })
-        
+
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
         }
@@ -416,7 +462,7 @@ export async function DELETE(
         const { id } = await params
 
         const userRole = (session.user as any)?.role || "cliente"
-        
+
         if (userRole !== "admin") {
             return NextResponse.json({ success: false, error: "Solo administradores" }, { status: 403 })
         }

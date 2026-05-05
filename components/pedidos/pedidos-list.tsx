@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Pagination } from "@/components/ui/pagination"
+import { Search, X, Calendar } from "lucide-react"
 import { Package, Clock, CheckCircle, XCircle, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info } from "lucide-react"
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string; icon: any }> = {
@@ -359,12 +361,178 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
     )
 }
 
+const ESTADOS = [
+    { value: "metraje_en_proceso", label: "Metraje en proceso" },
+    { value: "metraje_confirmado", label: "Metraje confirmado" },
+    { value: "pendiente", label: "Pago en revisión" },
+    { value: "confirmado", label: "Pago confirmado" },
+    { value: "rechazado", label: "Pedido rechazado" },
+    { value: "completado", label: "Pedido completado" },
+]
+
 export default function PedidosList({ pedidos, userRole }: PedidosListProps) {
+    const [busqueda, setBusqueda] = useState("")
+    const [estadoFiltro, setEstadoFiltro] = useState("")
+    const [fechaInicio, setFechaInicio] = useState("")
+    const [fechaFin, setFechaFin] = useState("")
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+
+    const filteredPedidos = pedidos.filter((pedido: any) => {
+        // Buscador por número de pedido
+        if (busqueda) {
+            if (!pedido.numeroOrden.toLowerCase().includes(busqueda.toLowerCase())) {
+                return false
+            }
+        }
+
+        // Filtro por estado
+        if (estadoFiltro && pedido.estado !== estadoFiltro) {
+            return false
+        }
+
+        // Filtro por rango de fechas
+        if (fechaInicio || fechaFin) {
+            const createdAtDate = new Date(pedido.createdAt)
+            const year = createdAtDate.getFullYear()
+            const month = String(createdAtDate.getMonth() + 1).padStart(2, '0')
+            const day = String(createdAtDate.getDate()).padStart(2, '0')
+            const pedidoFechaStr = `${year}-${month}-${day}`
+
+            if (fechaInicio && pedidoFechaStr < fechaInicio) return false
+            if (fechaFin && pedidoFechaStr > fechaFin) return false
+        }
+
+        return true
+    })
+
+    const totalPages = Math.ceil(filteredPedidos.length / itemsPerPage)
+    const startIdx = (currentPage - 1) * itemsPerPage
+    const paginatedPedidos = filteredPedidos.slice(startIdx, startIdx + itemsPerPage)
+
+    const tieneFiltrosActivos = busqueda || estadoFiltro || fechaInicio || fechaFin
+
+    const limpiarFiltros = () => {
+        setBusqueda("")
+        setEstadoFiltro("")
+        setFechaInicio("")
+        setFechaFin("")
+        setCurrentPage(1)
+    }
+
     return (
-        <div className="space-y-4">
-            {pedidos.map((pedido: any) => (
-                <PedidoCard key={pedido.id} pedido={pedido} userRole={userRole} />
-            ))}
+        <div>
+            {/* Filtros */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    {/* Buscador */}
+                    <div className="relative h-10">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <input
+                            type="text"
+                            value={busqueda}
+                            onChange={(e) => {
+                                setBusqueda(e.target.value)
+                                setCurrentPage(1)
+                            }}
+                            placeholder="Número de pedido..."
+                            className="w-full h-full pl-10 pr-4 border border-slate-300 rounded-lg text-sm text-black"
+                        />
+                    </div>
+
+                    {/* Filtro Estado */}
+                    <select
+                        value={estadoFiltro}
+                        onChange={(e) => {
+                            setEstadoFiltro(e.target.value)
+                            setCurrentPage(1)
+                        }}
+                        className="h-10 px-3 border border-slate-300 rounded-lg text-sm text-black"
+                    >
+                        <option value="">Todos los estados</option>
+                        {ESTADOS.map(estado => (
+                            <option key={estado.value} value={estado.value}>{estado.label}</option>
+                        ))}
+                    </select>
+
+                    {/* Fecha Inicio */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500">Fecha inicio</label>
+                        <div className="relative h-10 flex items-center" onClick={() => (document.getElementById('fecha-inicio-user') as HTMLInputElement)?.showPicker()}>
+                            <Calendar className="absolute left-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                            <input
+                                id="fecha-inicio-user"
+                                type="date"
+                                value={fechaInicio}
+                                onChange={(e) => {
+                                    setFechaInicio(e.target.value)
+                                    setCurrentPage(1)
+                                }}
+                                className="w-full h-full pl-10 pr-2 border border-slate-300 rounded-lg text-sm text-black cursor-pointer"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Fecha Fin */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500">Fecha fin</label>
+                        <div className="relative h-10 flex items-center" onClick={() => (document.getElementById('fecha-fin-user') as HTMLInputElement)?.showPicker()}>
+                            <Calendar className="absolute left-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                            <input
+                                id="fecha-fin-user"
+                                type="date"
+                                value={fechaFin}
+                                onChange={(e) => {
+                                    setFechaFin(e.target.value)
+                                    setCurrentPage(1)
+                                }}
+                                className="w-full h-full pl-10 pr-2 border border-slate-300 rounded-lg text-sm text-black cursor-pointer"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {tieneFiltrosActivos && (
+                    <div className="mt-4 flex items-center gap-2">
+                        <span className="text-sm text-slate-500">
+                            {filteredPedidos.length} resultado(s) de {pedidos.length} pedidos
+                        </span>
+                        <button
+                            onClick={limpiarFiltros}
+                            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                            <X className="h-3 w-3" />
+                            Limpiar filtros
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* Lista de Pedidos */}
+            {filteredPedidos.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                    <p className="text-slate-500">No se encontraron pedidos con los filtros aplicados.</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {paginatedPedidos.map((pedido: any) => (
+                        <PedidoCard key={pedido.id} pedido={pedido} userRole={userRole} />
+                    ))}
+
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={filteredPedidos.length}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={(value) => {
+                            setItemsPerPage(value)
+                            setCurrentPage(1)
+                        }}
+                        itemLabel="pedidos"
+                    />
+                </div>
+            )}
         </div>
     )
 }
