@@ -34,6 +34,7 @@ export default function NotificacionesPage() {
     const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
     const [loading, setLoading] = useState(true)
     const [markingAll, setMarkingAll] = useState(false)
+    const [userRole, setUserRole] = useState("cliente")
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [busqueda, setBusqueda] = useState("")
@@ -82,11 +83,26 @@ export default function NotificacionesPage() {
 
     const fetchNotificaciones = async () => {
         try {
-            const res = await fetch("/api/notificaciones", { credentials: "include" })
-            const json = await res.json()
+            const [notifRes, sessionRes] = await Promise.all([
+                fetch("/api/notificaciones", { credentials: "include" }),
+                fetch("/api/auth/session", { credentials: "include" })
+            ])
+            const json = await notifRes.json()
+            let role = "cliente"
+            
+            if (sessionRes.ok) {
+                try {
+                    const sessionJson = await sessionRes.json()
+                    role = sessionJson?.user?.role || "cliente"
+                } catch (e) {
+                    role = "cliente"
+                }
+            }
+            
             if (json.success) {
                 setNotificaciones(json.notificaciones)
             }
+            setUserRole(role)
         } catch (e) {
             console.error("Error fetching notificaciones:", e)
         } finally {
@@ -291,7 +307,7 @@ export default function NotificacionesPage() {
                                                                         await marcarLeida(notif.id)
                                                                         router.push("/dashboard/pedidos")
                                                                     }}
-                                                                    className="bg-green-600 hover:bg-green-700 text-xs"
+                                                                    className="bg-green-500 hover:bg-green-600 text-xs"
                                                                 >
                                                                     Ir a Pedidos
                                                                     <ArrowRight className="h-3 w-3 ml-1" />
@@ -305,6 +321,36 @@ export default function NotificacionesPage() {
                                                                         router.push(`/dashboard/pedidos-admin?pedidoId=${notif.pedidoId}`)
                                                                     }}
                                                                     className="bg-yellow-400 hover:bg-yellow-500 text-xs"
+                                                                >
+                                                                    Ver Pedido
+                                                                    <ArrowRight className="h-3 w-3 ml-1" />
+                                                                </Button>
+                                                            )}
+                                                            {notif.pedido && notif.tipo === "pedido_pago" && !notif.leida && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={async () => {
+                                                                        await marcarLeida(notif.id)
+                                                                        router.push(`/dashboard/pedidos-admin?pedidoId=${notif.pedidoId}`)
+                                                                    }}
+                                                                    className="bg-blue-400 hover:bg-blue-500 text-xs"
+                                                                >
+                                                                    Ver Pedido
+                                                                    <ArrowRight className="h-3 w-3 ml-1" />
+                                                                </Button>
+                                                            )}
+                                                            {notif.pedido && notif.tipo === "pedido_estado" && notif.mensaje?.includes("confirmado") && !notif.leida && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={async () => {
+                                                                        await marcarLeida(notif.id)
+                                                                        if (userRole === "cliente") {
+                                                                            router.push(`/dashboard/pedidos#${notif.pedidoId}`)
+                                                                        } else {
+router.push(`/dashboard/pedidos-admin#${notif.pedidoId}`)
+                                                                        }
+                                                                    }}
+                                                                    className="bg-green-600 hover:bg-green-700 text-xs"
                                                                 >
                                                                     Ver Pedido
                                                                     <ArrowRight className="h-3 w-3 ml-1" />

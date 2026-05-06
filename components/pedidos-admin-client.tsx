@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Search, X, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PedidoAccordion } from "@/app/dashboard/pedidos-admin/accordion"
@@ -25,7 +25,6 @@ interface Props {
     empleados: User[]
     role: string
     userId: string
-    pedidoIdInicial?: string
 }
 
 const ESTADOS = [
@@ -37,12 +36,25 @@ const ESTADOS = [
     { value: "completado", label: "Pedido completado" },
 ]
 
-export function PedidosAdminClient({ pedidos, empleados, role, userId, pedidoIdInicial }: Props) {
+export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) {
     const [busqueda, setBusqueda] = useState("")
     const [estadoFiltro, setEstadoFiltro] = useState("")
     const [colaboradorFiltro, setColaboradorFiltro] = useState("")
     const [fechaInicio, setFechaInicio] = useState("")
     const [fechaFin, setFechaFin] = useState("")
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        const queryPedidoId = params.get("pedidoId")
+        const hashPedidoId = window.location.hash.slice(1)
+        const pedidoId = queryPedidoId || hashPedidoId
+        
+        if (pedidoId) {
+            setExpandedIds(new Set([pedidoId]))
+            window.history.replaceState({}, '', window.location.pathname)
+        }
+    }, [])
 
     const filteredPedidos = useMemo(() => {
         return pedidos.filter(pedido => {
@@ -202,7 +214,7 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId, pedidoIdI
                     pedidos={filteredPedidos as any}
                     role={role}
                     userId={userId}
-                    pedidoIdInicial={pedidoIdInicial}
+                    expandedIds={expandedIds}
                 />
             )}
         </div>

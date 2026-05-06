@@ -50,6 +50,7 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: 
     metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800" },
     pendiente: { label: "Pago en revisión", color: "bg-blue-100", colorTexto: "text-blue-800" },
     confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900" },
+    pedido_enviado: { label: "Pedido enviado", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
     rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
     completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800" },
 }
@@ -71,13 +72,15 @@ interface Props {
     pedidos: Pedido[]
     role: string
     userId: string
-    pedidoIdInicial?: string
+    expandedIds?: Set<string>
 }
 
-export function PedidoAccordion({ pedidos, role, userId, pedidoIdInicial }: Props) {
-    const [expandedId, setExpandedId] = useState<string | null>(pedidoIdInicial || null)
+export function PedidoAccordion({ pedidos, role, userId, expandedIds }: Props) {
+    const [expandedId, setExpandedId] = useState<string | null>(null)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [currentPage, setCurrentPage] = useState(1)
+
+    const isExpandedCheck = (id: string) => expandedIds?.has(id) || expandedId === id
 
     const tomarPedido = async (pedidoId: string) => {
         try {
@@ -135,14 +138,12 @@ export function PedidoAccordion({ pedidos, role, userId, pedidoIdInicial }: Prop
                     const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
                     const deliveryLabel = pedido.delivery ? (DELIVERY_LABELS[pedido.delivery] || pedido.deliveryOtro) : null
                     const ocultarPrecio = pedido.estado === "metraje_en_proceso"
-                    const isExpanded = expandedId === pedido.id
-
-                    const isPedidoResaltado = pedidoIdInicial && pedido.id === pedidoIdInicial && isExpanded
+                    const isExpanded = isExpandedCheck(pedido.id)
 
                     return (
                         <div 
                         key={pedido.id} 
-                        className={`border-b border-slate-100 last:border-b-0 transition-all duration-300 ${expandedId && expandedId !== pedido.id ? "blur-sm opacity-50 pointer-events-none" : ""} ${isPedidoResaltado ? "animate-pulse-ring" : ""}`}
+                        className={`border-b border-slate-100 last:border-b-0 transition-all duration-300 ${expandedId && expandedId !== pedido.id ? "blur-sm opacity-50 pointer-events-none" : ""}`}
                     >
                             <div
                                 onClick={() => toggleExpand(pedido.id)}
@@ -161,22 +162,15 @@ export function PedidoAccordion({ pedidos, role, userId, pedidoIdInicial }: Prop
                                                 </span>
                                             ) : (
                                                 <>
-                                                    {!(tienePiezasFaltantes && pedido.estado === "metraje_en_proceso") && (
-                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
-                                                            {config.label}
-                                                        </span>
-                                                    )}
-                                                    {tienePiezas && (
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
+                                                        {config.label}
+                                                    </span>
+                                                    {tienePiezas && pedido.estado !== "confirmado" && pedido.estado !== "pedido_enviado" && (
                                                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
                                                             Piezas
                                                         </span>
                                                     )}
-                                                    {pedido.estado === "metraje_en_proceso" && tienePiezasFaltantes && (
-                                                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                                                            Metraje incompleto
-                                                        </span>
-                                                    )}
-                                                    {tienePiezasCompletas && (
+                                                    {tienePiezasCompletas && pedido.estado !== "confirmado" && pedido.estado !== "pedido_enviado" && (
                                                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700">
                                                             Metraje completado
                                                         </span>

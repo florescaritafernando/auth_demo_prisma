@@ -88,7 +88,7 @@ export async function PATCH(
 
         const { estado, metraje_items, numeroOperacion, motivoRechazo, costoEnvio } = body
 
-        const estadosValidos = ["metraje_en_proceso", "metraje_confirmado", "pendiente", "confirmado", "rechazado", "completado"]
+        const estadosValidos = ["metraje_en_proceso", "metraje_confirmado", "pendiente", "confirmado", "pedido_enviado", "rechazado", "completado"]
 
         if (estado && !estadosValidos.includes(estado)) {
             return NextResponse.json({ success: false, error: "Estado inválido" }, { status: 400 })
@@ -124,6 +124,16 @@ export async function PATCH(
                 return NextResponse.json({ success: false, error: "No puedes rechazar un pedido con pago confirmado o completado" }, { status: 400 })
             }
         } else if (isEmpleado) {
+            // Validar que empleado esté asignado para cambiar a pedido_enviado
+            if (estado === "pedido_enviado") {
+                const delegacion = await prisma.pedidoDelegado.findFirst({
+                    where: { pedidoId: id, userId: session.user.id }
+                })
+                if (!delegacion) {
+                    return NextResponse.json({ success: false, error: "No puedes cambiar el estado de un pedido al que no estás asignado" }, { status: 403 })
+                }
+            }
+
             // Empleado puede rechazar pedidos o actualizar metraje sin restricción de delegación
             if (estado === "rechazado") {
                 if (existingPedido.estado === "confirmado" || existingPedido.estado === "completado") {
@@ -226,6 +236,66 @@ export async function PATCH(
                 })
             }
             console.log("=== FIN NOTIFICACION PAGO ===")
+
+            // Marcar notificaciones anteriores del cliente como leídas al realizar el pago
+            await prisma.notificacion.updateMany({
+                where: {
+                    userId: pedido.userId,
+                    pedidoId: id,
+                    leida: false
+                },
+                data: { leida: true }
+            })
+        }
+
+        if (estado === "confirmado") {
+            await prisma.notificacion.create({
+                data: {
+                    userId: pedido.userId,
+                    tipo: "pedido_estado",
+                    titulo: "Pago confirmado",
+                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido confirmado. El pago ha sido verificado exitosamente.`,
+                    pedidoId: id
+                }
+            })
+
+            await prisma.notificacion.updateMany({
+                where: {
+                    pedidoId: id,
+                    tipo: "pedido_pago",
+                    leida: false
+                },
+                data: { leida: true }
+            })
+
+            const delegados = await prisma.pedidoDelegado.findMany({
+                where: { pedidoId: id },
+                select: { userId: true }
+            })
+
+            for (const deleg of delegados) {
+                await prisma.notificacion.create({
+                    data: {
+                        userId: deleg.userId,
+                        tipo: "pedido_estado",
+                        titulo: "Pago confirmado",
+                        mensaje: `El pedido ${pedido.numeroOrden} ha sido confirmado. El pago ha sido verificado exitosamente.`,
+                        pedidoId: id
+                    }
+                })
+            }
+        }
+
+        if (estado === "pedido_enviado") {
+            await prisma.notificacion.create({
+                data: {
+                    userId: pedido.userId,
+                    tipo: "pedido_estado",
+                    titulo: "Pedido enviado",
+                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido enviado. Puedes rastrear tu pedido y confirmar cuando lo recibas.`,
+                    pedidoId: id
+                }
+            })
         }
 
         if (estado === "rechazado") {

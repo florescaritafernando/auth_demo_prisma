@@ -1,17 +1,21 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { Search, X, Calendar } from "lucide-react"
-import { Package, Clock, CheckCircle, XCircle, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info } from "lucide-react"
+import { Package, Clock, CheckCircle, XCircle, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info, PackageCheck } from "lucide-react"
+import { FeedbackModal } from "./FeedbackModal"
+import { QuejaModal } from "./QuejaModal"
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string; icon: any }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800", icon: Clock },
-    metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800", icon: CheckCircle },
+    metraje_confirmado: { label: "Confirmado", color: "bg-green-100", colorTexto: "text-green-800", icon: CheckCircle },
     pendiente: { label: "Pago en revision", color: "bg-blue-100", colorTexto: "text-blue-800", icon: Package },
     confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900", icon: CheckCircle },
+    pedido_enviado: { label: "En transito", color: "bg-yellow-100", colorTexto: "text-yellow-800", icon: Package },
     rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800", icon: XCircle },
     completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800", icon: CheckCircle },
 }
@@ -77,8 +81,10 @@ interface PedidosListProps {
     userRole: string
 }
 
-function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string }) {
-    const [expanded, setExpanded] = useState(false)
+function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpanded, onToggle }: { pedido: PedidoItem; userRole: string; setFeedbackModal: (modal: { pedidoId: string; numeroOrden: string } | null) => void; setQuejaModal: (modal: { pedidoId: string; numeroOrden: string } | null) => void; isExpanded?: boolean; onToggle?: () => void }) {
+    const [internalExpanded, setInternalExpanded] = useState(false)
+    const expanded = isExpanded !== undefined ? isExpanded : internalExpanded
+    const setExpanded = isExpanded !== undefined ? onToggle! : setInternalExpanded
     const [showMotivo, setShowMotivo] = useState(false)
     const [showPagoDetails, setShowPagoDetails] = useState(false)
     const config = ESTADO_CONFIG[pedido.estado] || ESTADO_CONFIG.metraje_en_proceso
@@ -89,6 +95,7 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
     const ocultarPrecio = pedido.estado === "metraje_en_proceso"
     const mostrarContinuar = pedido.estado === "metraje_confirmado"
     const ocultarPago = ocultarPrecio || pedido.estado === "metraje_confirmado"
+    const tieneReclamo = (pedido as any).reclamos?.length > 0
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -163,6 +170,26 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
                                     Continuar
                                 </Button>
                             </Link>
+                        )}
+
+                        {pedido.estado === "pedido_enviado" && (
+                            <>
+                                <Button
+                                    onClick={() => setFeedbackModal({ pedidoId: pedido.id, numeroOrden: pedido.numeroOrden })}
+                                    className="bg-green-600 hover:bg-green-700 text-sm"
+                                >
+                                    <PackageCheck className="h-4 w-4 mr-1" />
+                                    Recibí mi pedido
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => !tieneReclamo && setQuejaModal({ pedidoId: pedido.id, numeroOrden: pedido.numeroOrden })}
+                                    disabled={tieneReclamo}
+                                    className={`text-sm border-red-300 ${tieneReclamo ? "text-slate-400 bg-slate-50 cursor-not-allowed" : "text-red-600 hover:bg-red-50"}`}
+                                >
+                                    {tieneReclamo ? "Reclamo registrado" : "Queja"}
+                                </Button>
+                            </>
                         )}
 
                         {userRole === "admin" && (
@@ -362,10 +389,10 @@ function PedidoCard({ pedido, userRole }: { pedido: PedidoItem; userRole: string
 }
 
 const ESTADOS = [
-    { value: "metraje_en_proceso", label: "Metraje en proceso" },
     { value: "metraje_confirmado", label: "Metraje confirmado" },
     { value: "pendiente", label: "Pago en revisión" },
     { value: "confirmado", label: "Pago confirmado" },
+    { value: "pedido_enviado", label: "En tránsito" },
     { value: "rechazado", label: "Pedido rechazado" },
     { value: "completado", label: "Pedido completado" },
 ]
@@ -377,6 +404,86 @@ export default function PedidosList({ pedidos, userRole }: PedidosListProps) {
     const [fechaFin, setFechaFin] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
+    const router = useRouter()
+
+    const [feedbackModal, setFeedbackModal] = useState<{ pedidoId: string; numeroOrden: string } | null>(null)
+    const [quejaModal, setQuejaModal] = useState<{ pedidoId: string; numeroOrden: string } | null>(null)
+    const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+
+    useEffect(() => {
+        const hash = window.location.hash.slice(1)
+        if (hash) {
+            setExpandedIds(new Set([hash]))
+            window.history.replaceState({}, '', window.location.pathname)
+        }
+    }, [])
+
+    const toggleExpanded = (id: string) => {
+        setExpandedIds(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) {
+                next.delete(id)
+            } else {
+                next.add(id)
+            }
+            return next
+        })
+    }
+
+    const showToast = (message: string, type: "success" | "error") => {
+        setToast({ message, type })
+        setTimeout(() => setToast(null), 4000)
+    }
+
+    const handleFeedbackSubmit = async (data: { calificacion: number; comentario: string; etiquetas: string[] }) => {
+        if (!feedbackModal) return
+        try {
+            const res = await fetch(`/api/feedback`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    pedidoId: feedbackModal.pedidoId,
+                    ...data
+                }),
+                credentials: "include"
+            })
+            const json = await res.json()
+            if (json.success) {
+                setFeedbackModal(null)
+                router.refresh()
+                showToast("Feedback enviado exitosamente", "success")
+            } else {
+                showToast(json.error || "Error al enviar feedback", "error")
+            }
+        } catch (e) {
+            showToast("Error de conexión", "error")
+        }
+    }
+
+    const handleQuejaSubmit = async (data: { tipo: string; descripcion: string; detalle_pedido: string }) => {
+        if (!quejaModal) return
+        try {
+            const res = await fetch(`/api/reclamos`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    pedidoId: quejaModal.pedidoId,
+                    ...data
+                }),
+                credentials: "include"
+            })
+            const json = await res.json()
+            if (json.success) {
+                setQuejaModal(null)
+                showToast("Tu reporte ha sido enviado exitosamente", "success")
+            } else {
+                showToast(json.error || "Error al enviar", "error")
+            }
+        } catch (e) {
+            showToast("Error de conexión", "error")
+        }
+    }
 
     const filteredPedidos = pedidos.filter((pedido: any) => {
         // Buscador por número de pedido
@@ -516,7 +623,15 @@ export default function PedidosList({ pedidos, userRole }: PedidosListProps) {
             ) : (
                 <div className="space-y-4">
                     {paginatedPedidos.map((pedido: any) => (
-                        <PedidoCard key={pedido.id} pedido={pedido} userRole={userRole} />
+                        <PedidoCard
+                            key={pedido.id}
+                            pedido={pedido}
+                            userRole={userRole}
+                            setFeedbackModal={setFeedbackModal}
+                            setQuejaModal={setQuejaModal}
+                            isExpanded={expandedIds.has(pedido.id)}
+                            onToggle={() => toggleExpanded(pedido.id)}
+                        />
                     ))}
 
                     <Pagination
@@ -531,6 +646,33 @@ export default function PedidosList({ pedidos, userRole }: PedidosListProps) {
                         }}
                         itemLabel="pedidos"
                     />
+                </div>
+            )}
+
+            {feedbackModal && (
+                <FeedbackModal
+                    pedidoId={feedbackModal.pedidoId}
+                    numeroOrden={feedbackModal.numeroOrden}
+                    onClose={() => setFeedbackModal(null)}
+                    onSubmit={handleFeedbackSubmit}
+                />
+            )}
+
+            {quejaModal && (
+                <QuejaModal
+                    pedidoId={quejaModal.pedidoId}
+                    numeroOrden={quejaModal.numeroOrden}
+                    onClose={() => setQuejaModal(null)}
+                    onSubmit={handleQuejaSubmit}
+                />
+            )}
+
+            {toast && (
+                <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-lg shadow-xl z-50 flex items-center gap-3 animate-in slide-in-from-bottom-4 ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
+                    <span className="text-white font-medium">{toast.message}</span>
+                    <button onClick={() => setToast(null)} className="text-white/80 hover:text-white">
+                        <X className="h-5 w-5" />
+                    </button>
                 </div>
             )}
         </div>

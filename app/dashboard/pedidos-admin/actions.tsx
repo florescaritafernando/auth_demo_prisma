@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus, RefreshCw } from "lucide-react"
 import { RechazarPedidoModal } from "@/components/pedidos/RechazarPedidoModal"
+import { ConfirmarMetrajeModal } from "@/components/pedidos/ConfirmarMetrajeModal"
 
 const ESTADOS_DISPONIBLES = [
     { value: "metraje_en_proceso", label: "Metraje en proceso", color: "bg-yellow-100 text-yellow-800" },
     { value: "metraje_confirmado", label: "Metraje confirmado", color: "bg-green-100 text-green-800" },
     { value: "pendiente", label: "Pago en revisión", color: "bg-blue-100 text-blue-800" },
     { value: "confirmado", label: "Pago confirmado", color: "bg-blue-200 text-blue-900" },
+    { value: "pedido_enviado", label: "Pedido enviado", color: "bg-yellow-100 text-yellow-800" },
     { value: "rechazado", label: "Rechazar pedido", color: "bg-red-100 text-red-800" },
     { value: "completado", label: "Pedido completado", color: "bg-green-100 text-green-800" },
 ]
@@ -54,6 +56,8 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [showRechazarModal, setShowRechazarModal] = useState(false)
+    const [showConfirmarMetrajeModal, setShowConfirmarMetrajeModal] = useState(false)
+    const [articulosFaltantes, setArticulosFaltantes] = useState<{nombre: string, solicitado: number, registrado: number}[]>([])
     const [metrajeData, setMetrajeData] = useState<Record<string, MetrajeRegistro[]>>(() => {
         const initial: Record<string, MetrajeRegistro[]> = {}
         pedido.pedidoDetalle
@@ -74,6 +78,8 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
 
     const piezaDetails = pedido.pedidoDetalle.filter(d => d.tipo === "pieza")
     const tienePiezas = piezaDetails.length > 0
+    const totalEtiquetas = piezaDetails.reduce((sum, d) => sum + (d.etiquetas?.length || 0), 0)
+    const hayMetrajRegistrado = totalEtiquetas > 0
     const tienePiezasCompletas = tienePiezas && piezaDetails.every(d => {
         const etiquetasCount = d.etiquetas?.length || 0
         return etiquetasCount === Number(d.cantidad)
@@ -86,12 +92,20 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
         }
 
         if (nuevoEstado === "metraje_confirmado") {
-            const hayPiezasFaltantes = piezaDetails.some(d => {
-                const etiquetasCount = d.etiquetas?.length || 0
-                return etiquetasCount !== Number(d.cantidad)
-            })
-            if (hayPiezasFaltantes) {
-                alert("No puedes confirmar el metraje porque faltan piezas por registrar")
+            const faltantes = piezaDetails
+                .filter(d => {
+                    const etiquetasCount = d.etiquetas?.length || 0
+                    return etiquetasCount < Number(d.cantidad)
+                })
+                .map(d => ({
+                    nombre: d.producto.nombre,
+                    solicitado: Number(d.cantidad),
+                    registrado: d.etiquetas?.length || 0
+                }))
+            
+            if (faltantes.length > 0) {
+                setArticulosFaltantes(faltantes)
+                setShowConfirmarMetrajeModal(true)
                 return
             }
         }
@@ -102,6 +116,28 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ estado: nuevoEstado }),
+                credentials: "include"
+            })
+            const json = await res.json()
+            if (json.success) {
+                router.refresh()
+            } else {
+                alert(json.error || "Error al actualizar estado")
+            }
+        } catch (e) {
+            alert("Error de conexión")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const cambiarEstadoDirecto = async (estado: string) => {
+        setLoading(true)
+        try {
+            const res = await fetch(`/api/pedidos/${pedido.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ estado }),
                 credentials: "include"
             })
             const json = await res.json()
@@ -335,10 +371,30 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
             <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-slate-700">Cambiar estado:</span>
                 <div className="flex flex-wrap gap-2">
-                    {ESTADOS_DISPONIBLES.filter(e => {
+{ESTADOS_DISPONIBLES.filter(e => {
+                        const estaAsignado = pedido.delegados?.some(d => d.userId === userId)
+                        
+                        // Si es empleado y NO está asignado, no mostrar ningún botón
+                        if (role === "empleado" && !estaAsignado) return false
+                        
+                        // Si es empleado asignado: solo mostrar "metraje_confirmado" (si hay metraje) y "rechazado"
+                        if (role === "empleado" && estaAsignado) {
+                            if (e.value === "rechazado") {
+                                if (pedido.estado === "confirmado" || pedido.estado === "completado" || pedido.estado === "pedido_enviado") return false
+                                return true
+                            }
+                            if (e.value === "metraje_confirmado") {
+                                if (!hayMetrajRegistrado) return false
+                                return true
+                            }
+                            return false
+                        }
+                        
+                        // Para admin: lógica original
                         if (e.value === pedido.estado) return false
                         if (e.value === "metraje_confirmado" && !tienePiezasCompletas && tienePiezas) return false
-                        if (e.value === "rechazado" && (pedido.estado === "confirmado" || pedido.estado === "completado")) return false
+                        if (e.value === "rechazado" && (pedido.estado === "confirmado" || pedido.estado === "completado" || pedido.estado === "pedido_enviado")) return false
+                        if (e.value === "pedido_enviado" && pedido.estado !== "confirmado") return false
                         return true
                     }).map(estado => (
                         <Button
@@ -358,7 +414,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                 </div>
             </div>
 
-            {(role === "admin" || role === "empleado") && (
+            {(role === "admin" || role === "empleado") && pedido.estado !== "pedido_enviado" && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="flex-1">
@@ -434,7 +490,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                 </div>
             )}
 
-            {tienePiezas && pedido.estado !== "confirmado" && pedido.estado !== "completado" && (
+            {tienePiezas && pedido.estado !== "confirmado" && pedido.estado !== "completado" && pedido.estado !== "pedido_enviado" && (
                 <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
                         <h4 className="font-bold text-yellow-900 flex items-center gap-2">
@@ -584,7 +640,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                 </div>
             )}
 
-            {pedido.estado !== "completado" && (
+            {pedido.estado !== "completado" && pedido.estado !== "pedido_enviado" && (
                 <div className="mt-4 pt-3 border-t border-yellow-300">
                     <label className="block text-sm font-bold text-yellow-900 mb-2">
                         Número de Operación (opcional)
@@ -639,6 +695,17 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                     numeroOrden={pedido.numeroOrden}
                     onClose={() => setShowRechazarModal(false)}
                     onReject={rechazarPedido}
+                />
+            )}
+
+            {showConfirmarMetrajeModal && (
+                <ConfirmarMetrajeModal
+                    articulosFaltantes={articulosFaltantes}
+                    onConfirm={() => {
+                        setShowConfirmarMetrajeModal(false)
+                        cambiarEstadoDirecto("metraje_confirmado")
+                    }}
+                    onCancel={() => setShowConfirmarMetrajeModal(false)}
                 />
             )}
         </div>

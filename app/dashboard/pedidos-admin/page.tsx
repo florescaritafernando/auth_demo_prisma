@@ -26,7 +26,7 @@ async function getPedidos() {
                     }
                 },
                 tienda: { select: { id: true, nombre: true, direccion: true } },
-                delegados: { 
+                delegados: {
                     include: { user: { select: { id: true, name: true, email: true } } }
                 }
             },
@@ -51,8 +51,7 @@ async function getEmpleados() {
     }
 }
 
-export default async function PedidosAdminPage({ searchParams }: { searchParams: Promise<{ pedidoId?: string }> }) {
-    const params = await searchParams
+export default async function PedidosAdminPage() {
     const session = await auth.api.getSession({
         headers: await headers()
     })
@@ -70,6 +69,7 @@ export default async function PedidosAdminPage({ searchParams }: { searchParams:
         metraje_confirmado: pedidos.filter(p => p.estado === "metraje_confirmado").length,
         pendiente: pedidos.filter(p => p.estado === "pendiente").length,
         confirmado: pedidos.filter(p => p.estado === "confirmado").length,
+        enviado: pedidos.filter(p => p.estado === "pedido_enviado").length,
         completado: pedidos.filter(p => p.estado === "completado").length,
         rechazado: pedidos.filter(p => p.estado === "rechazado").length,
     }
@@ -102,39 +102,45 @@ export default async function PedidosAdminPage({ searchParams }: { searchParams:
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                         <div className="flex items-center gap-2">
                             <Package className="h-5 w-5 text-blue-600" />
-                            <p className="text-sm text-blue-800 font-medium">Pendiente</p>
+                            <p className="text-sm text-blue-800 font-medium">Pago en revisión</p>
                         </div>
                         <p className="text-2xl font-bold text-blue-700 mt-2">{stats.pendiente}</p>
                     </div>
                     <div className="bg-blue-100 border border-blue-300 rounded-xl p-4">
                         <div className="flex items-center gap-2">
                             <CheckCircle className="h-5 w-5 text-blue-700" />
-                            <p className="text-sm text-blue-900 font-medium">Confirmado</p>
+                            <p className="text-sm text-blue-900 font-medium">Pago confirmado</p>
                         </div>
                         <p className="text-2xl font-bold text-blue-800 mt-2">{stats.confirmado}</p>
                     </div>
+                    <div className="bg-yellow-100 border border-yellow-300 rounded-xl p-4">
+                        <div className="flex items-center gap-2">
+                            <Truck className="h-5 w-5 text-yellow-600" />
+                            <p className="text-sm text-yellow-800 font-medium">Pedido Enviado</p>
+                        </div>
+                        <p className="text-2xl font-bold text-yellow-700 mt-2">{stats.enviado}</p>
+                    </div>
                     <div className="bg-green-100 border border-green-300 rounded-xl p-4">
                         <div className="flex items-center gap-2">
-                            <Truck className="h-5 w-5 text-green-700" />
-                            <p className="text-sm text-green-900 font-medium">Completado</p>
+                            <CheckCircle className="h-5 w-5 text-green-700" />
+                            <p className="text-sm text-green-900 font-medium">Pedido completado</p>
                         </div>
                         <p className="text-2xl font-bold text-green-800 mt-2">{stats.completado}</p>
                     </div>
                     <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                         <div className="flex items-center gap-2">
                             <XCircle className="h-5 w-5 text-red-600" />
-                            <p className="text-sm text-red-800 font-medium">Rechazado</p>
+                            <p className="text-sm text-red-800 font-medium">Pedido rechazado</p>
                         </div>
                         <p className="text-2xl font-bold text-red-700 mt-2">{stats.rechazado}</p>
                     </div>
                 </div>
 
-                <PedidosAdminClient 
-                    pedidos={pedidos as any} 
+                <PedidosAdminClient
+                    pedidos={pedidos as any}
                     empleados={empleados as any}
                     role={role}
                     userId={userId}
-                    pedidoIdInicial={params.pedidoId}
                 />
             </div>
         </div>

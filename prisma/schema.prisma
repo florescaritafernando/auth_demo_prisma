@@ -35,6 +35,8 @@ model User {
   reclamos         Reclamo[]
   notificaciones   Notificacion[]
   metrajeEtiquetas MetrajeEtiqueta[]
+  feedback         Feedback[]
+  atiendeReclamos  Reclamo[] @relation("ReclamoAtendido")
   tiendas          Tienda[]
   almacenes        Almacen[]
   pedidosDelegados PedidoDelegado[]
@@ -210,6 +212,7 @@ model Pedido {
   // Delegación y seguimiento
   motivoRechazo String? // Motivo cuando se rechaza
   delegados     PedidoDelegado[]
+  feedback       Feedback[]
 
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -254,21 +257,42 @@ model MetrajeEtiqueta {
 }
 
 model Reclamo {
-  id          String   @id @default(cuid())
-  userId      String
-  pedidoId    String?
-  tipo        String
-  descripcion String
-  estado      String   @default("pendiente")
-  respuesta   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pedido      Pedido?  @relation(fields: [pedidoId], references: [id])
+  id            String   @id @default(cuid())
+  userId        String
+  pedidoId      String?
+  tipo          String   // "queja" | "reclamo"
+  descripcion   String
+  detalle_pedido String?  // detalle adicional sobre el problema
+  estado        String   @default("pendiente")
+  respuesta     String?
+  atendidoPorId String?
+  atendidoPor   User?   @relation("ReclamoAtendido", fields: [atendidoPorId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedido        Pedido?  @relation(fields: [pedidoId], references: [id])
 
   @@index([userId])
   @@index([pedidoId])
+  @@index([tipo])
+  @@index([atendidoPorId])
   @@map("reclamo")
+}
+
+model Feedback {
+  id          String   @id @default(cuid())
+  pedidoId    String
+  userId      String
+  calificacion Int      // 0-5 estrellas (requerido)
+  comentario  String?   // opcional
+  etiquetas   String?   // opcional (separadas por coma)
+  createdAt   DateTime @default(now())
+  pedido      Pedido   @relation(fields: [pedidoId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([pedidoId])
+  @@index([userId])
+  @@map("feedback")
 }
 
 model Notificacion {

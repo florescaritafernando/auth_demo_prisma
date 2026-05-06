@@ -104,13 +104,16 @@ export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
                         setShowPopup(true)
                     }
 
-                    // Para clientes: mostrar popup si hay notificación de metraje_confirmado o rechazo no leída
-                    if (role === "cliente" && pathname !== "/dashboard/notificaciones" && !popupMostrado) {
+                    // Para clientes: mostrar popup si hay notificación de metraje_confirmado, rechazo o pago confirmado no leída
+                    if (role === "cliente" && pathname !== "/dashboard/notificaciones" && pathname !== "/dashboard/pedidos" && !popupMostrado) {
                         const notifMetrajeConfirmado = json.notificaciones?.find((n: any) =>
                             n.tipo === "metraje_confirmado" && !n.leida
                         )
                         const notifRechazado = json.notificaciones?.find((n: any) =>
                             n.tipo === "rechazado" && !n.leida
+                        )
+                        const notifPagoConfirmado = json.notificaciones?.find((n: any) =>
+                            n.tipo === "pedido_estado" && !n.leida && n.mensaje?.includes("confirmado")
                         )
 
                         if (notifMetrajeConfirmado) {
@@ -119,6 +122,10 @@ export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
                             setPopupMostrado(true)
                         } else if (notifRechazado) {
                             setNotificacionActual(notifRechazado)
+                            setShowPopup(true)
+                            setPopupMostrado(true)
+                        } else if (notifPagoConfirmado) {
+                            setNotificacionActual(notifPagoConfirmado)
                             setShowPopup(true)
                             setPopupMostrado(true)
                         }
