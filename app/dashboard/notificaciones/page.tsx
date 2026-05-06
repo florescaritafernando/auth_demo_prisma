@@ -318,7 +318,7 @@ export default function NotificacionesPage() {
                                                                     size="sm"
                                                                     onClick={async () => {
                                                                         await marcarLeida(notif.id)
-                                                                        router.push(`/dashboard/pedidos-admin?pedidoId=${notif.pedidoId}`)
+                                                                        router.push(`/dashboard/pedidos-admin#${notif.pedidoId}`)
                                                                     }}
                                                                     className="bg-yellow-400 hover:bg-yellow-500 text-xs"
                                                                 >
@@ -331,7 +331,7 @@ export default function NotificacionesPage() {
                                                                     size="sm"
                                                                     onClick={async () => {
                                                                         await marcarLeida(notif.id)
-                                                                        router.push(`/dashboard/pedidos-admin?pedidoId=${notif.pedidoId}`)
+                                                                        router.push(`/dashboard/pedidos-admin#${notif.pedidoId}`)
                                                                     }}
                                                                     className="bg-blue-400 hover:bg-blue-500 text-xs"
                                                                 >

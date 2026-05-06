@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { Search, X, Calendar } from "lucide-react"
-import { Package, Clock, CheckCircle, XCircle, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info, PackageCheck } from "lucide-react"
+import { Package, Clock, CheckCircle, XCircle, Truck, Wallet, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info, PackageCheck } from "lucide-react"
 import { FeedbackModal } from "./FeedbackModal"
 import { QuejaModal } from "./QuejaModal"
 
@@ -68,6 +68,8 @@ interface PedidoItem {
             id: string
             nombre: string
         }
+        etiquetas?: Array<{ valor: number }>
+        indicacionesCorte?: string | null
     }>
     tienda?: {
         id: string
@@ -87,6 +89,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
     const setExpanded = isExpanded !== undefined ? onToggle! : setInternalExpanded
     const [showMotivo, setShowMotivo] = useState(false)
     const [showPagoDetails, setShowPagoDetails] = useState(false)
+    const [indicacionModal, setIndicacionModal] = useState<{ nombre: string; texto: string } | null>(null)
     const config = ESTADO_CONFIG[pedido.estado] || ESTADO_CONFIG.metraje_en_proceso
     const IconComponent = config.icon
     const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
@@ -96,6 +99,21 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
     const mostrarContinuar = pedido.estado === "metraje_confirmado"
     const ocultarPago = ocultarPrecio || pedido.estado === "metraje_confirmado"
     const tieneReclamo = (pedido as any).reclamos?.length > 0
+
+    const getEstadoArticulo = (detalle: any) => {
+        if (detalle.tipo !== "pieza") return null
+
+        const solicitados = Number(detalle.cantidad)
+        const registrados = detalle.etiquetas?.length || 0
+
+        if (registrados === 0) {
+            return { estado: "sin_existencias", label: `Sin existencias 0/${solicitados} pieza(s)`, color: "bg-red-100 text-red-700", colorTexto: "text-red-700" }
+        }
+        if (registrados === solicitados) {
+            return { estado: "completo", label: `Completo ${registrados}/${solicitados} pieza(s)`, color: "bg-green-100 text-green-700", colorTexto: "text-green-700" }
+        }
+        return { estado: "parcial", label: `Parcial ${registrados}/${solicitados} pieza(s)`, color: "bg-yellow-100 text-yellow-700", colorTexto: "text-yellow-700" }
+    }
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -164,7 +182,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                         )}
 
                         {mostrarContinuar && (
-                            <Link href={`/dashboard/checkout?pedido=${pedido.id}`}>
+                            <Link href={`/dashboard/checkout#${pedido.id}`}>
                                 <Button className="bg-green-600 hover:bg-green-700 text-sm">
                                     <PlayCircle className="h-4 w-4 mr-1" />
                                     Continuar
@@ -226,21 +244,39 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                         <div className="space-y-2 mb-4">
                             {pedido.pedidoDetalle?.map((detalle, idx) => {
                                 const isPiezaPendingMetraje = pedido.estado === "metraje_en_proceso" && detalle.tipo === "pieza"
+                                const estadoArticulo = getEstadoArticulo(detalle)
+                                const mostrarBadge = estadoArticulo && (pedido.estado === "metraje_confirmado" || pedido.estado === "pedido_enviado")
                                 return (
                                     <div key={idx} className={`flex justify-between items-center text-sm bg-white p-2 rounded border ${isPiezaPendingMetraje ? "border-amber-300 bg-amber-50" : "border-slate-200"}`}>
-                                        <div className="text-slate-800">
-                                            <p className="font-medium">{detalle.producto?.nombre || `Producto ${idx + 1}`}</p>
+                                        <div className="text-slate-800 flex-1">
+                                            <p className="font-bold text-lg">{detalle.producto?.nombre || `Producto ${idx + 1}`}</p>
                                             {isPiezaPendingMetraje ? (
-                                                <p className="text-xs text-slate-500 mt-1">
-                                                    {detalle.cantidad} pieza(s) × S/ {Number(detalle.precio).toFixed(2)}/m
+                                                <p className="text-md text-slate-500 mt-1">
+                                                    {detalle.cantidad} pieza(s) {Number(detalle.metraje || 0).toFixed(2)} mts × S/ {Number(detalle.precio).toFixed(2)}/mts
                                                 </p>
                                             ) : (
-                                                <p className="text-xs text-slate-500">
-                                                    {detalle.metraje
-                                                        ? `${detalle.metraje}m × S/ ${Number(detalle.precio).toFixed(2)}/m`
-                                                        : `${detalle.cantidad} ${detalle.tipo === "pieza" ? "pieza(s)" : "m"} × S/ ${Number(detalle.precio).toFixed(2)}/m`
+                                                <p className="text-md text-slate-500">
+                                                    {detalle.tipo === "pieza"
+                                                        ? `${detalle.cantidad} pieza(s) ${(detalle.etiquetas?.reduce((sum: number, e: any) => sum + e.valor, 0) || 0).toFixed(2)} mts × S/ ${Number(detalle.precio).toFixed(2)}`
+                                                        : detalle.metraje
+                                                            ? `${detalle.metraje} mts × S/ ${Number(detalle.precio).toFixed(2)}`
+                                                            : `${detalle.cantidad} mts × S/ ${Number(detalle.precio).toFixed(2)}`
                                                     }
                                                 </p>
+                                            )}
+                                            {mostrarBadge && (
+                                                <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${estadoArticulo.color} ${estadoArticulo.colorTexto}`}>
+                                                    {estadoArticulo.label}
+                                                </span>
+                                            )}
+                                            {detalle.indicacionesCorte && pedido.estado !== "completado" && (
+                                                <button
+                                                    onClick={() => setIndicacionModal({ nombre: detalle.producto?.nombre || "", texto: detalle.indicacionesCorte || "" })}
+                                                    className="mt-2 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-colors"
+                                                >
+                                                    <span>📋</span>
+                                                    <span>Ver indicaciones</span>
+                                                </button>
                                             )}
                                         </div>
                                         <div className="flex flex-col items-end">
@@ -250,7 +286,10 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                                 </span>
                                             ) : (
                                                 <span className="text-slate-800 font-medium">
-                                                    S/ {(detalle.metraje ? detalle.metraje * detalle.precio : detalle.cantidad * detalle.precio).toFixed(2)}
+                                                    {detalle.tipo === "pieza" && ((detalle.etiquetas?.reduce((sum: number, e: any) => sum + e.valor, 0) || 0) === 0)
+                                                        ? "-"
+                                                        : `S/ ${(detalle.metraje ? detalle.metraje * detalle.precio : detalle.cantidad * detalle.precio).toFixed(2)}`
+                                                    }
                                                 </span>
                                             )}
                                         </div>
@@ -313,7 +352,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
 
                             {!ocultarPago && (
                                 <div className="flex items-start gap-2">
-                                    <Phone className="h-4 w-4 text-slate-400 mt-0.5" />
+                                    <Wallet className="h-4 w-4 text-slate-400 mt-0.5" />
                                     <div>
                                         <p className="text-slate-500">Pago:</p>
                                         <p className="font-medium text-slate-800">
@@ -324,7 +363,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                             )}
 
                             <div className="flex items-start gap-2">
-                                <Package className="h-4 w-4 text-slate-400 mt-0.5" />
+                                <Truck className="h-4 w-4 text-slate-400 mt-0.5" />
                                 <div>
                                     <p className="text-slate-500">Costo envío:</p>
                                     <p className="font-medium text-slate-800">S/ {Number(pedido.costoEnvio || 0).toFixed(2)}</p>
@@ -380,6 +419,28 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
 
                         <div className="mt-4 flex justify-end">
                             <Button onClick={() => setShowPagoDetails(false)} variant="outline">Cerrar</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {indicacionModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setIndicacionModal(null)}>
+                    <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-amber-700 flex items-center gap-2">
+                                📋 Indicación de corte
+                            </h2>
+                            <button onClick={() => setIndicacionModal(null)} className="text-slate-400 hover:text-slate-600">
+                                <XCircle className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                            <p className="text-sm text-amber-600 font-medium mb-2">{indicacionModal.nombre}</p>
+                            <p className="text-slate-700 italic">"{indicacionModal.texto}"</p>
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                            <Button onClick={() => setIndicacionModal(null)} variant="outline">Cerrar</Button>
                         </div>
                     </div>
                 </div>

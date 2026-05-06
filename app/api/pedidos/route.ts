@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
                 include: {
                     user: { select: { id: true, name: true, email: true } },
                     pedidoDetalle: {
-                        include: { producto: { select: { id: true, nombre: true, categoria: true } } }
+                        include: { 
+                            producto: { select: { id: true, nombre: true, categoria: true } },
+                            etiquetas: { select: { valor: true } }
+                        }
                     },
                     delegados: {
                         include: { user: { select: { id: true, name: true } } }
@@ -45,7 +48,10 @@ export async function GET(request: NextRequest) {
                 include: {
                     user: { select: { id: true, name: true, email: true } },
                     pedidoDetalle: {
-                        include: { producto: { select: { id: true, nombre: true, categoria: true } } }
+                        include: { 
+                            producto: { select: { id: true, nombre: true, categoria: true } },
+                            etiquetas: { select: { valor: true } }
+                        }
                     },
                     tienda: true,
                     reclamos: true
@@ -57,7 +63,10 @@ export async function GET(request: NextRequest) {
                 where: { userId: session.user.id },
                 include: {
                     pedidoDetalle: {
-                        include: { producto: { select: { id: true, nombre: true, categoria: true } } }
+                        include: { 
+                            producto: { select: { id: true, nombre: true, categoria: true } },
+                            etiquetas: { select: { valor: true } }
+                        }
                     },
                     tienda: true,
                     reclamos: { select: { id: true, tipo: true, estado: true, createdAt: true } }
@@ -69,8 +78,15 @@ export async function GET(request: NextRequest) {
         // Calculate subtotal from pedidoDetalle if not stored
         const pedidosWithSubtotal = pedidos.map(pedido => {
             const calculatedSubtotal = pedido.pedidoDetalle?.reduce((sum: number, detalle: any) => {
-                const cantidad = detalle.metraje || detalle.cantidad
-                return sum + (cantidad * detalle.precio)
+                let cantidad = 0
+                if (detalle.tipo === "pieza") {
+                    // Para piezas: usar suma de etiquetas si existen, sino 0
+                    cantidad = detalle.etiquetas?.reduce((s: number, e: any) => s + e.valor, 0) || 0
+                } else {
+                    // Para metros: usar metraje si existe, sino cantidad
+                    cantidad = detalle.metraje || detalle.cantidad
+                }
+                return sum + (cantidad * Number(detalle.precio))
             }, 0) || 0
             return {
                 ...pedido,

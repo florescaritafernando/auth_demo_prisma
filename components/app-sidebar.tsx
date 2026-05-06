@@ -14,7 +14,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { Home, ShoppingBag, ShoppingCart, User, Package, BarChart3, AlertTriangle, Tag, Warehouse, BellRing, X } from "lucide-react"
+import { Home, ShoppingBag, ShoppingCart, User, Package, BarChart3, AlertTriangle, Tag, Warehouse, BellRing, X, Settings } from "lucide-react"
 import { SignOutButton } from "@/components/signout-button"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -52,9 +52,11 @@ const empleadoItems = [
 
 interface AppSidebarProps {
     role?: string
+    userName?: string
+    userImage?: string | null
 }
 
-export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
+export function AppSidebar({ role = "cliente", userName = "Usuario", userImage = null }: AppSidebarProps) {
     const pathname = usePathname()
     const items = role === "admin" ? adminItems : role === "empleado" ? empleadoItems : clienteItems
     const [notificacionesNoLeidas, setNotificacionesNoLeidas] = useState(0)
@@ -64,6 +66,54 @@ export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
     const [notificacionesRecientes, setNotificacionesRecientes] = useState<any[]>([])
     const [fadeOut, setFadeOut] = useState(false)
     const [popupMostrado, setPopupMostrado] = useState(false)
+    const [sonidoActivo, setSonidoActivo] = useState(true)
+
+    // Función para reproducir sonido de notificación
+    const playNotificationSound = () => {
+        if (!sonidoActivo) return
+        try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+            const oscillator = audioContext.createOscillator()
+            const gainNode = audioContext.createGain()
+            
+            oscillator.connect(gainNode)
+            gainNode.connect(audioContext.destination)
+            
+            oscillator.frequency.value = 800
+            oscillator.type = "sine"
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
+            
+            oscillator.start(audioContext.currentTime)
+            oscillator.stop(audioContext.currentTime + 0.3)
+        } catch (e) {
+            console.error("Error playing sound:", e)
+        }
+    }
+
+    // Cargar preferencia de sonido
+    useEffect(() => {
+        const fetchPreferencias = async () => {
+            try {
+                const res = await fetch("/api/usuarios?propio=true", { credentials: "include" })
+                const json = await res.json()
+                if (json.success && json.usuario?.preferencias) {
+                    const prefs = json.usuario.preferencias as Record<string, boolean>
+                    setSonidoActivo(prefs.sonidoNotificaciones !== false)
+                }
+            } catch (e) {
+                console.error("Error fetching preferencias:", e)
+            }
+        }
+        fetchPreferencias()
+    }, [])
+
+    // Reproducir sonido cuando aparece el popup
+    useEffect(() => {
+        if (showPopup && notificacionActual) {
+            playNotificationSound()
+        }
+    }, [showPopup])
 
     // Cerrar popup si navega a la página de notificaciones
     useEffect(() => {
@@ -218,6 +268,30 @@ export function AppSidebar({ role = "cliente" }: AppSidebarProps) {
                     </SidebarGroup>
                 </SidebarContent>
                 <SidebarFooter className="border-t border-slate-700 p-4">
+                    <div className="flex items-center justify-between mb-4 p-2 bg-slate-800 rounded-lg">
+                        <div className="flex items-center gap-3">
+                            {userImage ? (
+                                <Image 
+                                    src={userImage} 
+                                    alt={userName} 
+                                    width={36} 
+                                    height={36} 
+                                    className="rounded-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                                    {userName.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                            <div>
+                                <p className="text-white text-sm font-medium truncate max-w-[120px]">{userName}</p>
+                                <p className="text-slate-400 text-xs capitalize">{role === "cliente" ? "Cliente" : role === "empleado" ? "Colaborador" : "Admin"}</p>
+                            </div>
+                        </div>
+                        <a href="/dashboard/perfil" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Configuración">
+                            <Settings className="h-4 w-4" />
+                        </a>
+                    </div>
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SignOutButton />

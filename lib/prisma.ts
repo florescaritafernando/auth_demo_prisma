@@ -19,6 +19,9 @@ const prisma =
         adapter,
     });
 
+// Ensure all models are loaded
+prisma.$connect().catch(console.error);
+
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export default prisma;

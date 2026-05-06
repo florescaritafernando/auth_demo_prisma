@@ -22,6 +22,9 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Preferencias
+  preferencias  Json?    @default("{}") // {"sonidoNotificaciones": true}
+
   // Datos de facturación persistentes
   tipoDocumento String? // "dni" | "ruc" | "ce"
   numeroDoc     String?
@@ -37,10 +40,12 @@ model User {
   metrajeEtiquetas MetrajeEtiqueta[]
   feedback         Feedback[]
   atiendeReclamos  Reclamo[] @relation("ReclamoAtendido")
-  tiendas          Tienda[]
-  almacenes        Almacen[]
-  pedidosDelegados PedidoDelegado[]
-  favoritos        Favorito[]
+  tiendas                Tienda[]
+  almacenes              Almacen[]
+  pedidosDelegados       PedidoDelegado[]
+  favoritos              Favorito[]
+  datosFacturacion       DatosFacturacion[]
+  datosDireccionEnvios   DatosDireccionEnvios[]
 
   @@unique([email])
   @@map("user")
@@ -342,4 +347,65 @@ model PedidoDelegado {
   @@index([pedidoId])
   @@index([userId])
   @@map("pedido_delegado")
+}
+
+model DatosFacturacion {
+  id             String   @id @default(cuid())
+  userId         String
+  nombre         String   // "Plantilla facturación", "Plantilla facturación 2", etc.
+
+  // Datos de facturación
+  tipoDocumento  String   // "dni" | "ruc" | "ce"
+  numeroDoc      String
+  nombreFactura  String
+  razonSocial    String?  // Solo para RUC
+  direccion      String?  // Dirección (para RUC o ubigeo)
+  departamento  String?
+  provincia      String?
+  distrito       String?
+  celular        String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("datos_facturacion")
+}
+
+model DatosDireccionEnvios {
+  id             String   @id @default(cuid())
+  userId         String
+  nombre         String   // "Plantilla dirección de envío", "Plantilla dirección de envío 2", etc.
+
+  // Método de envío
+  metodoEnvio    String   // "agencia" | "delivery" (no "tienda")
+  tiendaId       String?
+  agencia        String?  // "shalom" | "flores" | "marvisur" | "olva" | "safexpress" | "otros"
+  agenciaOtro    String?
+  delivery       String?  // "olva" | "safexpress" | "otros"
+  deliveryOtro   String?
+
+  // Ubicación
+  departamento   String?
+  provincia      String?
+  distrito       String?
+
+  // Dirección de envío (nuevo campo para agencia/delivery)
+  direccion      String?  // Dirección específica de entrega
+
+  // Datos de quien recibe
+  tipoEnvio      String?  // "mismapersona" | "otropersona"
+  dniRecibe      String?
+  nombreRecibe   String?
+  celularRecibe  String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("datos_direccion_envios")
 }

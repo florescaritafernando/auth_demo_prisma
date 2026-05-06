@@ -368,6 +368,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
 
     return (
         <div className="space-y-4">
+            {(role === "admin" || (role === "empleado" && pedido.estado !== "pedido_enviado" && pedido.estado !== "completado")) && (
             <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-slate-700">Cambiar estado:</span>
                 <div className="flex flex-wrap gap-2">
@@ -377,14 +378,19 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                         // Si es empleado y NO está asignado, no mostrar ningún botón
                         if (role === "empleado" && !estaAsignado) return false
                         
-                        // Si es empleado asignado: solo mostrar "metraje_confirmado" (si hay metraje) y "rechazado"
+                        // Si es empleado asignado: solo mostrar "metraje_confirmado" y "rechazado" y "pedido_enviado" (si estado confirmado)
                         if (role === "empleado" && estaAsignado) {
                             if (e.value === "rechazado") {
                                 if (pedido.estado === "confirmado" || pedido.estado === "completado" || pedido.estado === "pedido_enviado") return false
                                 return true
                             }
+                            if (e.value === "metraje_confirmado" && pedido.estado === "confirmado") {
+                                return false
+                            }
                             if (e.value === "metraje_confirmado") {
-                                if (!hayMetrajRegistrado) return false
+                                return true
+                            }
+                            if (e.value === "pedido_enviado" && pedido.estado === "confirmado") {
                                 return true
                             }
                             return false
@@ -413,8 +419,9 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                     ))}
                 </div>
             </div>
+            )}
 
-            {(role === "admin" || role === "empleado") && pedido.estado !== "pedido_enviado" && (
+            {(role === "admin" || (role === "empleado" && pedido.estado !== "pedido_enviado" && pedido.estado !== "completado")) && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="flex-1">

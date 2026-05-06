@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { ChevronDown, ChevronUp, FileText, UserCheck, UserPlus } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
+import { ChevronDown, ChevronUp, FileText, UserCheck, UserPlus, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { AdminPedidoActions } from "./actions"
+import { ImprimirPedidoModal } from "@/components/pedidos/ImprimirPedidoModal"
 
 interface DetalleItem {
     id: string
@@ -14,6 +15,7 @@ interface DetalleItem {
     producto: { id: string; nombre: string; categoria: string }
     precio: number
     etiquetas?: { id: string; valor: number }[]
+    indicacionesCorte?: string | null
 }
 
 interface Pedido {
@@ -73,14 +75,19 @@ interface Props {
     role: string
     userId: string
     expandedIds?: Set<string>
+    onToggleExpand?: (id: string) => void
 }
 
-export function PedidoAccordion({ pedidos, role, userId, expandedIds }: Props) {
+export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleExpand }: Props) {
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [currentPage, setCurrentPage] = useState(1)
+    const [pedidoImprimir, setPedidoImprimir] = useState<any>(null)
 
-    const isExpandedCheck = (id: string) => expandedIds?.has(id) || expandedId === id
+    const isExpandedCheck = (id: string) => {
+        const result = expandedIds?.has(id) || expandedId === id
+        return result
+    }
 
     const tomarPedido = async (pedidoId: string) => {
         try {
@@ -107,7 +114,13 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds }: Props) {
     }, [pedidos, currentPage, itemsPerPage])
 
     const toggleExpand = (id: string) => {
-        setExpandedId(prev => prev === id ? null : id)
+        const isCurrentlyExpanded = expandedIds?.has(id) || expandedId === id
+        if (isCurrentlyExpanded) {
+            setExpandedId(null)
+            onToggleExpand?.(id)
+        } else {
+            setExpandedId(id)
+        }
     }
 
     const handleItemsPerPageChange = (value: number) => {
@@ -130,10 +143,8 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds }: Props) {
                         const etiquetasCount = d.etiquetas?.length || 0
                         return etiquetasCount === Number(d.cantidad)
                     })
-                    // Si tiene metraje_confirmado pero piezas incompletas, mostrar como metraje_en_proceso
-                    const estadoReal = (pedido.estado === "metraje_confirmado" && tienePiezasFaltantes) 
-                        ? "metraje_en_proceso" 
-                        : pedido.estado
+                    // Mostrar siempre el estado real del pedido
+                    const estadoReal = pedido.estado
                     const config = ESTADO_CONFIG[estadoReal] || ESTADO_CONFIG.pendiente
                     const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
                     const deliveryLabel = pedido.delivery ? (DELIVERY_LABELS[pedido.delivery] || pedido.deliveryOtro) : null
@@ -156,6 +167,16 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds }: Props) {
                                     <div className="text-left min-w-0 flex-1">
                                         <div className="flex items-center gap-3 flex-wrap">
                                             <p className="font-bold text-slate-900">{pedido.numeroOrden}</p>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setPedidoImprimir(pedido)
+                                                }}
+                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                title="Imprimir pedido"
+                                            >
+                                                <Printer className="h-4 w-4" />
+                                            </button>
                                             {pedido.estado === "completado" ? (
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
                                                     {config.label}
@@ -187,6 +208,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds }: Props) {
                                                     ))}
                                                 </div>
                                             ) : (
+                                                (role === "admin" || (role === "empleado" && pedido.estado !== "completado" && pedido.estado !== "pedido_enviado")) && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
@@ -199,6 +221,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds }: Props) {
                                                     <UserPlus className="h-3 w-3 mr-1" />
                                                     Tomar Pedido
                                                 </Button>
+                                                )
                                             )}
                                         </div>
                                         <p className="text-sm text-slate-500 truncate">
@@ -270,6 +293,35 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds }: Props) {
                                                 })}
                                             </div>
                                         </div>
+
+                                        {(() => {
+                                            const detallesConIndicaciones = pedido.pedidoDetalle.filter((d: any) => d.indicacionesCorte)
+                                            if (detallesConIndicaciones.length === 0) return null
+                                            return (
+                                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                                    <h3 className="font-bold text-amber-800 flex items-center gap-2 text-sm mb-2">
+                                                        📋 Indicaciones de corte
+                                                    </h3>
+                                                    <div className="space-y-2">
+                                                        {detallesConIndicaciones.map((detalle: any) => {
+                                                            const metrajeTotal = detalle.etiquetas?.reduce((sum: number, e: any) => sum + (e.valor || 0), 0) ?? (detalle.metraje || 0)
+                                                            return (
+                                                                <div key={detalle.id} className="bg-white rounded p-2 text-sm">
+                                                                    <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
+                                                                    <p className="text-xs text-slate-500">
+                                                                        {detalle.tipo === "pieza" 
+                                                                            ? `${detalle.cantidad} pieza(s) • ${metrajeTotal.toFixed(2)}m`
+                                                                            : `${detalle.cantidad} metros`
+                                                                        }
+                                                                    </p>
+                                                                    <p className="text-xs text-amber-700 mt-1 italic">"{detalle.indicacionesCorte}"</p>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })()}
 
                                         <div className="space-y-4">
                                             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
@@ -383,6 +435,13 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds }: Props) {
                 onItemsPerPageChange={handleItemsPerPageChange}
                 itemLabel="pedidos"
             />
+
+            {pedidoImprimir && (
+                <ImprimirPedidoModal 
+                    pedido={pedidoImprimir} 
+                    onClose={() => setPedidoImprimir(null)} 
+                />
+            )}
         </div>
     )
 }

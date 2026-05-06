@@ -53,9 +53,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
     const role = (session.user as any)?.role || "cliente"
     const titulo = role === "admin" ? "Panel de Administracion" : role === "empleado" ? "Panel de Colaboradores" : role === "cliente" ? "Panel de Cliente" : "Panel de Control"
 
+    // Obtener datos completos del usuario incluyendo imagen
+    const userData = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true, image: true }
+    })
+
     return (
         <SidebarProvider>
-            <AppSidebar role={role} />
+            <AppSidebar 
+                role={role} 
+                userName={userData?.name || session.user.name || "Usuario"}
+                userImage={userData?.image || null}
+            />
             <main className="w-full flex-1 bg-slate-50">
                 <div className="p-4 border-b bg-white flex items-center shadow-sm sticky top-0 z-10">
                     <SidebarTrigger />

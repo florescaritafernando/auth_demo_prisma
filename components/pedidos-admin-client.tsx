@@ -45,16 +45,22 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search)
-        const queryPedidoId = params.get("pedidoId")
-        const hashPedidoId = window.location.hash.slice(1)
-        const pedidoId = queryPedidoId || hashPedidoId
-        
-        if (pedidoId) {
-            setExpandedIds(new Set([pedidoId]))
+        const hash = window.location.hash.slice(1)
+        if (hash) {
+            setExpandedIds(new Set([hash]))
             window.history.replaceState({}, '', window.location.pathname)
         }
     }, [])
+
+    const handleToggleExpand = (id: string) => {
+        setExpandedIds(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) {
+                next.delete(id)
+            }
+            return next
+        })
+    }
 
     const filteredPedidos = useMemo(() => {
         return pedidos.filter(pedido => {
@@ -215,6 +221,7 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
                     role={role}
                     userId={userId}
                     expandedIds={expandedIds}
+                    onToggleExpand={handleToggleExpand}
                 />
             )}
         </div>

@@ -43,7 +43,7 @@ export function ConfirmarMetrajeModal({ articulosFaltantes, onConfirm, onCancel 
                             </thead>
                             <tbody>
                                 {articulosFaltantes.map((articulo, idx) => (
-                                    <tr key={idx} className="border-b border-slate-100">
+                                    <tr key={idx} className="border-b border-slate-100 text-black">
                                         <td className="py-2 font-medium">{articulo.nombre}</td>
                                         <td className="py-2 text-center text-red-600">{articulo.solicitado}</td>
                                         <td className="py-2 text-center text-green-600">{articulo.registrado}</td>
@@ -53,7 +53,7 @@ export function ConfirmarMetrajeModal({ articulosFaltantes, onConfirm, onCancel 
                         </table>
                     </div>
                     <div className="flex gap-3">
-                        <Button onClick={onCancel} variant="outline" className="flex-1">Cancelar</Button>
+                        <Button onClick={onCancel} className="flex-1 bg-red-500 hover:bg-red-600 text-white">Cancelar</Button>
                         <Button onClick={onConfirm} className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white">Sí, continuar</Button>
                     </div>
                 </div>

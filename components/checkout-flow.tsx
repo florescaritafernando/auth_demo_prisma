@@ -98,8 +98,38 @@ export default function CheckoutPage() {
     const [showAyudaOperacion, setShowAyudaOperacion] = useState(false)
     const [pedidoId, setPedidoId] = useState<string | null>(null)
     const [continuarPedido, setContinuarPedido] = useState<any>(null)
+    const [facturacionTemplates, setFacturacionTemplates] = useState<any[]>([])
+    const [direccionTemplates, setDireccionTemplates] = useState<any[]>([])
+    const [showFacturacionTemplates, setShowFacturacionTemplates] = useState(false)
+    const [showDireccionTemplates, setShowDireccionTemplates] = useState(false)
+    const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
 
     const metrosPorPieza = 50
+
+    // Mostrar toast
+    const showToast = (message: string, type: "success" | "error") => {
+        setToast({ message, type })
+        setTimeout(() => setToast(null), 3000)
+    }
+
+    // Cargar plantillas al inicio
+    useEffect(() => {
+        const loadTemplates = async () => {
+            try {
+                const [factRes, dirRes] = await Promise.all([
+                    fetch("/api/datos-facturacion", { credentials: "include" }),
+                    fetch("/api/datos-direccion", { credentials: "include" })
+                ])
+                const factJson = await factRes.json()
+                const dirJson = await dirRes.json()
+                if (factJson.success) setFacturacionTemplates(factJson.templates || [])
+                if (dirJson.success) setDireccionTemplates(dirJson.templates || [])
+            } catch (e) {
+                console.error("Error loading templates:", e)
+            }
+        }
+        loadTemplates()
+    }, [])
 
     // Actualizar pedido cuando el cliente llegue al paso 4
     useEffect(() => {
@@ -116,11 +146,11 @@ export default function CheckoutPage() {
     }, [step, continuarPedido?.id])
 
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search)
-        const pedidoParam = params.get("pedido")
-        if (pedidoParam) {
-            setPedidoId(pedidoParam)
-            fetchPedido(pedidoParam)
+        const hash = window.location.hash.slice(1)
+        if (hash) {
+            setPedidoId(hash)
+            fetchPedido(hash)
+            window.history.replaceState({}, '', window.location.pathname)
         } else {
             setStep(1)
             fetchCarrito()
@@ -910,7 +940,77 @@ export default function CheckoutPage() {
 
                     {step === 2 && (
                         <div>
-                            <h2 className="text-xl font-bold text-black mb-4">Datos de Facturación</h2>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-black">Datos de Facturación</h2>
+                                <div className="flex gap-2">
+                                    {facturacionTemplates.length > 0 && (
+                                        <select
+                                            onChange={(e) => {
+                                                const t = facturacionTemplates.find(x => x.id === e.target.value)
+                                                if (t) {
+                                                    setData({
+                                                        ...data,
+                                                        tipoDocumento: t.tipoDocumento,
+                                                        numeroDoc: t.numeroDoc,
+                                                        nombreFactura: t.nombreFactura,
+                                                        direccion: t.direccion || "",
+                                                        departamento: t.departamento || "",
+                                                        provincia: t.provincia || "",
+                                                        distrito: t.distrito || ""
+                                                    })
+                                                    showToast("Datos cargados", "success")
+                                                }
+                                                e.target.value = ""
+                                            }}
+                                            className="text-sm border border-slate-300 rounded px-2 py-1 text-black"
+                                        >
+                                            <option value="">📂 Cargar plantilla</option>
+                                            {facturacionTemplates.map(t => (
+                                                <option key={t.id} value={t.id}>{t.nombre}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    <Button
+                                        onClick={async () => {
+                                            if (!data.tipoDocumento || !data.numeroDoc || !data.nombreFactura) {
+                                                showToast("Complete los datos de facturación primero", "error")
+                                                return
+                                            }
+                                            try {
+                                                const res = await fetch("/api/datos-facturacion", {
+                                                    method: "POST",
+                                                    headers: { "Content-Type": "application/json" },
+                                                    body: JSON.stringify({
+                                                        tipoDocumento: data.tipoDocumento,
+                                                        numeroDoc: data.numeroDoc,
+                                                        nombreFactura: data.nombreFactura,
+                                                        razonSocial: data.tipoDocumento === "ruc" ? data.nombreFactura : null,
+                                                        direccion: data.direccion,
+                                                        departamento: data.departamento,
+                                                        provincia: data.provincia,
+                                                        distrito: data.distrito,
+                                                        celular: null
+                                                    }),
+                                                    credentials: "include"
+                                                })
+                                                const json = await res.json()
+                                                if (json.success) {
+                                                    setFacturacionTemplates([json.template, ...facturacionTemplates])
+                                                    showToast("Plantilla guardada", "success")
+                                                } else {
+                                                    showToast(json.error || "Error al guardar", "error")
+                                                }
+                                            } catch (e) {
+                                                showToast("Error de conexión", "error")
+                                            }
+                                        }}
+                                        variant="outline"
+                                        className="text-black border-black hover:bg-slate-100"
+                                    >
+                                        💾 Guardar
+                                    </Button>
+                                </div>
+                            </div>
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-black mb-1">
@@ -1057,7 +1157,108 @@ export default function CheckoutPage() {
 
                     {step === 3 && (
                         <div>
-                            <h2 className="text-xl font-bold text-black mb-4">Método de Entrega</h2>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-black">Método de Entrega</h2>
+                                {(data.metodoEnvio === "agencia" || data.metodoEnvio === "delivery") && (
+                                    <div className="flex gap-2">
+                                        {direccionTemplates.length > 0 && (
+                                            <select
+                                                onChange={(e) => {
+                                                    const t = direccionTemplates.find(x => x.id === e.target.value)
+                                                    if (t) {
+                                                        // Guardar tipoEnvio para chequear después de setData
+                                                        const tipoEnvioCargado = t.tipoEnvio || "mismapersona"
+                                                        setData({
+                                                            ...data,
+                                                            metodoEnvio: t.metodoEnvio,
+                                                            tiendaId: t.tiendaId || "",
+                                                            agencia: t.agencia || "",
+                                                            agenciaOtro: t.agenciaOtro || "",
+                                                            delivery: t.delivery || "",
+                                                            deliveryOtro: t.deliveryOtro || "",
+                                                            departamento: t.departamento || "",
+                                                            provincia: t.provincia || "",
+                                                            distrito: t.distrito || "",
+                                                            direccion: t.direccion || "",
+                                                            tipoEnvio: tipoEnvioCargado,
+                                                            dniRecibe: t.dniRecibe || "",
+                                                            nombreRecibe: t.nombreRecibe || "",
+                                                            celularRecibe: t.celularRecibe || ""
+                                                        })
+                                                        // Forzar actualización de estado para mostrar campos de otra persona
+                                                        setTimeout(() => {
+                                                            setData(prev => ({
+                                                                ...prev,
+                                                                tipoEnvio: tipoEnvioCargado
+                                                            }))
+                                                        }, 50)
+                                                        showToast("Dirección cargada", "success")
+                                                    }
+                                                    e.target.value = ""
+                                                }}
+                                                className="text-sm border border-slate-300 rounded px-2 py-1 text-black"
+                                            >
+                                                <option value="">📂 Cargar dirección</option>
+                                                {direccionTemplates.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.nombre}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                        <Button
+                                            onClick={async () => {
+                                                if (!data.metodoEnvio) {
+                                                    showToast("Seleccione un método de envío", "error")
+                                                    return
+                                                }
+                                                if (data.metodoEnvio === "agencia" && !data.agencia) {
+                                                    showToast("Seleccione una agencia", "error")
+                                                    return
+                                                }
+                                                if (data.metodoEnvio === "delivery" && !data.delivery) {
+                                                    showToast("Seleccione un delivery", "error")
+                                                    return
+                                                }
+                                                try {
+                                                    const res = await fetch("/api/datos-direccion", {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({
+                                                            metodoEnvio: data.metodoEnvio,
+                                                            tiendaId: data.tiendaId || null,
+                                                            agencia: data.agencia || null,
+                                                            agenciaOtro: data.agenciaOtro || null,
+                                                            delivery: data.delivery || null,
+                                                            deliveryOtro: data.deliveryOtro || null,
+                                                            departamento: data.departamento || null,
+                                                            provincia: data.provincia || null,
+                                                            distrito: data.distrito || null,
+                                                            direccion: data.direccion || null,
+                                                            tipoEnvio: data.tipoEnvio || null,
+                                                            dniRecibe: data.dniRecibe || null,
+                                                            nombreRecibe: data.nombreRecibe || null,
+                                                            celularRecibe: data.celularRecibe || null
+                                                        }),
+                                                        credentials: "include"
+                                                    })
+                                                    const json = await res.json()
+                                                    if (json.success) {
+                                                        setDireccionTemplates([json.template, ...direccionTemplates])
+                                                        showToast("Dirección guardada", "success")
+                                                    } else {
+                                                        showToast(json.error || "Error al guardar", "error")
+                                                    }
+                                                } catch (e) {
+                                                    showToast("Error de conexión", "error")
+                                                }
+                                            }}
+                                            variant="outline"
+                                            className="text-black border-black hover:bg-slate-100"
+                                        >
+                                            💾 Guardar
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                             <div className="space-y-4">
                                 <button
                                     onClick={() => data.metodoEnvio !== "tienda" && handleInputChange("metodoEnvio", "tienda")}
@@ -1123,6 +1324,18 @@ export default function CheckoutPage() {
                                             />
                                         )}
                                         <div>
+                                            <label className="block text-sm font-medium text-black mb-2">
+                                                Dirección de envío
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="Dirección completa para entrega"
+                                                value={data.direccion || ""}
+                                                onChange={(e) => handleInputChange("direccion", e.target.value)}
+                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
+                                            />
+                                        </div>
+                                        <div>
                                             <p className="text-sm font-medium text-black mb-2">¿Quién recibe?</p>
                                             <select
                                                 value={data.tipoEnvio || "mismapersona"}
@@ -1152,7 +1365,7 @@ export default function CheckoutPage() {
                                                 />
                                                 <input
                                                     type="text"
-                                                    placeholder="Celular (opcional)"
+                                                    placeholder="Celular"
                                                     value={data.celularRecibe || ""}
                                                     onChange={(e) => handleInputChange("celularRecibe", e.target.value.replace(/\D/g, "").slice(0, 9))}
                                                     className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
@@ -1168,7 +1381,7 @@ export default function CheckoutPage() {
                                     className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "delivery" ? "border-blue-500 bg-blue-50" : "border-slate-200"} ${data.metodoEnvio === "delivery" ? "cursor-not-allowed opacity-75" : ""}`}
                                     disabled={data.metodoEnvio === "delivery"}
                                 >
-                                    <p className="font-bold text-black">Delivery / Delivery Express</p>
+                                    <p className="font-bold text-black">Delivery</p>
                                     <p className="text-sm text-slate-500">S/ {calcularCostoEnvio().toFixed(2)} - Envío a domicilio</p>
                                 </button>
 
@@ -1196,6 +1409,18 @@ export default function CheckoutPage() {
                                                 className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                             />
                                         )}
+                                        <div>
+                                            <label className="block text-sm font-medium text-black mb-2">
+                                                Dirección de envío
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="Dirección completa para entrega"
+                                                value={data.direccion || ""}
+                                                onChange={(e) => handleInputChange("direccion", e.target.value)}
+                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
+                                            />
+                                        </div>
                                         <div>
                                             <p className="text-sm font-medium text-black mb-2">¿Quién recibe?</p>
                                             <select
@@ -1255,33 +1480,54 @@ export default function CheckoutPage() {
                                         <h3 className="font-bold text-black mb-3">Artículos del pedido</h3>
                                         <div className="space-y-3">
                                             {continuarPedido.pedidoDetalle?.map((detalle: any, index: number) => {
-                                                const subtotalporItem = detalle.metraje
-                                                    ? detalle.metraje * detalle.precio
-                                                    : detalle.cantidad * detalle.precio;
+                                                const metrajeItem = detalle.tipo === "pieza"
+                                                    ? (detalle.etiquetas?.reduce((s: number, e: any) => s + e.valor, 0) || 0)
+                                                    : (detalle.metraje || detalle.cantidad)
+                                                const subtotalporItem = metrajeItem * Number(detalle.precio)
+
+                                                // Función para obtener estado del artículo
+                                                const getEstadoArticulo = () => {
+                                                    if (detalle.tipo !== "pieza") return null
+                                                    const solicitados = Number(detalle.cantidad)
+                                                    const registrados = detalle.etiquetas?.length || 0
+                                                    if (registrados === 0) {
+                                                        return { label: `Sin existencias 0/${solicitados} pieza(s)`, color: "bg-red-100 text-red-700" }
+                                                    }
+                                                    if (registrados === solicitados) {
+                                                        return { label: `Completo ${registrados}/${solicitados} pieza(s)`, color: "bg-green-100 text-green-700" }
+                                                    }
+                                                    return { label: `Parcial ${registrados}/${solicitados} pieza(s)`, color: "bg-yellow-100 text-yellow-700" }
+                                                }
+                                                const estadoArticulo = getEstadoArticulo()
 
                                                 return (
                                                     <div key={index} className="bg-white p-3 rounded shadow-sm">
                                                         <div className="flex justify-between text-black mb-1">
-                                                            <span className="font-medium">{detalle.producto?.nombre || `Producto ${index + 1}`}</span>
-                                                            <span>S/ {subtotalporItem.toFixed(2)}</span>
+                                                            <span className="font-bold text-lg">{detalle.producto?.nombre || `Producto ${index + 1}`}</span>
+                                                            <span>{metrajeItem === 0 ? "-" : `S/ ${subtotalporItem.toFixed(2)}`}</span>
                                                         </div>
 
-                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                        <div className="flex items-center gap-2 text-md text-gray-600">
                                                             {detalle.tipo === "pieza" ? (
                                                                 <>
                                                                     <PackageCheck className="h-3 w-3" />
-                                                                    <span>Piezas: {detalle.cantidad}</span>
-                                                                    {detalle.metraje && <span>• Metraje: {detalle.metraje}m</span>}
-                                                                    <span>• P.Unit: S/ {Number(detalle.precio).toFixed(2)}</span>
+                                                                    <span>{detalle.cantidad} pieza(s) {(() => {
+                                                                        const metrajePieza = detalle.etiquetas?.reduce((s: number, e: any) => s + e.valor, 0) || 0
+                                                                        return `${metrajePieza.toFixed(2)} mts`
+                                                                    })()} × S/ {Number(detalle.precio).toFixed(2)}</span>
                                                                 </>
                                                             ) : (
                                                                 <>
                                                                     <RulerDimensionLine className="h-3 w-3" />
-                                                                    <span>Metraje: {detalle.metraje || detalle.cantidad}m</span>
-                                                                    <span>• P.Unit: S/ {Number(detalle.precio).toFixed(2)}</span>
+                                                                    <span>{detalle.metraje || detalle.cantidad} mts × S/ {Number(detalle.precio).toFixed(2)}</span>
                                                                 </>
                                                             )}
                                                         </div>
+                                                        {estadoArticulo && (
+                                                            <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${estadoArticulo.color}`}>
+                                                                {estadoArticulo.label}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
@@ -1295,13 +1541,13 @@ export default function CheckoutPage() {
                                             <span className="text-black">S/ {(() => {
                                                 const detalles = continuarPedido.pedidoDetalle || []
                                                 return detalles.reduce((sum: number, d: any) => {
-                                                    const metraje = d.metraje || 0
-                                                    const cantidad = d.cantidad || 0
                                                     const precio = Number(d.precio) || 0
                                                     if (d.tipo === "pieza") {
-                                                        return sum + (precio * metraje)
+                                                        const metrajePieza = d.etiquetas?.reduce((s: number, e: any) => s + e.valor, 0) || 0
+                                                        return sum + (precio * metrajePieza)
                                                     }
-                                                    return sum + (precio * cantidad)
+                                                    const metraje = d.metraje || d.cantidad || 0
+                                                    return sum + (precio * metraje)
                                                 }, 0)
                                             })().toFixed(2)}</span>
                                         </div>
@@ -1322,11 +1568,17 @@ export default function CheckoutPage() {
                                         </div>
                                     </div>
 
-                                    <div className="mt-6">
+                                    <div className="flex justify-center gap-4 mt-6 pt-4">
+                                        <Button
+                                            onClick={() => router.push("/dashboard/pedidos")}
+                                            className="w-2/5 bg-slate-700 hover:bg-slate-900 text-white font-bold py-3"
+                                        >
+                                            Volver a pedidos
+                                        </Button>
                                         <Button
                                             onClick={() => setShowPaymentModal(true)}
                                             disabled={loading}
-                                            className="w-full bg-green-600 text-white font-bold"
+                                            className="w-3/5 bg-green-600 hover:bg-green-700 text-white font-bold py-3"
                                         >
                                             {loading ? "Procesando..." : "Finalizar Compra"}
                                         </Button>
@@ -1348,7 +1600,7 @@ export default function CheckoutPage() {
                                         </div>
                                         <div className="mt-3 flex items-center gap-2 text-xs text-amber-600">
                                             <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                                            <span>Pending de confirmación</span>
+                                            <span>Pendiente de confirmación</span>
                                         </div>
                                     </div>
 
@@ -1357,11 +1609,36 @@ export default function CheckoutPage() {
                                         <div className="space-y-2">
                                             {continuarPedido?.pedidoDetalle?.length ? (
                                                 continuarPedido.pedidoDetalle.map((detalle: any, idx: number) => (
-                                                    <div key={idx} className="flex justify-between text-sm">
+                                                    <div key={idx} className="flex justify-between items-center text-md">
                                                         <span className="text-black">{detalle.producto?.nombre || `Producto ${idx + 1}`}</span>
-                                                        <span className="text-black font-medium">
-                                                            {detalle.metraje ? `${detalle.metraje}m` : `${detalle.cantidad} ${detalle.tipo === "pieza" ? "pieza(s)" : "m"}`}
-                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                            {detalle.tipo === "pieza" && (() => {
+                                                                const solicitados = Number(detalle.cantidad)
+                                                                const registrados = detalle.etiquetas?.length || 0
+                                                                let badge = null
+                                                                if (registrados === 0) {
+                                                                    badge = { label: "Sin existencias", color: "bg-red-100 text-red-700 text-xs" }
+                                                                } else if (registrados === solicitados) {
+                                                                    badge = { label: "Completo", color: "bg-green-100 text-green-700 text-xs" }
+                                                                } else {
+                                                                    badge = { label: "Parcial", color: "bg-yellow-100 text-yellow-700 text-xs" }
+                                                                }
+                                                                return badge ? (
+                                                                    <span className={`px-2 py-0.5 rounded ${badge.color}`}>
+                                                                        {badge.label} {registrados}/{solicitados}
+                                                                    </span>
+                                                                ) : null
+                                                            })()}
+                                                            <span className="text-black font-medium">
+                                                                {detalle.tipo === "pieza"
+                                                                    ? `${detalle.cantidad} pieza(s) ${(() => {
+                                                                        const metrajePieza = detalle.etiquetas?.reduce((s: number, e: any) => s + e.valor, 0) || 0
+                                                                        return `${metrajePieza.toFixed(2)} mts`
+                                                                    })()}`
+                                                                    : `${detalle.metraje || detalle.cantidad} mts`
+                                                                }
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 ))
                                             ) : (
@@ -1369,7 +1646,7 @@ export default function CheckoutPage() {
                                                     <div key={idx} className="flex justify-between text-sm">
                                                         <span className="text-black">{item.producto.nombre}</span>
                                                         <span className="text-black font-medium">
-                                                            {item.cantidad} {item.tipo === "pieza" ? "pieza(s)" : "m"}
+                                                            {item.cantidad} {item.tipo === "pieza" ? "pieza(s)" : " mts"}
                                                         </span>
                                                     </div>
                                                 ))
@@ -1405,13 +1682,13 @@ export default function CheckoutPage() {
                                             {items.map((item: any, idx: number) => {
                                                 const subtotal = item.metraje ? item.metraje * item.producto.precio : item.cantidad * item.producto.precio
                                                 return (
-                                                    <div key={idx} className="flex justify-between text-sm">
+                                                    <div key={idx} className="flex justify-between text-md">
                                                         <div className="text-black">
                                                             <p className="font-medium">{item.producto.nombre}</p>
                                                             <p className="text-xs text-gray-600">
                                                                 {item.metraje
-                                                                    ? `${item.metraje}m × S/ ${Number(item.producto.precio).toFixed(2)}/m`
-                                                                    : `${item.cantidad} ${item.tipo === "pieza" ? "pieza(s)" : "m"} × S/ ${Number(item.producto.precio).toFixed(2)}/m`
+                                                                    ? `${item.metraje}m × S/ ${Number(item.producto.precio).toFixed(2)}`
+                                                                    : `${item.cantidad} ${item.tipo === "pieza" ? "pieza(s)" : " mts"} × S/ ${Number(item.producto.precio).toFixed(2)}`
                                                                 }
                                                             </p>
                                                         </div>

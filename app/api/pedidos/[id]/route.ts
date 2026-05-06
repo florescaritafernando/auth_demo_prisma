@@ -347,7 +347,7 @@ export async function PATCH(
         if (metrajeItemsArray && Array.isArray(metrajeItemsArray)) {
             for (const item of metrajeItemsArray) {
                 if (item.detalleId && item.metraje > 0) {
-await prisma.metrajeEtiqueta.create({
+                    await prisma.metrajeEtiqueta.create({
                         data: {
                             detalleId: item.detalleId,
                             valor: item.metraje,
