@@ -4,7 +4,6 @@ import { headers, cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Package, FileText } from "lucide-react"
-import { AlertaWrapper } from "@/components/alerta-wrapper"
 import dynamic from "next/dynamic"
 
 const PedidosList = dynamic(() => import("@/components/pedidos/pedidos-list"))
