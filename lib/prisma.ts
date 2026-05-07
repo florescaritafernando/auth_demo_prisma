@@ -11,7 +11,7 @@ const connectionString = !dbUrl || dbUrl.includes("sslmode")
 let prisma: PrismaClient;
 
 if (!connectionString) {
-  prisma = new PrismaClient();
+  prisma = new PrismaClient({});
 } else {
   // @ts-expect-error - El adapter de Neon tiene problemas de tipos con Prisma v7
   const adapter = new PrismaNeon(connectionString);
