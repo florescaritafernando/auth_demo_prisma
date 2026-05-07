@@ -254,7 +254,7 @@ export async function PATCH(
                     userId: pedido.userId,
                     tipo: "pedido_estado",
                     titulo: "Pago confirmado",
-                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido confirmado. El pago ha sido verificado exitosamente.`,
+                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido confirmado. Estamos preparando tu pedido para el envío y te avisaremos cuando esté en camino.`,
                     pedidoId: id
                 }
             })
@@ -292,7 +292,7 @@ export async function PATCH(
                     userId: pedido.userId,
                     tipo: "pedido_estado",
                     titulo: "Pedido enviado",
-                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido enviado. Puedes rastrear tu pedido y confirmar cuando lo recibas.`,
+                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido enviado. Por favor, confirma cuando lo recibas.`,
                     pedidoId: id
                 }
             })

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell, Check, CheckCheck, Package, AlertTriangle, Clock, ArrowRight, Search, X, Calendar } from "lucide-react"
+import { Bell, Check, CheckCheck, Package, BadgeAlert, AlertTriangle, CircleDollarSign, Clock, ArrowRight, Search, X, Calendar, Wallet, Truck, CheckCircle, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { useRouter } from "next/navigation"
@@ -18,15 +18,23 @@ interface Notificacion {
 }
 
 const TIPO_ICONS: Record<string, any> = {
-    metraje_confirmado: AlertTriangle,
-    pedido_estado: Package,
-    sistema: Bell
+    metraje_confirmado: Check,
+    pedido_estado: Check,
+    sistema: BadgeAlert,
+    pedido_pago: CircleDollarSign,
+    pedido_enviado: Truck,
+    pedido_completado: CheckCircle,
+    pedido_rechazado: XCircle,
 }
 
 const TIPO_COLORS: Record<string, string> = {
     metraje_confirmado: "bg-green-100 text-green-700",
-    pedido_estado: "bg-blue-100 text-blue-700",
-    sistema: "bg-slate-100 text-slate-700"
+    pedido_estado: "bg-green-100 text-green-700",
+    sistema: "bg-slate-100 text-slate-700",
+    pedido_pago: "bg-blue-100 text-blue-700",
+    pedido_enviado: "bg-yellow-100 text-yellow-700",
+    pedido_completado: "bg-green-100 text-green-700",
+    pedido_rechazado: "bg-red-100 text-red-700",
 }
 
 export default function NotificacionesPage() {
@@ -89,7 +97,7 @@ export default function NotificacionesPage() {
             ])
             const json = await notifRes.json()
             let role = "cliente"
-            
+
             if (sessionRes.ok) {
                 try {
                     const sessionJson = await sessionRes.json()
@@ -98,7 +106,7 @@ export default function NotificacionesPage() {
                     role = "cliente"
                 }
             }
-            
+
             if (json.success) {
                 setNotificaciones(json.notificaciones)
             }
@@ -318,11 +326,11 @@ export default function NotificacionesPage() {
                                                                     size="sm"
                                                                     onClick={async () => {
                                                                         await marcarLeida(notif.id)
-                                                                        router.push(`/dashboard/pedidos-admin#${notif.pedidoId}`)
+                                                                        router.push(`/dashboard/pedidos-admin`)
                                                                     }}
                                                                     className="bg-yellow-400 hover:bg-yellow-500 text-xs"
                                                                 >
-                                                                    Ver Pedido
+                                                                    Ir a Pedidos
                                                                     <ArrowRight className="h-3 w-3 ml-1" />
                                                                 </Button>
                                                             )}
@@ -331,11 +339,11 @@ export default function NotificacionesPage() {
                                                                     size="sm"
                                                                     onClick={async () => {
                                                                         await marcarLeida(notif.id)
-                                                                        router.push(`/dashboard/pedidos-admin#${notif.pedidoId}`)
+                                                                        router.push(`/dashboard/pedidos-admin`)
                                                                     }}
                                                                     className="bg-blue-400 hover:bg-blue-500 text-xs"
                                                                 >
-                                                                    Ver Pedido
+                                                                    Ir a Pedidos
                                                                     <ArrowRight className="h-3 w-3 ml-1" />
                                                                 </Button>
                                                             )}
@@ -345,14 +353,27 @@ export default function NotificacionesPage() {
                                                                     onClick={async () => {
                                                                         await marcarLeida(notif.id)
                                                                         if (userRole === "cliente") {
-                                                                            router.push(`/dashboard/pedidos#${notif.pedidoId}`)
+                                                                            router.push(`/dashboard/pedidos`)
                                                                         } else {
-router.push(`/dashboard/pedidos-admin#${notif.pedidoId}`)
+                                                                            router.push(`/dashboard/pedidos-admin`)
                                                                         }
                                                                     }}
                                                                     className="bg-green-600 hover:bg-green-700 text-xs"
                                                                 >
-                                                                    Ver Pedido
+                                                                    Ir a Pedidos
+                                                                    <ArrowRight className="h-3 w-3 ml-1" />
+                                                                </Button>
+                                                            )}
+                                                            {notif.pedido && notif.tipo === "pedido_estado" && notif.mensaje?.includes("enviado") && !notif.leida && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={async () => {
+                                                                        await marcarLeida(notif.id)
+                                                                        router.push("/dashboard/pedidos")
+                                                                    }}
+                                                                    className="bg-yellow-500 hover:bg-yellow-600 text-xs"
+                                                                >
+                                                                    Ir a Pedidos
                                                                     <ArrowRight className="h-3 w-3 ml-1" />
                                                                 </Button>
                                                             )}

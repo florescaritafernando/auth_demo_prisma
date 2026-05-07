@@ -74,7 +74,8 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const [costoEnvioManual, setCostoEnvioManual] = useState<string>(String(pedido.costoEnvio || 0))
     const [guardandoCosto, setGuardandoCosto] = useState(false)
 
-    const puedeEditar = role === "admin" || (role === "empleado" && pedido.delegados?.some(d => d.userId === userId))
+    const estaAsignado = pedido.delegados?.some(d => d.userId === userId)
+    const puedeEditar = role === "admin" || (role === "empleado" && estaAsignado && pedido.estado !== "metraje_confirmado")
 
     const piezaDetails = pedido.pedidoDetalle.filter(d => d.tipo === "pieza")
     const tienePiezas = piezaDetails.length > 0
@@ -421,7 +422,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
             </div>
             )}
 
-            {(role === "admin" || (role === "empleado" && pedido.estado !== "pedido_enviado" && pedido.estado !== "completado")) && (
+            {(role === "admin" || (role === "empleado" && pedido.estado !== "pedido_enviado" && pedido.estado !== "completado" && pedido.estado !== "confirmado")) && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="flex-1">
@@ -647,7 +648,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                 </div>
             )}
 
-            {pedido.estado !== "completado" && pedido.estado !== "pedido_enviado" && (
+            {pedido.estado !== "completado" && pedido.estado !== "pedido_enviado" && pedido.estado !== "confirmado" && (
                 <div className="mt-4 pt-3 border-t border-yellow-300">
                     <label className="block text-sm font-bold text-yellow-900 mb-2">
                         Número de Operación (opcional)

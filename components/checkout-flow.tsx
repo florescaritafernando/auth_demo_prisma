@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock, FileText, HelpCircle } from "lucide-react"
+import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, Copy, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock, FileText, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PackageCheck, RulerDimensionLine } from "lucide-react"
 import { UBIGEO_DATA as UBIGEO, type UbigeoType } from "@/lib/ubigeo"
@@ -524,6 +524,19 @@ export default function CheckoutPage() {
             setLoading(false)
         }
     }
+
+    const copiarTexto = (texto: string, key: string) => {
+        navigator.clipboard.writeText(texto)
+        setCopiado({ ...copiado, [key]: true })
+        setTimeout(() => setCopiado({ ...copiado, [key]: false }), 2000)
+    }
+
+    const [copiado, setCopiado] = useState({
+        bcp: false,
+        cci: false,
+        celular: false
+    })
+
 
     const crearPedidoConMetrajeTemporal = async () => {
         setLoading(true)
@@ -1766,371 +1779,433 @@ export default function CheckoutPage() {
             )}
 
             {showPaymentModal && (
+
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+
                     <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl">
                         <h2 className="text-xl font-bold text-black mb-4">Métodos de Pago</h2>
 
-                        <div className="bg-slate-50 p-4 rounded-lg mb-4">
-                            <p className="font-bold text-lg text-black">Total: S/ {continuarPedido?.total ? Number(continuarPedido.total).toFixed(2) : calcularTotal().toFixed(2)}</p>
+                        <div className="bg-slate-50 p-4 rounded-lg mt-4 mb-4">
+                            <p className="font-bold text-xl text-black">Total: S/ {continuarPedido?.total ? Number(continuarPedido.total).toFixed(2) : calcularTotal().toFixed(2)}</p>
                         </div>
 
                         <div className="space-y-3 mb-4">
-                            <div className="border rounded-lg p-3">
-                                <p className="font-bold text-sm text-black mb-2">🏦 Transferencia Bancaria</p>
-                                <div className="text-sm text-slate-700 space-y-1">
-                                    <p>BBVA: 0011-0184-0202841851</p>
-                                    <p>BCP: 215-2858489001</p>
-                                    <p>Interbank: 620-3004489521</p>
-                                </div>
-                            </div>
-
-                            <div className="border rounded-lg p-3">
-                                <p className="font-bold text-sm text-black mb-2">📱 Yape / Plin</p>
-                                <div className="text-sm text-slate-700">
-                                    <p>Cel: +51 978 543 210</p>
-                                    <p>EMPRESA SAC</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium mb-1 text-black flex items-center gap-2">
-                                Número de operación:
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAyudaOperacion(true)}
-                                    className="text-blue-500 hover:text-blue-700"
-                                    title="Ver qué es el número de operación"
-                                >
-                                    <HelpCircle className="h-4 w-4" />
+                            <p className="text-black">Transferencias bancarias:</p>
+                            <img src="/images/bcp_logo.png" alt="BCP" className="w-28 h-8" />
+                            <div className="flex items-center justify-between">
+                                <p className="text-black">Cuenta corriente: 215-2858489001</p>
+                                <button onClick={() => copiarTexto("215-2858489001", "bcp")}
+                                    className={`px-2 py-1 text-xs rounded ${copiado.bcp
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                        }`}>
+                                    {copiado.bcp ? "Copiado" : "Copiar"}
                                 </button>
-                            </label>
-                            <input
-                                type="text"
-                                value={data.numeroOperacion}
-                                onChange={(e) => setData({ ...data, numeroOperacion: e.target.value })}
-                                className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
-                                placeholder="Ingresa el número de operación"
-                            />
-                        </div>
-
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={() => setShowPaymentModal(false)}
-                                variant="outline"
-                                className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                onClick={confirmarPago}
-                                disabled={loading || !data.numeroOperacion}
-                                className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
-                            >
-                                {loading ? "Procesando..." : "Confirmar Pedido"}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showAyudaOperacion && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setShowAyudaOperacion(false)}>
-                    <div className="relative max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
-                        <button
-                            onClick={() => setShowAyudaOperacion(false)}
-                            className="absolute -top-10 right-0 text-white hover:text-gray-200 font-bold text-lg flex items-center gap-1"
-                        >
-                            <X className="h-5 w-5" />
-                            Cerrar
-                        </button>
-                        <img
-                            src="/images/yape_info2.jpg"
-                            alt="Cómo encontrar el número de operación"
-                            className="w-full rounded-lg shadow-2xl"
-                        />
-                    </div>
-                </div>
-            )}
-
-            {!continuarPedido && showMetrajePopup && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <AlertTriangle className="h-6 w-6 text-yellow-600" />
                             </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-black">⚠️ Tu pedido incluye piezas</h2>
-                                <p className="text-sm text-slate-500">El metraje exacto está siendo procesado.</p>
+                            <div className="flex items-center justify-between">
+                                <p className="text-black">CCI: 620-3004489521</p>
+                                <button onClick={() => copiarTexto("620-3004489521", "cci")}
+                                    className={`px-2 py-1 text-xs rounded ${copiado.cci
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                        }`}>
+                                    {copiado.cci ? "Copiado" : "Copiar"}
+                                </button>
                             </div>
-                        </div>
+                            <div className="flex items-center gap-2">
+                                <p className="text-black">Billeteras digitales: </p>
+                            </div>
 
-                        <div className="mb-4">
-                            <p className="text-sm font-medium text-slate-700 mb-2">Artículos que requieren metraje:</p>
-                            <div className="bg-slate-50 rounded-lg p-3 max-h-32 overflow-y-auto">
-                                {items.filter(i => i.tipo === "pieza").map((item, idx) => (
-                                    <div key={idx} className="flex justify-between text-sm py-1">
-                                        <span className="text-slate-800">{item.producto.nombre}</span>
-                                        <span className="text-slate-500">{item.cantidad} piezas</span>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-3 align-center justify-center">
+                                    <div className="flex flex-row gap-2 items-center justify-center">
+                                        <img src="/images/yape_logo.png" alt="Yape" className="w-16 h-16 rounded-lg" />
+                                        <img src="/images/plin_image.jpg" alt="Plin" className="w-16 h-16 rounded-lg" />
                                     </div>
-                                ))}
+
+                                    <div className="flex items-center justify-between gap-2 items-center justify-center">
+                                        <p className="text-black font-medium">+51 978 543 210</p>
+                                        <button
+                                            onClick={() => copiarTexto("+51 978 543 210", "celular")}
+                                            className={`px-3 py-1.5 text-xs rounded font-medium ${copiado.celular
+                                                ? "bg-green-500 text-white"
+                                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                                }`}
+                                        >
+                                            {copiado.celular ? "Copiado" : "Copiar"}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-center">
+                                    <img
+                                        src="/images/QR-Yape.jpg"
+                                        alt="QR-Yape"
+                                        className="w-40 h-40 rounded-lg"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-black">Empresa: <strong>Manchester Collection Perú E.I.R.L.</strong></p>
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium mb-1 text-black flex items-center gap-2">
+                                    Número de operación:
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAyudaOperacion(true)}
+                                        className="text-blue-500 hover:text-blue-700"
+                                        title="Ver qué es el número de operación"
+                                    >
+                                        <HelpCircle className="h-4 w-4" />
+                                    </button>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={data.numeroOperacion}
+                                    onChange={(e) => setData({ ...data, numeroOperacion: e.target.value })}
+                                    className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
+                                    placeholder="Ingresa el número de operación"
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <div className="w-full gap-3">
+                                    <Button
+                                        onClick={() => setShowPaymentModal(false)}
+                                        className="w-2/5 bg-red-600 hover:bg-red-700 font-bold py-2.5 px-4 rounded-lg text-white"
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        onClick={confirmarPago}
+                                        disabled={loading || !data.numeroOperacion}
+                                        className="w-3/5 bg-green-600 hover:bg-green-700 font-bold py-2.5 px-4 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading ? "Procesando..." : "Confirmar Pedido"}
+                                    </Button>
+                                </div>
+
                             </div>
                         </div>
                     </div>
-
-                    <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
-                        <p className="text-sm text-yellow-800">
-                            Te notificaremos cuando esté listo para continuar.
-                        </p>
-                    </div>
-                    <div className="flex gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => { setShowMetrajePopup(false); router.push("/dashboard") }}
-                            className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={async () => {
-                                setShowMetrajePopup(false)
-                                await crearPedidoConMetrajeTemporal()
-                            }}
-                            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
-                        >
-                            Aceptar
-                        </Button>
-                    </div>
                 </div>
-            )}
+            )
+            }
 
-
-            {deletingId && items.find(i => i.id === deletingId) && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
-                        <div className="text-center mb-4">
-                            <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                            <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
-                            <p className="text-slate-600 mt-2">
-                                El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
-                            </p>
-                        </div>
-                        <div className="flex justify-center gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={cancelarEliminar}
-                                className="border-slate-300 text-black"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                onClick={confirmarEliminar}
-                                className="bg-red-600 hover:bg-red-700"
-                            >
-                                Sí, eliminar
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {deletingId && items.find(i => i.id === deletingId) && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
-                        <div className="text-center mb-4">
-                            <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                            <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
-                            <p className="text-slate-600 mt-2">
-                                El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
-                            </p>
-                        </div>
-                        <div className="flex justify-center gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={cancelarEliminar}
-                                className="border-slate-300 text-black"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                onClick={confirmarEliminar}
-                                className="bg-red-600 hover:bg-red-700"
-                            >
-                                Sí, eliminar
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {popupItem && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-slate-900">Indicaciones de corte</h3>
+            {
+                showAyudaOperacion && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setShowAyudaOperacion(false)}>
+                        <div className="relative max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
                             <button
-                                onClick={() => setPopupItem(null)}
-                                className="p-2 text-slate-500 hover:text-slate-700 rounded"
+                                onClick={() => setShowAyudaOperacion(false)}
+                                className="absolute -top-10 right-0 text-white hover:text-gray-200 font-bold text-lg flex items-center gap-1"
                             >
                                 <X className="h-5 w-5" />
+                                Cerrar
                             </button>
-                        </div>
-
-                        <div className="space-y-3 mb-4">
-                            <div>
-                                <p className="text-sm text-slate-500">Producto</p>
-                                <p className="font-medium text-slate-900">{popupItem.producto.nombre}</p>
-                            </div>
-
-                            <div className="flex gap-4">
-                                <div>
-                                    <p className="text-sm text-slate-500">Tipo</p>
-                                    <p className="font-medium text-slate-900">{popupItem.tipoLabel}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-slate-500">Cantidad</p>
-                                    <p className="font-medium text-slate-900">{popupItem.cantidad} {popupItem.tipo === "pieza" ? "pzs" : "m"}</p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p className="text-sm font-medium text-slate-700 mb-2">Indicaciones de corte</p>
-                                <textarea
-                                    value={indicaciones[popupItem.id] || ""}
-                                    onChange={(e) => {
-                                        const value = e.target.value.slice(0, 200)
-                                        setIndicaciones(prev => ({ ...prev, [popupItem.id]: value }))
-                                    }}
-                                    maxLength={200}
-                                    placeholder="Ej: Cortar a 2.5 metros, necesito 3 piezas de 1m cada una..."
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm text-slate-900"
-                                    rows={4}
-                                />
-                                <p className="text-xs text-slate-400 mt-1">{(indicaciones[popupItem.id] || "").length}/200 caracteres</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={async () => {
-                                    await guardarIndicacion(popupItem.id)
-                                    setPopupItem(null)
-                                }}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                            >
-                                Guardar
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setPopupItem(null)}
-                            >
-                                Cancelar
-                            </Button>
+                            <img
+                                src="/images/yape_info2.jpg"
+                                alt="Cómo encontrar el número de operación"
+                                className="w-full rounded-lg shadow-2xl"
+                            />
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {indicacionToDelete && (
-                <div
-                    className="fixed inset-0 flex items-center justify-center z-[100]"
-                    style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
-                    onClick={() => setIndicacionToDelete(null)}
-                >
-                    <div
-                        className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="text-center mb-4">
-                            <FileText className="h-12 w-12 text-amber-500 mx-auto mb-2" />
-                            <p className="text-lg font-bold text-slate-900">¿Eliminar indicación de corte?</p>
-                            <p className="text-slate-600 mt-2">
-                                La indicación para este producto será eliminada. Esta acción no se puede deshacer.
+            {
+                !continuarPedido && showMetrajePopup && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-black">⚠️ Tu pedido incluye piezas</h2>
+                                    <p className="text-sm text-slate-500">El metraje exacto está siendo procesado.</p>
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <p className="text-sm font-medium text-slate-700 mb-2">Artículos que requieren metraje:</p>
+                                <div className="bg-slate-50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                                    {items.filter(i => i.tipo === "pieza").map((item, idx) => (
+                                        <div key={idx} className="flex justify-between text-sm py-1">
+                                            <span className="text-slate-800">{item.producto.nombre}</span>
+                                            <span className="text-slate-500">{item.cantidad} piezas</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
+                            <p className="text-sm text-yellow-800">
+                                Te notificaremos cuando esté listo para continuar.
                             </p>
                         </div>
-                        <div className="flex justify-center gap-3">
+                        <div className="flex gap-3">
                             <Button
                                 variant="outline"
-                                onClick={() => setIndicacionToDelete(null)}
-                                className="border-slate-300 text-slate-700"
+                                onClick={() => { setShowMetrajePopup(false); router.push("/dashboard") }}
+                                className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
                             >
                                 Cancelar
                             </Button>
                             <Button
                                 onClick={async () => {
-                                    console.log("Confirmando eliminación...")
-                                    // Actualizar estado local
-                                    setIndicaciones(prev => ({ ...prev, [indicacionToDelete]: "" }))
-                                    // Llamar al API directamente con null para eliminar
-                                    await fetch("/api/carrito", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({
-                                            action: "actualizarIndicaciones",
-                                            carritoId: indicacionToDelete,
-                                            indicacionesCorte: null
-                                        }),
-                                        credentials: "include"
-                                    })
-                                    setIndicacionToDelete(null)
+                                    setShowMetrajePopup(false)
+                                    await crearPedidoConMetrajeTemporal()
                                 }}
-                                className="bg-red-600 hover:bg-red-700"
+                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
                             >
-                                Sí, eliminar
+                                Aceptar
                             </Button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {successModal.show && (
-                <div
-                    className="fixed inset-0 flex items-center justify-center z-50"
-                    style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-                    onClick={() => {
-                        setSuccessModal({ show: false, message: "" })
-                        router.push("/dashboard/pedidos")
-                    }}
-                >
-                    <div
-                        className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl transform scale-100"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="text-center">
-                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Check className="h-10 w-10 text-green-600" />
-                            </div>
-                            <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                                ¡Pedido Agendado!
-                            </h2>
-                            {successModal.orderNumber && (
-                                <p className="text-sm text-slate-500 mb-4">
-                                    Orden: <span className="font-semibold text-slate-700">{successModal.orderNumber}</span>
-                                </p>
-                            )}
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                                <p className="text-amber-800 text-sm">
-                                    <Clock className="inline h-4 w-4 mr-1" />
-                                    Piezas en proceso de metraje
-                                </p>
-                                <p className="text-amber-600 text-xs mt-1">
-                                    Te contactaremos pronto para confirmar los detalles.
+
+            {
+                deletingId && items.find(i => i.id === deletingId) && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
+                            <div className="text-center mb-4">
+                                <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
+                                <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
+                                <p className="text-slate-600 mt-2">
+                                    El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
                                 </p>
                             </div>
-                            <button
-                                onClick={() => {
-                                    setSuccessModal({ show: false, message: "" })
-                                    router.push("/dashboard/pedidos")
-                                }}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
-                            >
-                                Ver mis pedidos
-                            </button>
+                            <div className="flex justify-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={cancelarEliminar}
+                                    className="border-slate-300 text-black"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={confirmarEliminar}
+                                    className="bg-red-600 hover:bg-red-700"
+                                >
+                                    Sí, eliminar
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
+
+            {
+                deletingId && items.find(i => i.id === deletingId) && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
+                            <div className="text-center mb-4">
+                                <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
+                                <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
+                                <p className="text-slate-600 mt-2">
+                                    El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
+                                </p>
+                            </div>
+                            <div className="flex justify-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={cancelarEliminar}
+                                    className="border-slate-300 text-black"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={confirmarEliminar}
+                                    className="bg-red-600 hover:bg-red-700"
+                                >
+                                    Sí, eliminar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                popupItem && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-slate-900">Indicaciones de corte</h3>
+                                <button
+                                    onClick={() => setPopupItem(null)}
+                                    className="p-2 text-slate-500 hover:text-slate-700 rounded"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3 mb-4">
+                                <div>
+                                    <p className="text-sm text-slate-500">Producto</p>
+                                    <p className="font-medium text-slate-900">{popupItem.producto.nombre}</p>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <div>
+                                        <p className="text-sm text-slate-500">Tipo</p>
+                                        <p className="font-medium text-slate-900">{popupItem.tipoLabel}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-slate-500">Cantidad</p>
+                                        <p className="font-medium text-slate-900">{popupItem.cantidad} {popupItem.tipo === "pieza" ? "pzs" : "m"}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-sm font-medium text-slate-700 mb-2">Indicaciones de corte</p>
+                                    <textarea
+                                        value={indicaciones[popupItem.id] || ""}
+                                        onChange={(e) => {
+                                            const value = e.target.value.slice(0, 200)
+                                            setIndicaciones(prev => ({ ...prev, [popupItem.id]: value }))
+                                        }}
+                                        maxLength={200}
+                                        placeholder="Ej: Cortar a 2.5 metros, necesito 3 piezas de 1m cada una..."
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm text-slate-900"
+                                        rows={4}
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">{(indicaciones[popupItem.id] || "").length}/200 caracteres</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <Button
+                                    onClick={async () => {
+                                        await guardarIndicacion(popupItem.id)
+                                        setPopupItem(null)
+                                    }}
+                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                >
+                                    Guardar
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setPopupItem(null)}
+                                >
+                                    Cancelar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                indicacionToDelete && (
+                    <div
+                        className="fixed inset-0 flex items-center justify-center z-[100]"
+                        style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
+                        onClick={() => setIndicacionToDelete(null)}
+                    >
+                        <div
+                            className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="text-center mb-4">
+                                <FileText className="h-12 w-12 text-amber-500 mx-auto mb-2" />
+                                <p className="text-lg font-bold text-slate-900">¿Eliminar indicación de corte?</p>
+                                <p className="text-slate-600 mt-2">
+                                    La indicación para este producto será eliminada. Esta acción no se puede deshacer.
+                                </p>
+                            </div>
+                            <div className="flex justify-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIndicacionToDelete(null)}
+                                    className="border-slate-300 text-slate-700"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={async () => {
+                                        console.log("Confirmando eliminación...")
+                                        // Actualizar estado local
+                                        setIndicaciones(prev => ({ ...prev, [indicacionToDelete]: "" }))
+                                        // Llamar al API directamente con null para eliminar
+                                        await fetch("/api/carrito", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({
+                                                action: "actualizarIndicaciones",
+                                                carritoId: indicacionToDelete,
+                                                indicacionesCorte: null
+                                            }),
+                                            credentials: "include"
+                                        })
+                                        setIndicacionToDelete(null)
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700"
+                                >
+                                    Sí, eliminar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                successModal.show && (
+                    <div
+                        className="fixed inset-0 flex items-center justify-center z-50"
+                        style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+                        onClick={() => {
+                            setSuccessModal({ show: false, message: "" })
+                            router.push("/dashboard/pedidos")
+                        }}
+                    >
+                        <div
+                            className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl transform scale-100"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="text-center">
+                                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Check className="h-10 w-10 text-green-600" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                                    ¡Pedido Agendado!
+                                </h2>
+                                {successModal.orderNumber && (
+                                    <p className="text-sm text-slate-500 mb-4">
+                                        Orden: <span className="font-semibold text-slate-700">{successModal.orderNumber}</span>
+                                    </p>
+                                )}
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                                    <p className="text-amber-800 text-sm">
+                                        <Clock className="inline h-4 w-4 mr-1" />
+                                        Piezas en proceso de metraje
+                                    </p>
+                                    <p className="text-amber-600 text-xs mt-1">
+                                        Te contactaremos pronto para confirmar los detalles.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setSuccessModal({ show: false, message: "" })
+                                        router.push("/dashboard/pedidos")
+                                    }}
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+                                >
+                                    Ver mis pedidos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </>
     )
 }
