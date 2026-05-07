@@ -1,22 +1,44 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"
+import { redirect } from "next/navigation"
+import prisma from "@/lib/prisma"
+import { DashboardClient } from "./dashboard-client"
 
+export const dynamic = "force-dynamic"
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+async function getProductos() {
+    try {
+        const productos = await prisma.producto.findMany({
+            where: { activo: true },
+            orderBy: { createdAt: "desc" },
+            include: {
+                stocks: {
+                    include: { almacen: { select: { id: true, nombre: true, ciudad: true } } }
+                }
+            },
+        })
+        return productos
+    } catch {
+        return []
+    }
+}
+
+export default async function DashboardPage() {
+    const headersList = await headers()
+    const session = await auth.api.getSession({
+        headers: headersList
+    })
+
+    if (!session) redirect("/login")
+
+    const role = (session.user as any)?.role || "cliente"
+    const productos = await getProductos()
+
     return (
-        <>
-            <div>
-                <div className="flex flex-col items-center py-4 text-2xl font-bold w-full">Welcome to the dashboard of Manchester Collection Peru</div>
-
-            </div>
-            <SidebarProvider>
-                <AppSidebar />
-                <main>
-                    <SidebarTrigger />
-                    {children}
-                </main>
-            </SidebarProvider>
-
-        </>
+        <DashboardClient
+            productos={productos as any}
+            userName={session?.user?.name || "Cliente"}
+            userRole={role}
+        />
     )
 }
