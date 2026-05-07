@@ -3,7 +3,18 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "./prisma";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+let resendInstance: Resend | undefined;
+
+function getResend(): Resend {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error("RESEND_API_KEY is not set");
+    }
+    resendInstance = new Resend(apiKey);
+  }
+  return resendInstance;
+}
 
 interface EmailResponse {
     success: boolean;
@@ -24,7 +35,7 @@ export async function enviarEmail(
     }
 
     try {
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResend().emails.send({
             from: "<onboarding@resend.dev>",
             to,
             subject,
@@ -75,7 +86,7 @@ export const auth = betterAuth({
             const token = urlObj.searchParams.get("token");
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
             const verifyUrl = `${appUrl}/api/verify-email?token=${token}`;
-            await resend.emails.send({
+            await getResend().emails.send({
                 from: "onboarding@resend.dev",
                 to: user.email,
                 subject: "Verifica tu correo electrónico",
@@ -133,7 +144,7 @@ export const auth = betterAuth({
     },
     passwordReset: {
         sendResetEmail: async ({ user, url }: { user: any; url: string }) => {
-            await resend.emails.send({
+            await getResend().emails.send({
                 from: "onboarding@resend.dev",
                 to: user.email,
                 subject: "Restablece tu contraseña",
