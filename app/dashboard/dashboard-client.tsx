@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider"
 import { Pagination } from "@/components/ui/pagination"
 import { CarritoBadge } from "@/components/carrito-badge"
 import { CarritoParticulas } from "@/components/carrito-particulas"
-import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle } from "lucide-react"
+import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search } from "lucide-react"
 import { BotonAgregarCarrito } from "@/components/agregar-carrito-button"
 import { cn } from "@/lib/utils"
 
@@ -42,6 +42,8 @@ interface Filtros {
     precioMax: number | null
     stock: string
     soloFavoritos: boolean
+    busqueda: string
+    color: string | null
 }
 
 function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Producto; esFavorito: boolean; onToggleFavorito: (id: string) => void }) {
@@ -262,6 +264,30 @@ function PanelFiltros({
                     </div>
 
                     <div>
+                        <label className="block text-sm font-semibold text-black mb-2">Color</label>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { nombre: "negro", codigos: ["999", "900", "901", "902", "903", "904"], hex: "#1a1a1a" },
+                                { nombre: "azul", codigos: ["100", "101", "102", "200", "201", "300", "301"], hex: "#1e40af" },
+                                { nombre: "blanco", codigos: ["001", "002", "003", "004", "005"], hex: "#f5f5f5" },
+                                { nombre: "rojo", codigos: ["500", "501", "502", "503", "600"], hex: "#dc2626" },
+                                { nombre: "rosa", codigos: ["310", "311", "312", "313", "314", "315", "316"], hex: "#ec4899" },
+                                { nombre: "celeste", codigos: ["400", "401", "402", "410"], hex: "#0ea5e9" },
+                                { nombre: "verde olivo", codigos: ["700", "701", "702", "710"], hex: "#65a30d" },
+                                { nombre: "marron", codigos: ["800", "801", "802", "810", "820"], hex: "#78350f" },
+                            ].map((color) => (
+                                <button
+                                    key={color.nombre}
+                                    onClick={() => setFiltros({ ...filtros, color: filtros.color === color.nombre ? null : color.nombre })}
+                                    className={`w-8 h-8 rounded-full border-2 transition-all ${filtros.color === color.nombre ? "border-slate-900 scale-110 shadow-md" : "border-slate-300 hover:border-slate-400"}`}
+                                    style={{ backgroundColor: color.hex }}
+                                    title={color.nombre.charAt(0).toUpperCase() + color.nombre.slice(1)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
                         <label className="block text-sm font-semibold text-black mb-4">
                             Precio hasta S/ {precioMaxSel.toFixed(0)}
                         </label>
@@ -282,7 +308,7 @@ function PanelFiltros({
                     <div>
                         <button
                             onClick={() => {
-                                setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false })
+                                setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false, busqueda: "", color: null })
                                 setPrecioMaxSel(precioMaxGlobal)
                             }}
                             className="w-full py-2 text-sm text-black hover:text-gray-800 flex items-center justify-center gap-2"
@@ -316,7 +342,9 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
         precioMin: null,
         precioMax: null,
         stock: "",
-        soloFavoritos: false
+        soloFavoritos: false,
+        busqueda: "",
+        color: null
     })
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(12)
@@ -411,6 +439,30 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
     const precioMin = precios.length > 0 ? Math.min(...precios) : 0
     const precioMax = precios.length > 0 ? Math.max(...precios) : 1000
 
+    const COLORES = [
+        { nombre: "negro", codigos: ["999", "900", "901", "902", "903", "904"], hex: "#1a1a1a" },
+        { nombre: "azul", codigos: ["100", "101", "102", "200", "201", "300", "301"], hex: "#1e40af" },
+        { nombre: "blanco", codigos: ["001", "002", "003", "004", "005"], hex: "#f5f5f5" },
+        { nombre: "rojo", codigos: ["500", "501", "502", "503", "600"], hex: "#dc2626" },
+        { nombre: "rosa", codigos: ["310", "311", "312", "313", "314", "315", "316"], hex: "#ec4899" },
+        { nombre: "celeste", codigos: ["400", "401", "402", "410"], hex: "#0ea5e9" },
+        { nombre: "verde olivo", codigos: ["700", "701", "702", "710"], hex: "#65a30d" },
+        { nombre: "marron", codigos: ["800", "801", "802", "810", "820"], hex: "#78350f" },
+    ]
+
+    const getColorFromNombre = (nombre: string): string | null => {
+        const parts = nombre.split("-")
+        const codigo = parts[parts.length - 1]?.trim()
+        if (!codigo) return null
+        
+        for (const color of COLORES) {
+            if (color.codigos.includes(codigo)) {
+                return color.nombre
+            }
+        }
+        return null
+    }
+
     const productosFiltrados = productos.filter(prod => {
         if (filtros.categoria && prod.categoria !== filtros.categoria) return false
 
@@ -419,15 +471,22 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
 
         if (filtros.soloFavoritos && !favoritos.has(prod.id)) return false
 
+        if (filtros.busqueda && !prod.nombre.toLowerCase().includes(filtros.busqueda.toLowerCase())) return false
+
+        if (filtros.color) {
+            const colorProducto = getColorFromNombre(prod.nombre)
+            if (colorProducto !== filtros.color) return false
+        }
+
         return true
     })
 
-    const tieneFiltrosActivos = filtros.categoria || filtros.precioMin !== null || filtros.precioMax !== null || filtros.soloFavoritos
+    const tieneFiltrosActivos = filtros.categoria || filtros.precioMin !== null || filtros.precioMax !== null || filtros.soloFavoritos || filtros.busqueda || filtros.color
 
     return (
         <div className="p-6 md:p-10 font-sans">
             <div ref={headerRef} className="mb-6 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
-                <div>
+                <div className="w-full md:w-auto">
                     <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
                         Mi Catalogo Exclusivo
                     </h1>
@@ -435,7 +494,17 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                         Bienvenido(a), <span className="font-semibold text-slate-700">{userName}</span>.
                     </p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar por nombre..."
+                            value={filtros.busqueda}
+                            onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+                        />
+                    </div>
                     <button
                         onClick={() => setFiltros({ ...filtros, soloFavoritos: !filtros.soloFavoritos })}
                         className={`flex items-center gap-2 px-4 py-2 border rounded-lg font-semibold transition-colors ${filtros.soloFavoritos ? 'border-red-500 text-red-600 bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
@@ -458,6 +527,12 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                 <div className="max-w-7xl mx-auto mb-4">
                     <div className="flex flex-wrap gap-2 items-center">
                         <span className="text-sm text-slate-500">Filtros activos:</span>
+                        {filtros.busqueda && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                "{filtros.busqueda}"
+                                <button onClick={() => setFiltros({ ...filtros, busqueda: "" })}><X className="h-3 w-3" /></button>
+                            </span>
+                        )}
                         {filtros.categoria && (
                             <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
                                 {filtros.categoria}
@@ -483,7 +558,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                             </span>
                         )}
                         <button
-                            onClick={() => setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false })}
+                            onClick={() => setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false, busqueda: "", color: null })}
                             className="text-xs text-slate-500 hover:text-slate-700 underline"
                         >
                             Limpiar todo
@@ -496,7 +571,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                 {productosFiltrados.length === 0 ? (
                     <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
                         <p className="text-slate-500 mb-4">No hay productos que coincidan con los filtros.</p>
-                        <Button onClick={() => setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false })}>
+                        <Button onClick={() => setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false, busqueda: "", color: null })}>
                             Limpiar filtros
                         </Button>
                     </div>

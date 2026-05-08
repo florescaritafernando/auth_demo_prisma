@@ -75,7 +75,7 @@ function ProductCard({ prod, onClick, priority }: { prod: any, onClick?: () => v
       className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col rounded-lg overflow-hidden"
       onClick={onClick}
     >
-      <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center">
+      <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
         {prod.imagen ? (
           <Image
             src={prod.imagen}

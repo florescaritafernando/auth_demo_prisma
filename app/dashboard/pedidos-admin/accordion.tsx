@@ -152,10 +152,10 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                     const isExpanded = isExpandedCheck(pedido.id)
 
                     return (
-                        <div 
-                        key={pedido.id} 
-                        className={`border-b border-slate-100 last:border-b-0 transition-all duration-300 ${expandedId && expandedId !== pedido.id ? "blur-sm opacity-50 pointer-events-none" : ""}`}
-                    >
+                        <div
+                            key={pedido.id}
+                            className="border-b border-slate-100 last:border-b-0"
+                        >
                             <div
                                 onClick={() => toggleExpand(pedido.id)}
                                 className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer"
@@ -209,18 +209,18 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 </div>
                                             ) : (
                                                 (role === "admin" || (role === "empleado" && pedido.estado !== "completado" && pedido.estado !== "pedido_enviado")) && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="text-xs h-6 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        tomarPedido(pedido.id)
-                                                    }}
-                                                >
-                                                    <UserPlus className="h-3 w-3 mr-1" />
-                                                    Tomar Pedido
-                                                </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="text-xs h-6 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            tomarPedido(pedido.id)
+                                                        }}
+                                                    >
+                                                        <UserPlus className="h-3 w-3 mr-1" />
+                                                        Tomar Pedido
+                                                    </Button>
                                                 )
                                             )}
                                         </div>
@@ -260,8 +260,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 {pedido.pedidoDetalle.map((detalle) => {
                                                     const tieneEtiquetas = detalle.etiquetas && detalle.etiquetas.length > 0;
                                                     // Cambiamos e.metraje por e.valor según lo que indica tu error de TypeScript
-                                                    const metrajeTotal = detalle.etiquetas?.reduce((sum, e) => sum + (e.valor || 0), 0)
-                                                        ?? (detalle.metraje || 0);
+                                                    const metrajeTotal = Number((detalle.etiquetas?.reduce((sum, e) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2));
 
                                                     const precioTotal = detalle.tipo === "pieza"
                                                         ? Number(detalle.precio) * metrajeTotal
@@ -300,16 +299,16 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                             return (
                                                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                                                     <h3 className="font-bold text-amber-800 flex items-center gap-2 text-sm mb-2">
-                                                        📋 Indicaciones de corte
+                                                        Indicaciones de corte
                                                     </h3>
                                                     <div className="space-y-2">
                                                         {detallesConIndicaciones.map((detalle: any) => {
-                                                            const metrajeTotal = detalle.etiquetas?.reduce((sum: number, e: any) => sum + (e.valor || 0), 0) ?? (detalle.metraje || 0)
+                                                            const metrajeTotal = Number((detalle.etiquetas?.reduce((sum: number, e: any) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2))
                                                             return (
                                                                 <div key={detalle.id} className="bg-white rounded p-2 text-sm">
                                                                     <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
                                                                     <p className="text-xs text-slate-500">
-                                                                        {detalle.tipo === "pieza" 
+                                                                        {detalle.tipo === "pieza"
                                                                             ? `${detalle.cantidad} pieza(s) • ${metrajeTotal.toFixed(2)}m`
                                                                             : `${detalle.cantidad} metros`
                                                                         }
@@ -437,9 +436,9 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
             />
 
             {pedidoImprimir && (
-                <ImprimirPedidoModal 
-                    pedido={pedidoImprimir} 
-                    onClose={() => setPedidoImprimir(null)} 
+                <ImprimirPedidoModal
+                    pedido={pedidoImprimir}
+                    onClose={() => setPedidoImprimir(null)}
                 />
             )}
         </div>
