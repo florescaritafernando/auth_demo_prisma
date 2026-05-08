@@ -22,10 +22,11 @@ export async function POST(request: NextRequest) {
 
     for (const producto of productos) {
       try {
+        if (!producto.imagen) continue;
         const localPath = join(process.cwd(), "public", producto.imagen.replace(/^\//, ""))
-        
+
         const buffer = await readFile(localPath)
-        
+
         const ext = producto.imagen.split('.').pop()?.toLowerCase()
         const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg'
 
@@ -48,24 +49,24 @@ export async function POST(request: NextRequest) {
 
         resultados.exitosos++
         resultados.detalles.push(`✓ ${producto.nombre}`)
-        
+
       } catch (error) {
         resultados.fallidos++
         resultados.detalles.push(`✗ ${producto.nombre}: ${error}`)
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Migración completada: ${resultados.exitosos} exitosos, ${resultados.fallidos} fallidos`,
       detalles: resultados.detalles
     })
 
   } catch (error) {
     console.error("Error en migración:", error)
-    return NextResponse.json({ 
-      success: false, 
-      error: "Error durante la migración" 
+    return NextResponse.json({
+      success: false,
+      error: "Error durante la migración"
     }, { status: 500 })
   }
 }
