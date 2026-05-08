@@ -110,6 +110,22 @@ export default function Home() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [carouselApi, setCarouselApi] = useState<any>(null);
   const [colorSeleccionado, setColorSeleccionado] = useState<string | null>(null);
+  const [productosRandom, setProductosRandom] = useState<any[]>([]);
+
+  const shuffleArray = (array: any[]) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  useEffect(() => {
+    if (categoriaSeleccionada === "todas" && searchTerm === "" && !colorSeleccionado && productos.length > 0) {
+      setProductosRandom(shuffleArray(productos).slice(0, 20));
+    }
+  }, [productos, categoriaSeleccionada, searchTerm, colorSeleccionado]);
 
   const COLORES = [
     { nombre: "negro", codigos: ["999", "900", "901", "902", "903", "904"], hex: "#1a1a1a" },
@@ -187,8 +203,8 @@ export default function Home() {
       return (a.nombre || "").localeCompare(b.nombre || "");
     });
 
-  const productosCarrusel = searchTerm === "" && !colorSeleccionado
-    ? productosOrdenados.slice(0, 10)
+  const productosCarrusel = categoriaSeleccionada === "todas" && searchTerm === "" && !colorSeleccionado
+    ? productosRandom
     : productosOrdenados;
 
   const categoriasOrdenadas = ["todas", ...new Set(productos.map(p => p.categoria).filter(Boolean))]
