@@ -2,18 +2,7 @@
 
 import Image from "next/image";
 import * as React from "react";
-import { useState } from "react";
-
-/* nav imports */
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
+import { useState, useEffect, useRef } from "react";
 
 const WHATSAPP_NUMBER = "51981404062"
 const WHATSAPP_MESSAGE = "Hola%20Manchester%20Collection%20Per%C3%BA,%20me%20interesa%20conocer%20m%C3%A1s%20sobre%20sus%20productos"
@@ -30,52 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 /* Iconos de Lucide */
-import { Award, CircleDollarSign, Scissors, ArrowRight, Search, Menu, X } from "lucide-react"
-
-const PRODUCTOS_DESTACADOS = [
-  {
-    nombre: "D-10-001",
-    categoria: "Telas Industriales",
-    imagen: "/images/D-10-001.png",
-    descripcion: "Ideal para trajes formales y eventos",
-  },
-  {
-    nombre: "D-10-005",
-    categoria: "Telas Premium",
-    imagen: "/images/D-10-005.png",
-    descripcion: "Calidad europea superior garantizada",
-  },
-  {
-    nombre: "D-10-020",
-    categoria: "Telas Exclusivas",
-    imagen: "/images/D-10-020.png",
-    descripcion: "Diseños vanguardistas",
-  },
-  {
-    nombre: "D-27-310",
-    categoria: "Telas Clásicas",
-    imagen: "/images/D-27-310.png",
-    descripcion: "Durabilidad excepcional",
-  },
-  {
-    nombre: "D-27-315",
-    categoria: "Telas",
-    imagen: "/images/D-27-315.png",
-    descripcion: "Acabado perfecto al tacto",
-  },
-  {
-    nombre: "D-27-500",
-    categoria: "Temporada",
-    imagen: "/images/D-27-500.png",
-    descripcion: "Tendencia de temporada",
-  },
-  {
-    nombre: "D-27-505",
-    categoria: "Colección",
-    imagen: "/images/D-27-505.png",
-    descripcion: "Colección especial limitada",
-  },
-];
+import { Award, CircleDollarSign, Scissors, ArrowRight, Search, Menu, X, ImageOff, ZoomIn, ZoomOut, MessageCircle } from "lucide-react"
 
 const RESENAS_CLIENTES = [
   {
@@ -125,34 +69,32 @@ const SOCIOS_CLAVES = [
   },
 ];
 
-function ProductCard({ prod }: { prod: any }) {
+function ProductCard({ prod, onClick, priority }: { prod: any, onClick?: () => void, priority?: boolean }) {
   return (
-    <div className="group relative overflow-hidden rounded-[2rem] bg-white border border-slate-200 p-5 transition-all hover:shadow-2xl hover:shadow-slate-200 hover:-translate-y-2 duration-300 h-full flex flex-col">
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[1.5rem] bg-slate-100/50 mb-6 shrink-0">
-        <Badge className="absolute top-4 left-4 z-10 bg-slate-900 text-white hover:bg-slate-800 border-none px-3 py-1 text-xs uppercase tracking-wider font-semibold">
-          Premium
-        </Badge>
-        <Image
-          src={prod.imagen}
-          alt={prod.nombre}
-          fill
-          className="object-contain p-6 transition-transform duration-700 group-hover:scale-110"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-        />
+    <div 
+      className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col rounded-lg overflow-hidden"
+      onClick={onClick}
+    >
+      <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center">
+        {prod.imagen ? (
+          <Image
+            src={prod.imagen}
+            alt={prod.nombre}
+            fill
+            priority={priority}
+            className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          />
+        ) : (
+          <ImageOff className="w-12 h-12 text-slate-400" />
+        )}
       </div>
-      <div className="text-center space-y-3 px-2 flex-grow flex flex-col justify-between">
-        <div>
-          <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{prod.nombre}</h3>
-          <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mt-1">{prod.categoria}</p>
-          <p className="text-sm text-slate-600 leading-relaxed mt-2">{prod.descripcion}</p>
-        </div>
-        <div className="pt-4 mt-auto">
-          <Button className="w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all duration-300 h-12 text-md font-medium shadow-md hover:shadow-lg" asChild>
-            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%2C%20me%20interesa%20cotizar%20la%20tela%20${prod.nombre}`}>
-              Cotizar <ArrowRight className="ml-2 h-5 w-5" />
-            </a>
-          </Button>
-        </div>
+      <div className="p-4 flex flex-col items-center text-center justify-center">
+        <h3 className="text-sm font-medium text-slate-900">{prod.nombre}</h3>
+        <p className="text-xs text-slate-500 mt-1">{prod.categoria}</p>
+        <span className="text-xs text-slate-400 mt-3 hover:text-slate-600 transition-colors">
+          Ver detalles →
+        </span>
       </div>
     </div>
   );
@@ -161,12 +103,100 @@ function ProductCard({ prod }: { prod: any }) {
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [productos, setProductos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("todas");
+  const [productoSeleccionado, setProductoSeleccionado] = useState<any>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [carouselApi, setCarouselApi] = useState<any>(null);
+  const [colorSeleccionado, setColorSeleccionado] = useState<string | null>(null);
 
-  const filteredProducts = PRODUCTOS_DESTACADOS.filter(prod =>
-    prod.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    prod.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    prod.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const COLORES = [
+    { nombre: "negro", codigos: ["999", "900", "901", "902", "903", "904"], hex: "#1a1a1a" },
+    { nombre: "azul", codigos: ["100", "101", "102", "200", "201", "300", "301"], hex: "#1e40af" },
+    { nombre: "blanco", codigos: ["001", "002", "003", "004", "005"], hex: "#f5f5f5" },
+    { nombre: "rojo", codigos: ["500", "501", "502", "503", "600"], hex: "#dc2626" },
+    { nombre: "rosa", codigos: ["310", "311", "312", "313", "314", "315", "316"], hex: "#ec4899" },
+    { nombre: "celeste", codigos: ["400", "401", "402", "410"], hex: "#0ea5e9" },
+    { nombre: "verde olivo", codigos: ["700", "701", "702", "710"], hex: "#65a30d" },
+    { nombre: "marron", codigos: ["800", "801", "802", "810", "820"], hex: "#78350f" },
+  ];
+
+  const getColorFromNombre = (nombre: string): string | null => {
+    const parts = nombre.split("-");
+    const codigo = parts[parts.length - 1]?.trim();
+    if (!codigo) return null;
+    
+    for (const color of COLORES) {
+      if (color.codigos.includes(codigo)) {
+        return color.nombre;
+      }
+    }
+    return null;
+  };
+
+  const ORDEN_CATEGORIAS = [
+    "MANCHESTER SUITING",
+    "MANCHESTER STRECH",
+    "MANCHESTER FASHION",
+    "LONDON FANCY SUITING"
+  ];
+
+  const getOrdenCategoria = (categoria: string) => {
+    const idx = ORDEN_CATEGORIAS.indexOf(categoria.toUpperCase());
+    return idx >= 0 ? idx : 100 + ORDEN_CATEGORIAS.filter(c => categoria.toUpperCase().includes(c.split(" ")[1] || "")).length;
+  };
+
+  useEffect(() => {
+    fetch('/api/productos?activo=true')
+      .then(res => res.json())
+      .then(data => {
+        setProductos(data.productos || [])
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, []);
+
+  useEffect(() => {
+    if (!carouselApi || searchTerm !== "" || categoriaSeleccionada !== "todas") return;
+    const interval = setInterval(() => {
+      carouselApi.scrollNext();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [carouselApi, searchTerm, categoriaSeleccionada]);
+
+  const productosOrdenados = [...productos]
+    .filter(p => categoriaSeleccionada === "todas" || p.categoria === categoriaSeleccionada)
+    .filter(p => {
+      if (colorSeleccionado) {
+        const colorProducto = getColorFromNombre(p.nombre);
+        if (colorProducto !== colorSeleccionado) return false;
+      }
+      return true;
+    })
+    .filter(p =>
+      searchTerm === "" ||
+      p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.categoria && p.categoria.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (p.descripcion && p.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+    .sort((a, b) => {
+      const ordenA = getOrdenCategoria(a.categoria || "");
+      const ordenB = getOrdenCategoria(b.categoria || "");
+      if (ordenA !== ordenB) return ordenA - ordenB;
+      return (a.nombre || "").localeCompare(b.nombre || "");
+    });
+
+  const productosCarrusel = searchTerm === "" && !colorSeleccionado
+    ? productosOrdenados.slice(0, 10)
+    : productosOrdenados;
+
+  const categoriasOrdenadas = ["todas", ...new Set(productos.map(p => p.categoria).filter(Boolean))]
+    .sort((a, b) => {
+      if (a === "todas") return -1;
+      if (b === "todas") return 1;
+      return getOrdenCategoria(a) - getOrdenCategoria(b);
+    });
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -231,54 +261,135 @@ export default function Home() {
       </header>
 
       {/* Catálogo de Productos */}
-      <section id="catalogo" className="w-full pt-16 pb-16 px-4 md:px-10 bg-slate-50 min-h-[60vh]">
-        <div className="text-center mb-12 max-w-3xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
-            Descubre Nuestra Colección Premium
-          </h1>
-          <p className="text-lg md:text-xl text-slate-600">
-            La más alta calidad en telas importadas para confección, sastrería y eventos exclusivos.
-            Encuentra el tejido perfecto para tu próxima creación.
-          </p>
-        </div>
-
-        {searchTerm.trim() === "" ? (
-          // Carrusel original si no hay búsqueda
-          <Carousel className="w-full max-w-[90rem] mx-auto p-4 md:p-10" >
-            <CarouselContent className="-ml-6">
-              {PRODUCTOS_DESTACADOS.map((prod) => (
-                <CarouselItem key={prod.imagen} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                  <ProductCard prod={prod} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex -left-6 h-14 w-14 border-slate-200 shadow-xl bg-white text-slate-900 hover:bg-slate-50" />
-            <CarouselNext className="hidden md:flex -right-6 h-14 w-14 border-slate-200 shadow-xl bg-white text-slate-900 hover:bg-slate-50" />
-          </Carousel>
-        ) : (
-          // Cuadrícula dinámica para los resultados de búsqueda
-          <div className="w-full max-w-[90rem] mx-auto p-4 md:p-10">
-            {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {filteredProducts.map((prod) => (
-                  <ProductCard key={prod.imagen} prod={prod} />
+      <section id="catalogo" className="w-full pt-10 pb-16 px-4 md:px-10 bg-slate-50 min-h-screen">
+        {/* Filtro de categorías - scroll horizontal */}
+        <div className="mb-6 px-4">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide whitespace-nowrap justify-start md:justify-center">
+            {loading ? (
+              <div className="flex gap-2">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="w-20 h-8 bg-slate-200 rounded-full animate-pulse flex-shrink-0" />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                <Search className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-slate-700">No encontramos telas para "{searchTerm}"</h3>
-                <p className="text-slate-500 mt-2 text-lg">Intenta buscar usando otro código o categoría.</p>
-                <Button
-                  variant="outline"
-                  className="mt-6 border-slate-300 text-slate-700"
-                  onClick={() => setSearchTerm("")}
+              categoriasOrdenadas.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setCategoriaSeleccionada(cat);
+                    setSearchTerm("");
+                    setColorSeleccionado(null);
+                  }}
+                  className={`px-4 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 flex-shrink-0 ${categoriaSeleccionada === cat
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"
+                    }`}
                 >
-                  Ver todo el catálogo
-                </Button>
-              </div>
+                  {cat === "todas" ? "Todos" : cat}
+                </button>
+              ))
             )}
           </div>
+        </div>
+
+        {/* Filtro de colores - scroll horizontal */}
+        <div className="mb-6 px-4">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide justify-start md:justify-center">
+            {COLORES.map(color => (
+              <button
+                key={color.nombre}
+                onClick={() => setColorSeleccionado(colorSeleccionado === color.nombre ? null : color.nombre)}
+                className={`w-8 h-8 rounded-full border-2 flex-shrink-0 transition-all duration-200 ${colorSeleccionado === color.nombre 
+                  ? "border-slate-900 scale-110 shadow-md" 
+                  : "border-slate-300 hover:border-slate-400"
+                }`}
+                style={{ backgroundColor: color.hex }}
+                title={color.nombre.charAt(0).toUpperCase() + color.nombre.slice(1)}
+              />
+            ))}
+            {colorSeleccionado && (
+              <button
+                onClick={() => setColorSeleccionado(null)}
+                className="px-3 py-1 text-xs text-slate-500 hover:text-slate-700 underline flex-shrink-0 self-center"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
+          </div>
+) : productosOrdenados.length === 0 ? (
+          <div className="text-center py-20 px-4">
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 max-w-md mx-auto">
+              <Search className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-slate-700 mb-2">No encontramos telas</h3>
+              <p className="text-slate-500 mb-6">
+                {colorSeleccionado 
+                  ? `No hay productos con color ${colorSeleccionado}. Prueba con otro color.` 
+                  : "No hay productos que coincidan con tu búsqueda."}
+              </p>
+              <Button
+                variant="outline"
+                className="border-slate-300 text-slate-700"
+                onClick={() => { 
+                  setSearchTerm(""); 
+                  setCategoriaSeleccionada("todas"); 
+                  setColorSeleccionado(null);
+                }}
+              >
+                Ver todo el catálogo
+              </Button>
+            </div>
+          </div>
+        ) : searchTerm.trim() === "" && !colorSeleccionado ? (
+          <>
+            {/* Grid para móvil - 2x2 */}
+            <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
+              {productosCarrusel.slice(0, 8).map((prod, idx) => (
+                <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
+              ))}
+            </div>
+            {/* Carrusel para desktop */}
+            <Carousel
+              className="w-full max-w-[90rem] mx-auto p-4 md:py-10 hidden md:block h-[calc(100vh-200px)]"
+              opts={{
+                loop: true,
+                duration: 60,
+              }}
+              setApi={setCarouselApi}
+              onMouseEnter={() => { }}
+              onMouseLeave={() => { }}
+            >
+              <CarouselContent className="-ml-6 items-stretch [transition-timing-function:cubic-bezier(0.25,0.1,0.25,1)]">
+                {productosCarrusel.map((prod, idx) => (
+                  <CarouselItem key={prod.id || prod.nombre} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
+                    <ProductCard prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex -left-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
+              <CarouselNext className="hidden md:flex -right-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
+            </Carousel>
+          </>
+        ) : (
+          <>
+            {/* Grid para móvil - 2x2 */}
+            <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
+              {productosOrdenados.slice(0, 8).map((prod, idx) => (
+                <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} />
+              ))}
+            </div>
+            {/* Grid para desktop */}
+            <div className="hidden md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-10 h-full">
+              {productosOrdenados.map((prod, idx) => (
+                <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
+              ))}
+            </div>
+          </>
         )}
       </section>
 
@@ -290,6 +401,7 @@ export default function Home() {
           fill
           sizes="100vw"
           className="object-cover"
+          loading="eager"
         />
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]"></div>
         <div className="absolute inset-0 flex items-center justify-center">
@@ -449,6 +561,94 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Modal de Detalle del Producto */}
+      {productoSeleccionado && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => { setProductoSeleccionado(null); setZoomLevel(1); }}
+        >
+          <div
+            className="bg-white rounded-lg max-w-lg w-full overflow-hidden shadow-xl border border-slate-200"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header con imagen y controles */}
+            <div className="relative h-64 bg-slate-100 overflow-hidden">
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.3s ease' }}
+              >
+                {productoSeleccionado.imagen ? (
+                  <Image
+                    src={productoSeleccionado.imagen}
+                    alt={productoSeleccionado.nombre}
+                    width={250}
+                    height={250}
+                    className="object-contain max-w-full max-h-full"
+                    style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%' }}
+                  />
+                ) : (
+                  <ImageOff className="w-16 h-16 text-slate-400" />
+                )}
+              </div>
+
+              {/* Controles de zoom */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white/95 rounded-full px-2 py-1 shadow-sm border border-slate-200">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setZoomLevel(Math.max(0.5, zoomLevel - 0.25)); }}
+                  className="p-1.5 hover:bg-slate-100 rounded-full"
+                >
+                  <ZoomOut className="w-4 h-4 text-slate-600" />
+                </button>
+                <span className="text-xs font-medium text-slate-600 w-10 text-center">{Math.round(zoomLevel * 100)}%</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setZoomLevel(Math.min(3, zoomLevel + 0.25)); }}
+                  className="p-1.5 hover:bg-slate-100 rounded-full"
+                >
+                  <ZoomIn className="w-4 h-4 text-slate-600" />
+                </button>
+              </div>
+
+              {/* Botón cerrar */}
+              <button
+                onClick={() => { setProductoSeleccionado(null); setZoomLevel(1); }}
+                className="absolute top-3 right-3 bg-white/80 hover:bg-white p-1.5 rounded-full shadow-sm border border-slate-200 transition-colors"
+              >
+                <X className="w-4 h-4 text-slate-600" />
+              </button>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-5">
+              {/* Categoría */}
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+                {productoSeleccionado.categoria || "Sin categoría"}
+              </p>
+
+              {/* Nombre */}
+              <h2 className="text-xl font-medium text-slate-900 mb-4">
+                {productoSeleccionado.nombre}
+              </h2>
+
+              {/* Descripción */}
+              <div className="mb-5">
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {productoSeleccionado.descripcion || "Sin descripción disponible"}
+                </p>
+              </div>
+
+              {/* Botón de cotización */}
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%2C%20me%20interesa%20cotizar%20la%20tela%20${productoSeleccionado.nombre}`}
+                className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Cotizar
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating WhatsApp Button */}
       <a

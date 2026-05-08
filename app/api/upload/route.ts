@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
+import cloudinary from "@/lib/cloudinary"
 
 export async function POST(request: NextRequest) {
     const session = await auth.api.getSession({
@@ -31,26 +30,20 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        let uploadDir: string
-        let urlPrefix: string
+        const folder = tipo === "perfil" ? "perfiles" : "productos"
 
-        if (tipo === "perfil") {
-            // Cualquier usuario puede subir su foto de perfil
-            uploadDir = join(process.cwd(), "public", "images", "perfiles")
-            urlPrefix = "/images/perfiles"
-        } else {
-            // Solo admins pueden subir productos
-            uploadDir = join(process.cwd(), "public", "images", "productos")
-            urlPrefix = "/images/productos"
-        }
+        const result = await cloudinary.uploader.upload(
+            `data:${file.type};base64,${buffer.toString('base64')}`,
+            {
+                folder: folder,
+                resource_type: 'image',
+                transformation: [
+                    { quality: 'auto:good', fetch_format: 'auto' }
+                ]
+            }
+        )
 
-        await mkdir(uploadDir, { recursive: true })
-
-        const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
-        const filepath = join(uploadDir, filename)
-        await writeFile(filepath, buffer)
-
-        const url = `${urlPrefix}/${filename}`
+        const url = result.secure_url
 
         return NextResponse.json({ success: true, url })
     } catch (error) {

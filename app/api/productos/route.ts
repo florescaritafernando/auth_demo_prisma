@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
+import cloudinary from "@/lib/cloudinary"
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { nombre, categoria, descripcion, precio, stocks } = body
+    const { nombre, categoria, descripcion, precio, stocks, imagen } = body
 
     try {
         const stocksArray = Object.entries(stocks || {})
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
                 descripcion,
                 precio: parseFloat(precio),
                 activo: true,
+                imagen: imagen || null,
                 stocks: {
                     create: stocksArray
                 }
@@ -115,14 +117,18 @@ export async function PUT(request: NextRequest) {
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        const uploadDir = join(process.cwd(), "public", "images", "productos")
-        await mkdir(uploadDir, { recursive: true })
+        const result = await cloudinary.uploader.upload(
+            `data:${file.type};base64,${buffer.toString('base64')}`,
+            {
+                folder: 'productos',
+                resource_type: 'image',
+                transformation: [
+                    { quality: 'auto:good', fetch_format: 'auto' }
+                ]
+            }
+        )
 
-        const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
-        const filepath = join(uploadDir, filename)
-        await writeFile(filepath, buffer)
-
-        const url = `/images/productos/${filename}`
+        const url = result.secure_url
 
         return NextResponse.json({ success: true, url })
     } catch (error) {
