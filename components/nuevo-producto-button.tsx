@@ -126,6 +126,8 @@ export function BotonNuevoProducto() {
         try {
             const formData = new FormData()
             formData.append("file", imagenFile)
+            formData.append("tipo", "producto")
+            formData.append("nombre", form.nombre) // Enviar nombre del producto
 
             const res = await fetch("/api/upload", {
                 method: "POST",
