@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const tipo = formData.get("tipo") as string // "producto" | "perfil"
     const file = formData.get("file") as File
-    const nombre = formData.get("nombre") as string | null // Nombre personalizado para productos
 
     if (!file) {
         return NextResponse.json({ error: "No hay archivo" }, { status: 400 })
@@ -33,10 +32,8 @@ export async function POST(request: NextRequest) {
 
         const folder = tipo === "perfil" ? "perfiles" : "productos"
         
-        // Para productos, usar nombre personalizado; para perfiles, Cloudinary genera ID automático
-        const publicId = tipo === "producto" && nombre 
-            ? nombre.replace(/[^a-zA-Z0-9]/g, '_')
-            : undefined
+        // Usar nombre original del archivo como public_id
+        const publicId = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, '_');
 
         const result = await cloudinary.uploader.upload(
             `data:${file.type};base64,${buffer.toString('base64')}`,
