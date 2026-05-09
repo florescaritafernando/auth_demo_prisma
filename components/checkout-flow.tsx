@@ -19,6 +19,7 @@ interface CarritoItem {
         categoria: string
         precio: number
         imagen?: string | null
+        stocks?: { stock: number }[]
     }
     cantidadMetros: number
     tipoLabel: string
@@ -71,6 +72,8 @@ export default function CheckoutPage() {
     const [tiendas, setTiendas] = useState<{ id: string, nombre: string, direccion: string }[]>([])
     const [buscandoDocumento, setBuscandoDocumento] = useState(false)
     const [alertDocumento, setAlertDocumento] = useState<{ show: boolean; message: string }>({ show: false, message: "" })
+    const [toastMessage, setToastMessage] = useState<{ show: boolean; message: string; type: "error" | "success" }>({ show: false, message: "", type: "error" })
+    const [inputValues, setInputValues] = useState<Record<string, string>>({})
     const [comprobanteFile, setComprobanteFile] = useState<File | null>(null)
     const [comprobanteUrl, setComprobanteUrl] = useState<string>("")
     const [subiendoComprobante, setSubiendoComprobante] = useState(false)
@@ -215,6 +218,12 @@ export default function CheckoutPage() {
                 }))
                 console.log("Items from pedido:", itemsFromPedido)
                 setItems(itemsFromPedido)
+                // Initialize input values from fetched items
+                const initInputValues: Record<string, string> = {}
+                itemsFromPedido.forEach((item: any) => {
+                    initInputValues[item.id] = String(item.cantidad)
+                })
+                setInputValues(initInputValues)
                 setStep(4)
             }
         } catch (e) {
@@ -249,12 +258,15 @@ export default function CheckoutPage() {
                 })
                 setItems(itemsConPrecio)
 
-                // Initialize indicaciones from fetched items
+                // Initialize indicaciones and input values from fetched items
                 const initIndicaciones: Record<string, string> = {}
+                const initInputValues: Record<string, string> = {}
                     ; (json.items || []).forEach((item: any) => {
                         initIndicaciones[item.id] = item.indicacionesCorte || ""
+                        initInputValues[item.id] = String(item.cantidad)
                     })
                 setIndicaciones(initIndicaciones)
+                setInputValues(initInputValues)
             }
         } catch (e) {
             console.error("Error fetching cart:", e)
@@ -323,7 +335,33 @@ export default function CheckoutPage() {
     }, [calcularSubtotal, calcularCostoEnvio])
 
     const actualizarCantidad = async (itemId: string, nuevaCantidad: number) => {
-        if (nuevaCantidad < 1) return
+        const item = items.find(i => i.id === itemId)
+        if (!item) return
+
+        // Validación según tipo de artículo
+        if (item.tipo === "pieza") {
+            // No validar stock en frontend - solo en API
+        } else {
+            // Validación para metros
+            const MIN_METROS = 0.10
+            const MAX_METROS = 50.00
+            
+            if (nuevaCantidad < MIN_METROS) {
+                setToastMessage({ show: true, message: "La cantidad mínima es 0.10 metros", type: "error" })
+                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                return
+            }
+            if (nuevaCantidad > MAX_METROS) {
+                setToastMessage({ show: true, message: "La cantidad máxima es 50 metros", type: "error" })
+                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                return
+            }
+        }
+
+        // Validación mínimo general
+        const minVal = item.tipo === "pieza" ? 1 : 0.10
+        if (nuevaCantidad < minVal) return
+
         try {
             const res = await fetch("/api/carrito", {
                 method: "PATCH",
@@ -340,6 +378,17 @@ export default function CheckoutPage() {
                     precioTotal: item.tipo === "pieza" ? Number(item.producto.precio) * (item.cantidad * metrosPorPieza) : Number(item.producto.precio) * item.cantidad
                 }))
                 setItems(itemsConPrecio)
+                // Update input values to match new quantities
+                const newInputValues: Record<string, string> = {}
+                ;(json.items || []).forEach((item: any) => {
+                    newInputValues[item.id] = String(item.cantidad)
+                })
+                setInputValues(prev => ({ ...prev, ...newInputValues }))
+            } else {
+                setToastMessage({ show: true, message: json.error || "Error al actualizar", type: "error" })
+                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                // Reset input value to current item quantity
+                setInputValues(prev => ({ ...prev, [itemId]: String(item.cantidad) }))
             }
         } catch (e) {
             console.error("Error updating:", e)
@@ -856,6 +905,18 @@ export default function CheckoutPage() {
 
     return (
         <>
+            {/* Toast flotante */}
+            {toastMessage.show && (
+                <div className="fixed top-20 right-4 z-50 animate-slide-in">
+                    <div className={`px-4 py-3 rounded-lg shadow-lg border ${
+                        toastMessage.type === "error" 
+                            ? "bg-red-50 border-red-200 text-red-800" 
+                            : "bg-green-50 border-green-200 text-green-800"
+                    }`}>
+                        <p className="font-medium">{toastMessage.message}</p>
+                    </div>
+                </div>
+            )}
             <div className="max-w-4xl mx-auto">
                 {error && (
                     <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
@@ -972,32 +1033,89 @@ export default function CheckoutPage() {
 
                                                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
                                                     <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => actualizarCantidad(item.id, item.tipo === "pieza" ? item.cantidad - 1 : item.cantidad - 0.01)}
-                                                            disabled={item.tipo === "pieza" ? item.cantidad <= 1 : item.cantidad <= 0.01}
-                                                            className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
-                                                        >
-                                                            <Minus className="h-4 w-4 text-slate-700" />
-                                                        </button>
-                                                        <input
-                                                            type="number"
-                                                            step={item.tipo === "pieza" ? "1" : "0.01"}
-                                                            min={item.tipo === "pieza" ? "1" : "0.01"}
-                                                            value={item.cantidad}
-                                                            onChange={(e) => {
-                                                                const raw = parseFloat(e.target.value)
-                                                                const value = item.tipo === "pieza" ? Math.floor(raw) || 1 : (raw || 0.01)
-                                                                const minVal = item.tipo === "pieza" ? 1 : 0.01
-                                                                if (value >= minVal) actualizarCantidad(item.id, value)
-                                                            }}
-                                                            className="w-20 text-center border-2 border-black rounded px-2 py-1 font-bold text-black"
-                                                        />
-                                                        <button
-                                                            onClick={() => actualizarCantidad(item.id, item.tipo === "pieza" ? item.cantidad + 1 : item.cantidad + 0.01)}
-                                                            className="p-2 bg-slate-100 rounded hover:bg-slate-200"
-                                                        >
-                                                            <Plus className="h-4 w-4 text-slate-700" />
-                                                        </button>
+                                                        {item.tipo === "pieza" && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const nuevaCantidad = item.cantidad - 1
+                                                                        if (nuevaCantidad < 1) {
+                                                                            setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                                                                            setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                            return
+                                                                        }
+                                                                        actualizarCantidad(item.id, nuevaCantidad)
+                                                                    }}
+                                                                    disabled={item.cantidad <= 1}
+                                                                    className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                                                                >
+                                                                    <Minus className="h-4 w-4 text-slate-700" />
+                                                                </button>
+                                                                <input
+                                                                    type="text"
+                                                                    inputMode="decimal"
+                                                                    step="1"
+                                                                    min="1"
+                                                                    value={inputValues[item.id] ?? String(item.cantidad)}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value
+                                                                        setInputValues(prev => ({ ...prev, [item.id]: val }))
+                                                                    }}
+                                                                    onBlur={(e) => {
+                                                                        const raw = parseInt(e.target.value)
+                                                                        if (isNaN(raw) || raw < 1) {
+                                                                            setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                                                                            setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                            setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                            return
+                                                                        }
+                                                                        // La validación de stock se hace en el servidor
+                                                                        actualizarCantidad(item.id, raw)
+                                                                    }}
+                                                                    className="w-20 text-center border-2 border-black rounded px-2 py-1 font-bold text-black"
+                                                                />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const nuevaCantidad = item.cantidad + 1
+                                                                        // La validación de stock se hace en el servidor
+                                                                        actualizarCantidad(item.id, nuevaCantidad)
+                                                                    }}
+                                                                    className="p-2 bg-slate-100 rounded hover:bg-slate-200"
+                                                                >
+                                                                    <Plus className="h-4 w-4 text-slate-700" />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {item.tipo === "metros" && (
+                                                            <input
+                                                                type="text"
+                                                                inputMode="decimal"
+                                                                step="0.10"
+                                                                min="0.10"
+                                                                max="50"
+                                                                value={inputValues[item.id] ?? String(item.cantidad)}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value
+                                                                    setInputValues(prev => ({ ...prev, [item.id]: val }))
+                                                                }}
+                                                                onBlur={(e) => {
+                                                                    const raw = parseFloat(e.target.value)
+                                                                    if (isNaN(raw) || raw < 0.10) {
+                                                                        setToastMessage({ show: true, message: "La cantidad mínima es 0.10 metros", type: "error" })
+                                                                        setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                        setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                        return
+                                                                    }
+                                                                    if (raw > 50) {
+                                                                        setToastMessage({ show: true, message: "La cantidad máxima es 50 metros", type: "error" })
+                                                                        setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                        setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                        return
+                                                                    }
+                                                                    actualizarCantidad(item.id, raw)
+                                                                }}
+                                                                className="w-24 text-center border-2 border-black rounded px-2 py-1 font-bold text-black"
+                                                            />
+                                                        )}
                                                     </div>
                                                     <button
                                                         onClick={() => eliminarItem(item.id)}
@@ -1678,7 +1796,7 @@ export default function CheckoutPage() {
                                                             {detalle.tipo === "pieza" ? (
                                                                 <>
                                                                     <PackageCheck className="h-3 w-3" />
-                                                                    <span>{detalle.cantidad} pieza(s) {(() => {
+                                                                    <span>{(continuarPedido?.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) {(() => {
                                                                         const metrajePieza = detalle.etiquetas?.reduce((s: number, e: any) => s + e.valor, 0) || 0
                                                                         return `${metrajePieza.toFixed(2)} mts`
                                                                     })()} × S/ {Number(detalle.precio).toFixed(2)}</span>
@@ -1815,7 +1933,7 @@ export default function CheckoutPage() {
                                                             })()}
                                                             <span className="text-black font-medium">
                                                                 {detalle.tipo === "pieza"
-                                                                    ? `${detalle.cantidad} pieza(s) ${(() => {
+                                                                    ? `${(continuarPedido?.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) ${(() => {
                                                                         const metrajePieza = detalle.etiquetas?.reduce((s: number, e: any) => s + e.valor, 0) || 0
                                                                         return `${metrajePieza.toFixed(2)} mts`
                                                                     })()}`

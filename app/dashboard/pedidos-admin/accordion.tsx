@@ -275,7 +275,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                                 <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
                                                                 <p className="text-xs text-slate-500">
                                                                     {detalle.tipo === "pieza"
-                                                                        ? `${detalle.cantidad} pieza(s)`
+                                                                        ? `${(pedido.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s)`
                                                                         : `${detalle.cantidad} metros`
                                                                     }
                                                                 </p>
@@ -312,7 +312,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                                     <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
                                                                     <p className="text-xs text-slate-500">
                                                                         {detalle.tipo === "pieza"
-                                                                            ? `${detalle.cantidad} pieza(s) • ${metrajeTotal.toFixed(2)}m`
+                                                                            ? `${(pedido.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) • ${metrajeTotal.toFixed(2)}m`
                                                                             : `${detalle.cantidad} metros`
                                                                         }
                                                                     </p>

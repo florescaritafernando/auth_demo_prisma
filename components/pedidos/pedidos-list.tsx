@@ -263,7 +263,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                             ) : (
                                                 <p className="text-md text-slate-500">
                                                     {detalle.tipo === "pieza"
-                                                        ? `${detalle.cantidad} pieza(s) ${(detalle.etiquetas?.reduce((sum: number, e: any) => sum + e.valor, 0) || 0).toFixed(2)} mts × S/ ${Number(detalle.precio).toFixed(2)}`
+                                                        ? `${(pedido.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) ${(detalle.etiquetas?.reduce((sum: number, e: any) => sum + e.valor, 0) || 0).toFixed(2)} mts × S/ ${Number(detalle.precio).toFixed(2)}`
                                                         : detalle.metraje
                                                             ? `${detalle.metraje} mts × S/ ${Number(detalle.precio).toFixed(2)}`
                                                             : `${detalle.cantidad} mts × S/ ${Number(detalle.precio).toFixed(2)}`

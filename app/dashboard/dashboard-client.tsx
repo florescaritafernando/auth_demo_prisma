@@ -10,7 +10,8 @@ import { Slider } from "@/components/ui/slider"
 import { Pagination } from "@/components/ui/pagination"
 import { CarritoBadge } from "@/components/carrito-badge"
 import { CarritoParticulas } from "@/components/carrito-particulas"
-import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search } from "lucide-react"
+import { CrearPedidoModal } from "@/components/crear-pedido-modal"
+import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus } from "lucide-react"
 import { BotonAgregarCarrito } from "@/components/agregar-carrito-button"
 import { cn } from "@/lib/utils"
 
@@ -334,7 +335,8 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
     const [loadingFavoritos, setLoadingFavoritos] = useState(true)
     const [showFiltros, setShowFiltros] = useState(false)
     const [isScrolled, setIsScrolled] = useState(false)
-    const [carritoCount, setCarritoCount] = useState(0)
+    const [carritoCount, setCarritoCount] = useState(false)
+    const [showCrearPedido, setShowCrearPedido] = useState(false)
     const headerRef = useRef<HTMLDivElement>(null)
 
     const [filtros, setFiltros] = useState<Filtros>({
@@ -485,6 +487,27 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
 
     return (
         <div className="p-6 md:p-10 font-sans">
+            {/* Tarjetas para empleados */}
+            {userRole === "empleado" && (
+                <div className="max-w-7xl mx-auto mb-8">
+                    <h2 className="text-lg font-semibold text-slate-700 mb-4">Acciones Rápidas</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <button
+                            onClick={() => setShowCrearPedido(true)}
+                            className="flex items-center gap-4 p-4 bg-white border-2 border-blue-500 rounded-xl hover:bg-blue-50 transition-colors text-left group"
+                        >
+                            <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                                <FilePlus className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-slate-900">Crear Pedido</p>
+                                <p className="text-sm text-slate-500">Nuevo pedido para cliente</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div ref={headerRef} className="mb-6 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
                 <div className="w-full md:w-auto">
                     <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -616,6 +639,12 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                     onClose={() => setShowFiltros(false)}
                 />
             )}
+
+            <CrearPedidoModal 
+                isOpen={showCrearPedido} 
+                onClose={() => setShowCrearPedido(false)}
+                userName={userName}
+            />
 
             <CarritoParticulas showFloatingCart={isScrolled} />
 

@@ -42,6 +42,8 @@ export default function CarritoPage() {
     const [popupItem, setPopupItem] = useState<CarritoItem | null>(null)
     const [savingId, setSavingId] = useState<string | null>(null)
     const [indicacionToDelete, setIndicacionToDelete] = useState<string | null>(null)
+    const [toastMessage, setToastMessage] = useState<{ show: boolean; message: string; type: "error" | "success" }>({ show: false, message: "", type: "error" })
+    const [inputValues, setInputValues] = useState<Record<string, string>>({})
 
     useEffect(() => {
         fetchCarrito()
@@ -50,16 +52,16 @@ export default function CarritoPage() {
     const fetchCarrito = async () => {
         try {
             const res = await fetch("/api/carrito", { credentials: "include" })
-            const json = await res.json()
+const json = await res.json()
             if (json.success) {
                 setItems(json.items || [])
                 setTotal(json.total || 0)
-                // Initialize indicaciones from fetched items
-                const initIndicaciones: Record<string, string> = {}
+                // Update input values to match new quantities
+                const newInputValues: Record<string, string> = {}
                 ;(json.items || []).forEach((item: CarritoItem) => {
-                    initIndicaciones[item.id] = item.indicacionesCorte || ""
+                    newInputValues[item.id] = String(item.cantidad)
                 })
-                setIndicaciones(initIndicaciones)
+                setInputValues(prev => ({ ...prev, ...newInputValues }))
             }
         } catch (e) {
             console.error("Error:", e)
@@ -94,8 +96,33 @@ export default function CarritoPage() {
     }
 
     const actualizarCantidad = async (itemId: string, nuevaCantidad: number, tipo: string) => {
-        const minVal = tipo === "pieza" ? 1 : 0.01
+        const item = items.find(i => i.id === itemId)
+        if (!item) return
+
+        // Validación según tipo de artículo
+        if (tipo === "pieza") {
+            // No validar stock en frontend - solo en API
+        } else {
+            // Validación para metros
+            const MIN_METROS = 0.10
+            const MAX_METROS = 50.00
+            
+            if (nuevaCantidad < MIN_METROS) {
+                setToastMessage({ show: true, message: "La cantidad mínima es 0.10 metros", type: "error" })
+                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                return
+            }
+            if (nuevaCantidad > MAX_METROS) {
+                setToastMessage({ show: true, message: "La cantidad máxima es 50 metros", type: "error" })
+                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                return
+            }
+        }
+
+        // Validación mínimo general
+        const minVal = tipo === "pieza" ? 1 : 0.10
         if (nuevaCantidad < minVal) return
+
         try {
             const res = await fetch("/api/carrito", {
                 method: "PATCH",
@@ -107,6 +134,17 @@ export default function CarritoPage() {
             if (json.success) {
                 setItems(json.items || [])
                 setTotal(json.total || 0)
+                // Update input values to match new quantities
+                const newInputValues: Record<string, string> = {}
+                ;(json.items || []).forEach((item: CarritoItem) => {
+                    newInputValues[item.id] = String(item.cantidad)
+                })
+                setInputValues(prev => ({ ...prev, ...newInputValues }))
+            } else {
+                setToastMessage({ show: true, message: json.error || "Error al actualizar", type: "error" })
+                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                // Reset input value to current item quantity
+                setInputValues(prev => ({ ...prev, [itemId]: String(item.cantidad) }))
             }
         } catch (e) {
             console.error("Error:", e)
@@ -182,6 +220,18 @@ export default function CarritoPage() {
 
     return (
         <>
+            {/* Toast flotante */}
+            {toastMessage.show && (
+                <div className="fixed top-20 right-4 z-50 animate-slide-in">
+                    <div className={`px-4 py-3 rounded-lg shadow-lg border ${
+                        toastMessage.type === "error" 
+                            ? "bg-red-50 border-red-200 text-red-800" 
+                            : "bg-green-50 border-green-200 text-green-800"
+                    }`}>
+                        <p className="font-medium">{toastMessage.message}</p>
+                    </div>
+                </div>
+            )}
             <div className="min-h-screen bg-slate-50 p-6">
                 <div className="max-w-4xl mx-auto">
                     <div className="flex items-center justify-between mb-8">
@@ -233,36 +283,89 @@ export default function CarritoPage() {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 {item.tipo === "pieza" && (
-                                                    <button
-                                                        onClick={() => actualizarCantidad(item.id, item.cantidad - 1, item.tipo)}
-                                                        disabled={item.cantidad <= 1}
-                                                        className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
-                                                    >
-                                                        <Minus className="h-4 w-4 text-slate-700" />
-                                                    </button>
+                                                    <>
+                                                        <button
+                                                            onClick={() => {
+                                                                const nuevaCantidad = item.cantidad - 1
+                                                                if (nuevaCantidad < 1) {
+                                                                    setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                                                                    setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                    return
+                                                                }
+                                                                actualizarCantidad(item.id, nuevaCantidad, item.tipo)
+                                                            }}
+                                                            disabled={item.cantidad <= 1}
+                                                            className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                                                        >
+                                                            <Minus className="h-4 w-4 text-slate-700" />
+                                                        </button>
+                                                        <input
+                                                            type="text"
+                                                            inputMode="decimal"
+                                                            step="1"
+                                                            min="1"
+                                                            value={inputValues[item.id] ?? String(item.cantidad)}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value
+                                                                setInputValues(prev => ({ ...prev, [item.id]: val }))
+                                                            }}
+                                                            onBlur={(e) => {
+                                                                const raw = parseInt(e.target.value)
+                                                                if (isNaN(raw) || raw < 1) {
+                                                                    setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                                                                    setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                    setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                    return
+                                                                }
+                                                                // La validación de stock se hace en el servidor
+                                                                actualizarCantidad(item.id, raw, item.tipo)
+                                                            }}
+                                                            className="w-20 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900"
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                const nuevaCantidad = item.cantidad + 1
+                                                                // La validación de stock se hace en el servidor
+                                                                actualizarCantidad(item.id, nuevaCantidad, item.tipo)
+                                                            }}
+                                                            className="p-2 bg-slate-100 rounded hover:bg-slate-200"
+                                                        >
+                                                            <Plus className="h-4 w-4 text-slate-700" />
+                                                        </button>
+                                                    </>
                                                 )}
-                                                <input
-                                                    type="number"
-                                                    step={item.tipo === "pieza" ? "1" : "0.1"}
-                                                    min={item.tipo === "pieza" ? "1" : "0.1"}
-                                                    value={item.cantidad}
-                                                    onChange={(e) => {
-                                                        const raw = parseFloat(e.target.value)
-                                                        const value = item.tipo === "pieza" ? Math.floor(raw) || 1 : (raw || 1)
-                                                        const minVal = item.tipo === "pieza" ? 1 : 1
-                                                        if (value >= minVal) actualizarCantidad(item.id, value, item.tipo)
-                                                    }}
-                                                    className="w-20 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900"
-                                                />
-                                                {item.tipo === "pieza" && (
-                                                    <button
-                                                        onClick={() => actualizarCantidad(item.id, item.cantidad + 1, item.tipo)}
-                                                        className="p-2 bg-slate-100 rounded hover:bg-slate-200"
-                                                    >
-                                                        <Plus className="h-4 w-4 text-slate-700" />
-                                                    </button>
+                                                {item.tipo === "metros" && (
+                                                    <input
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        step="0.10"
+                                                        min="0.10"
+                                                        max="50"
+                                                        value={inputValues[item.id] ?? String(item.cantidad)}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value
+                                                            setInputValues(prev => ({ ...prev, [item.id]: val }))
+                                                        }}
+                                                        onBlur={(e) => {
+                                                            const raw = parseFloat(e.target.value)
+                                                            if (isNaN(raw) || raw < 0.10) {
+                                                                setToastMessage({ show: true, message: "La cantidad mínima es 0.10 metros", type: "error" })
+                                                                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                return
+                                                            }
+                                                            if (raw > 50) {
+                                                                setToastMessage({ show: true, message: "La cantidad máxima es 50 metros", type: "error" })
+                                                                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                return
+                                                            }
+                                                            actualizarCantidad(item.id, raw, item.tipo)
+                                                        }}
+                                                        className="w-24 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900"
+                                                    />
                                                 )}
-                                                {item.tipo !== "pieza" && <span className="text-sm text-slate-500">m</span>}
+                                                {item.tipo === "metros" && <span className="text-sm text-slate-500">m</span>}
                                             </div>
                                             <button
                                                 onClick={() => eliminarItem(item.id, item.producto.nombre)}
