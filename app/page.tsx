@@ -277,9 +277,23 @@ export default function Home() {
       </header>
 
       {/* Catálogo de Productos */}
-      <section id="catalogo" className="w-full pt-10 pb-16 px-4 md:px-10 bg-slate-50 min-h-screen">
+      <section id="catalogo" className="w-full pt-6 pb-16 px-3 md:px-10 bg-slate-50 min-h-screen">
+        {/* Barra de búsqueda móvil - arriba de todo en móvil */}
+        <div className="mb-4 px-2 md:hidden">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Buscar telas, códigos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm"
+            />
+          </div>
+        </div>
+
         {/* Filtro de categorías - scroll horizontal */}
-        <div className="mb-6 px-4">
+        <div className="mb-3 px-4">
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide whitespace-nowrap justify-start md:justify-center">
             {loading ? (
               <div className="flex gap-2">
@@ -309,14 +323,14 @@ export default function Home() {
         </div>
 
         {/* Filtro de colores - scroll horizontal */}
-        <div className="mb-6 px-4">
+        <div className="mb-3 px-4">
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide justify-start md:justify-center">
             {COLORES.map(color => (
               <button
                 key={color.nombre}
                 onClick={() => setColorSeleccionado(colorSeleccionado === color.nombre ? null : color.nombre)}
-                className={`w-8 h-8 rounded-full border-2 flex-shrink-0 transition-all duration-200 ${colorSeleccionado === color.nombre 
-                  ? "border-slate-900 scale-110 shadow-md" 
+                className={`w-7 h-7 rounded-full border-2 flex-shrink-0 transition-all duration-200 ${colorSeleccionado === color.nombre 
+                  ? "border-blue-400 shadow-sm" 
                   : "border-slate-300 hover:border-slate-400"
                 }`}
                 style={{ backgroundColor: color.hex }}
@@ -363,9 +377,9 @@ export default function Home() {
           </div>
         ) : searchTerm.trim() === "" && !colorSeleccionado ? (
           <>
-            {/* Grid para móvil - 2x2 */}
+            {/* Grid para móvil - 2x2 pero mostrando todos los productos del carrusel (20 max) */}
             <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
-              {productosCarrusel.slice(0, 8).map((prod, idx) => (
+              {productosCarrusel.slice(0, 20).map((prod, idx) => (
                 <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
               ))}
             </div>
@@ -393,10 +407,10 @@ export default function Home() {
           </>
         ) : (
           <>
-            {/* Grid para móvil - 2x2 */}
+            {/* Grid para móvil - mostrar todos los resultados de la búsqueda/filtro */}
             <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
-              {productosOrdenados.slice(0, 8).map((prod, idx) => (
-                <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} />
+              {productosOrdenados.map((prod, idx) => (
+                <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
               ))}
             </div>
             {/* Grid para desktop */}
