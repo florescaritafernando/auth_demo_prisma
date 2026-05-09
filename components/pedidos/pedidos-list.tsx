@@ -1,11 +1,12 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
-import { Search, X, Calendar } from "lucide-react"
+import { Search, X, Calendar, File, ExternalLink } from "lucide-react"
 import { Package, Clock, CheckCircle, XCircle, Truck, Wallet, AlertCircle, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info, CircleDollarSign, PackageCheck } from "lucide-react"
 import { FeedbackModal } from "./FeedbackModal"
 import { QuejaModal } from "./QuejaModal"
@@ -57,6 +58,7 @@ interface PedidoItem {
     nombreRecibe: string
     dniRecibe: string
     numeroOperacion: string
+    comprobantePago: string | null
     motivoRechazo: string | null
     pedidoDetalle?: Array<{
         id: string
@@ -405,10 +407,35 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                         </div>
 
                         <div className="space-y-3">
-                            <div className="bg-slate-50 p-3 rounded-lg">
-                                <p className="text-sm text-slate-500">Número de operación:</p>
-                                <p className="font-bold text-slate-800">{pedido.numeroOperacion || "No registrado"}</p>
-                            </div>
+                            {/* Comprobante de pago - siempre mostrar si existe */}
+                            {pedido.comprobantePago && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <p className="text-sm text-green-700 font-medium mb-2">Comprobante de pago:</p>
+                                    {pedido.comprobantePago.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                                        <div className="relative w-full h-48 bg-slate-100 rounded-lg overflow-hidden">
+                                            <Image 
+                                                src={pedido.comprobantePago} 
+                                                alt="Comprobante de pago" 
+                                                fill
+                                                className="object-contain"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-slate-200">
+                                            <File className="h-8 w-8 text-red-500" />
+                                            <span className="text-sm text-slate-700">Archivo PDF subido</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Número de operación - solo mostrar si es diferente de "012345678" */}
+                            {pedido.numeroOperacion && pedido.numeroOperacion !== "012345678" && (
+                                <div className="bg-slate-50 p-3 rounded-lg">
+                                    <p className="text-sm text-slate-500">Número de operación:</p>
+                                    <p className="font-bold text-slate-800">{pedido.numeroOperacion}</p>
+                                </div>
+                            )}
 
                             <div className="bg-slate-50 p-3 rounded-lg">
                                 <p className="text-sm text-slate-500">Estado del pago:</p>

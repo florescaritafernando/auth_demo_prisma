@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { ChevronDown, ChevronUp, FileText, UserCheck, UserPlus, Printer } from "lucide-react"
+import Image from "next/image"
+import { ChevronDown, ChevronUp, FileText, UserCheck, ExternalLink, UserPlus, Printer, X, File } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { AdminPedidoActions } from "./actions"
@@ -40,6 +41,7 @@ interface Pedido {
     nombreRecibe: string | null
     celularRecibe: string | null
     numeroOperacion: string | null
+    comprobantePago: string | null
     motivoRechazo: string | null
     createdAt: Date
     user: { id: string; name: string | null; email: string | null } | null
@@ -83,6 +85,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [currentPage, setCurrentPage] = useState(1)
     const [pedidoImprimir, setPedidoImprimir] = useState<any>(null)
+    const [comprobantePreview, setComprobantePreview] = useState<string | null>(null)
 
     const isExpandedCheck = (id: string) => {
         const result = expandedIds?.has(id) || expandedId === id
@@ -335,12 +338,26 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                     <span className="text-slate-600">Nombre:</span>
                                                     <span className="font-bold text-slate-900">{pedido.nombreFactura}</span>
                                                 </div>
+                                                {pedido.numeroOperacion && pedido.numeroOperacion !== "012345678" && (
                                                 <div className="flex justify-between">
                                                     <span className={`font-bold ${pedido.estado === "pendiente" ? "text-yellow-700" : "text-slate-600"}`}>Nro. Operación:</span>
                                                     <span className={`font-bold ${pedido.estado === "pendiente" ? "text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded" : "text-slate-900"}`}>
-                                                        {pedido.numeroOperacion || "No registrado"}
+                                                        {pedido.numeroOperacion}
                                                     </span>
                                                 </div>
+                                                )}
+{pedido.comprobantePago && (
+                                                    <div className="flex justify-between items-center mt-2">
+                                                        <span className="text-slate-600">Comprobante:</span>
+                                                        <button 
+                                                            onClick={() => setComprobantePreview(pedido.comprobantePago)}
+                                                            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                                        >
+                                                            <File className="h-3 w-3" />
+                                                            Ver comprobante
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm pt-4">
@@ -440,6 +457,36 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                     pedido={pedidoImprimir}
                     onClose={() => setPedidoImprimir(null)}
                 />
+            )}
+
+            {/* Modal de previsualización del comprobante */}
+            {comprobantePreview && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setComprobantePreview(null)}>
+                    <div className="bg-white rounded-xl w-full max-w-2xl p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-black">Comprobante de Pago</h2>
+                            <button onClick={() => setComprobantePreview(null)} className="text-slate-400 hover:text-slate-600">
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+                        <div className="relative w-full h-[500px] bg-slate-100 rounded-lg overflow-hidden">
+                            {comprobantePreview.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                                <Image 
+                                    src={comprobantePreview} 
+                                    alt="Comprobante de pago" 
+                                    fill
+                                    className="object-contain"
+                                />
+                            ) : (
+                                <iframe 
+                                    src={comprobantePreview}
+                                    className="w-full h-full"
+                                    title="Comprobante de pago PDF"
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )

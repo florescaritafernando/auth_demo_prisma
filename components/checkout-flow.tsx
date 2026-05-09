@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, Copy, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock, FileText, HelpCircle } from "lucide-react"
+import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, Copy, AlertCircle as AlertCircleIcon, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock, FileText, HelpCircle, Search, Loader2, Upload, File, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PackageCheck, RulerDimensionLine } from "lucide-react"
 import { UBIGEO_DATA as UBIGEO, type UbigeoType } from "@/lib/ubigeo"
@@ -69,6 +69,11 @@ export default function CheckoutPage() {
     const [indicacionToDelete, setIndicacionToDelete] = useState<string | null>(null)
     const [successModal, setSuccessModal] = useState<{ show: boolean; message: string; orderNumber?: string }>({ show: false, message: "" })
     const [tiendas, setTiendas] = useState<{ id: string, nombre: string, direccion: string }[]>([])
+    const [buscandoDocumento, setBuscandoDocumento] = useState(false)
+    const [alertDocumento, setAlertDocumento] = useState<{ show: boolean; message: string }>({ show: false, message: "" })
+    const [comprobanteFile, setComprobanteFile] = useState<File | null>(null)
+    const [comprobanteUrl, setComprobanteUrl] = useState<string>("")
+    const [subiendoComprobante, setSubiendoComprobante] = useState(false)
     const [data, setData] = useState<CheckoutData>({
         tipoDocumento: "",
         numeroDoc: "",
@@ -186,6 +191,11 @@ export default function CheckoutPage() {
                     celularRecibe: pedido.celularRecibe || "",
                     numeroOperacion: pedido.numeroOperacion === "012345678" ? "" : (pedido.numeroOperacion || "")
                 }))
+                
+                // Cargar comprobante de pago si existe
+                if (pedido.comprobantePago) {
+                    setComprobanteUrl(pedido.comprobantePago)
+                }
 
                 const itemsFromPedido = (pedido.pedidoDetalle || []).map((detalle: any) => ({
                     id: detalle.id,
@@ -421,6 +431,114 @@ export default function CheckoutPage() {
         })
     }
 
+    const buscarDocumento = async () => {
+        if (!data.tipoDocumento || !data.numeroDoc) return
+
+        setBuscandoDocumento(true)
+        setAlertDocumento({ show: false, message: "" })
+        try {
+            const res = await fetch("/api/buscar-documento", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tipo: data.tipoDocumento, numero: data.numeroDoc })
+            })
+            const result = await res.json()
+
+            if (result.success) {
+                const tieneDatos = data.tipoDocumento === "dni"
+                    ? result.nombre && result.nombre.trim() !== ""
+                    : result.razonSocial && result.razonSocial.trim() !== ""
+
+                if (!tieneDatos) {
+                    setAlertDocumento({ show: true, message: "Datos no encontrados del documento consultado" })
+                } else {
+                    if (data.tipoDocumento === "dni") {
+                        handleInputChange("nombreFactura", result.nombre)
+                    } else if (data.tipoDocumento === "ruc") {
+                        handleInputChange("nombreFactura", result.razonSocial)
+                        handleInputChange("direccion", result.direccion)
+                        
+                        // Helper to find matching key in UBIGEO
+                        const findUbigeoMatch = (value: string, options: string[]) => {
+                            if (!value) return ""
+                            const normalized = value.trim().toUpperCase()
+                            // Try exact match first
+                            const exact = options.find(o => o.toUpperCase() === normalized)
+                            if (exact) return exact
+                            // Try partial match
+                            const partial = options.find(o => o.toUpperCase().includes(normalized) || normalized.includes(o.toUpperCase()))
+                            if (partial) return partial
+                            return ""
+                        }
+                        
+                        // Find matching department
+                        const deptKeys = Object.keys(UBIGEO)
+                        const matchedDept = findUbigeoMatch(result.departamento, deptKeys)
+                        if (matchedDept) {
+                            handleInputChange("departamento", matchedDept)
+                            // Find matching province
+                            const provKeys = Object.keys(UBIGEO[matchedDept] || {})
+                            const matchedProv = findUbigeoMatch(result.provincia, provKeys)
+                            if (matchedProv) {
+                                handleInputChange("provincia", matchedProv)
+                                // Find matching district
+                                const distOptions = UBIGEO[matchedDept]?.[matchedProv] || []
+                                const matchedDist = findUbigeoMatch(result.distrito, distOptions)
+                                if (matchedDist) {
+                                    handleInputChange("distrito", matchedDist)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                setAlertDocumento({ show: true, message: result.error || "Datos no encontrados del documento consultado" })
+            }
+        } catch (e) {
+            console.error("Error buscando documento:", e)
+            setAlertDocumento({ show: true, message: "Error al consultar documento" })
+        }
+        setBuscandoDocumento(false)
+    }
+
+    const handleComprobanteChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        // Validar tamaño (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            alert("El archivo no puede superar 5MB")
+            return
+        }
+
+        setComprobanteFile(file)
+        setSubiendoComprobante(true)
+
+        try {
+            const formData = new FormData()
+            formData.append("file", file)
+            formData.append("tipo", "comprobante")
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+                credentials: "include",
+            })
+            const data = await res.json()
+
+            if (data.url) {
+                setComprobanteUrl(data.url)
+            } else if (data.error) {
+                console.error("Error del servidor:", data.error)
+                alert("Error al subir: " + data.error)
+            }
+        } catch (error) {
+            console.error("Error uploading comprobante:", error)
+            alert("Error al subir comprobante")
+        }
+        setSubiendoComprobante(false)
+    }
+
     const tienePiezas = useMemo(() => {
         return items && items.length > 0 ? items.some((item: any) => item.tipo === "pieza") : false
     }, [items])
@@ -651,8 +769,8 @@ export default function CheckoutPage() {
     }
 
     const confirmarPago = async () => {
-        if (!data.numeroOperacion) {
-            setError("Por favor ingresa tu número de operación")
+        if (!data.numeroOperacion && !comprobanteUrl) {
+            setError("Por favor ingresa tu número de operación o sube un comprobante de pago")
             return
         }
 
@@ -668,7 +786,8 @@ export default function CheckoutPage() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         estado: "pendiente",
-                        numeroOperacion: data.numeroOperacion
+                        numeroOperacion: data.numeroOperacion,
+                        comprobantePago: comprobanteUrl || null
                     }),
                     credentials: "include"
                 })
@@ -712,6 +831,7 @@ export default function CheckoutPage() {
                         nombreRecibe: data.nombreRecibe || null,
                         celularRecibe: data.celularRecibe || null,
                         numeroOperacion: data.numeroOperacion,
+                        comprobantePago: comprobanteUrl || null,
                         estado: "pendiente",
                         items: itemsParaApi
                     }),
@@ -1046,19 +1166,53 @@ export default function CheckoutPage() {
                                         {data.tipoDocumento === "ruc" ? "Nro. de RUC *" : data.tipoDocumento === "ce" ? "Nro. de documento *" : "Nro. de documento *"}
                                         <span className="text-red-500 ml-1">*</span>
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={data.numeroDoc}
-                                        onChange={e => {
-                                            const maxLen = data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15
-                                            const filtered = e.target.value.replace(/[^0-9]/g, "").slice(0, maxLen)
-                                            handleInputChange("numeroDoc", filtered)
-                                        }}
-                                        maxLength={data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15}
-                                        className="w-full border-1 border-black rounded-lg px-3 py-2 text-black"
-                                        placeholder={data.tipoDocumento === "ruc" ? "11 dígitos" : data.tipoDocumento === "dni" ? "8 dígitos" : "15 dígitos"}
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={data.numeroDoc}
+                                            disabled={!data.tipoDocumento}
+                                            onChange={e => {
+                                                const maxLen = data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15
+                                                const filtered = e.target.value.replace(/[^0-9]/g, "").slice(0, maxLen)
+                                                handleInputChange("numeroDoc", filtered)
+                                                // Auto-búsqueda al completar dígitos
+                                                const isDocValido = data.tipoDocumento === "dni" || data.tipoDocumento === "ruc"
+                                                if (isDocValido && filtered.length === maxLen && !buscandoDocumento) {
+                                                    buscarDocumento()
+                                                }
+                                            }}
+                                            maxLength={data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15}
+                                            className={`w-full border-1 border-black rounded-lg px-3 py-2 pr-10 text-black ${!data.tipoDocumento ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                                            placeholder={!data.tipoDocumento ? "Seleccione tipo primero" : data.tipoDocumento === "ruc" ? "11 dígitos" : data.tipoDocumento === "dni" ? "8 dígitos" : "15 dígitos"}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={buscarDocumento}
+                                            disabled={buscandoDocumento || !data.numeroDoc || (data.tipoDocumento !== "dni" && data.tipoDocumento !== "ruc")}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-700 disabled:opacity-50"
+                                        >
+                                            {buscandoDocumento ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                        </button>
+</div>
                                 </div>
+                                {buscandoDocumento && (
+                                    <div className="mt-2 flex items-center gap-2 text-blue-600">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span className="text-sm">Buscando...</span>
+                                    </div>
+                                )}
+                                {alertDocumento.show && (
+                                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                                        <AlertCircleIcon className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                        <p className="text-sm text-red-700">{alertDocumento.message}</p>
+                                        <button 
+                                            onClick={() => setAlertDocumento({ show: false, message: "" })}
+                                            className="ml-auto text-red-400 hover:text-red-600"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                )}
                                 {data.tipoDocumento !== "ruc" && (
                                     <div>
                                         <label className="block text-sm font-medium text-black mb-1">
@@ -1581,6 +1735,23 @@ export default function CheckoutPage() {
                                         </div>
                                     </div>
 
+                                    {/* Indicador de comprobante de pago */}
+                                    {comprobanteUrl && (
+                                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                                            <File className="h-5 w-5 text-green-600" />
+                                            <span className="text-sm text-green-700 flex-1">Comprobante de pago subido</span>
+                                            <a 
+                                                href={comprobanteUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                                            >
+                                                <ExternalLink className="h-3 w-3" />
+                                                Ver
+                                            </a>
+                                        </div>
+                                    )}
+
                                     <div className="flex justify-center gap-4 mt-6 pt-4">
                                         <Button
                                             onClick={() => router.push("/dashboard/pedidos")}
@@ -1871,6 +2042,47 @@ export default function CheckoutPage() {
                                 />
                             </div>
 
+                            {/* Comprobante de pago */}
+                            <div>
+                                <label className="block text-sm font-medium text-black mb-1">
+                                    Comprobante de pago (opcional)
+                                </label>
+                                {comprobanteUrl ? (
+                                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                        <File className="h-5 w-5 text-green-600" />
+                                        <span className="text-sm text-green-700 flex-1">Comprobante subido</span>
+                                        <a 
+                                            href={comprobanteUrl} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            Ver
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <input
+                                            type="file"
+                                            accept=".jpg,.jpeg,.png,.pdf"
+                                            onChange={handleComprobanteChange}
+                                            disabled={subiendoComprobante}
+                                            className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                                        />
+                                        {subiendoComprobante && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-sm text-blue-600">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Subiendo...
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {comprobanteFile && !comprobanteUrl && !subiendoComprobante && (
+                                    <p className="text-xs text-orange-600 mt-1">Archivo seleccionado pero no subido</p>
+                                )}
+                            </div>
+
                             <div className="flex gap-3">
                                 <div className="w-full gap-3">
                                     <Button
@@ -1881,7 +2093,7 @@ export default function CheckoutPage() {
                                     </Button>
                                     <Button
                                         onClick={confirmarPago}
-                                        disabled={loading || !data.numeroOperacion}
+                                        disabled={loading || (!data.numeroOperacion && !comprobanteUrl)}
                                         className="w-3/5 bg-green-600 hover:bg-green-700 font-bold py-2.5 px-4 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {loading ? "Procesando..." : "Confirmar Pedido"}

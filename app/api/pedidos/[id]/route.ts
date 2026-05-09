@@ -86,7 +86,7 @@ export async function PATCH(
             return NextResponse.json({ success: false, error: "Datos inválidos" }, { status: 400 })
         }
 
-        const { estado, metraje_items, numeroOperacion, motivoRechazo, costoEnvio } = body
+        const { estado, metraje_items, numeroOperacion, motivoRechazo, costoEnvio, comprobantePago } = body
 
         const estadosValidos = ["metraje_en_proceso", "metraje_confirmado", "pendiente", "confirmado", "pedido_enviado", "rechazado", "completado"]
 
@@ -162,6 +162,7 @@ export async function PATCH(
         const updateData: any = {}
         if (estado) updateData.estado = estado
         if (numeroOperacion) updateData.numeroOperacion = numeroOperacion
+        if (comprobantePago !== undefined) updateData.comprobantePago = comprobantePago
         if (motivoRechazo && estado === "rechazado") updateData.motivoRechazo = motivoRechazo
         if (costoEnvio !== undefined && (isAdmin || isEmpleado)) {
             if (typeof costoEnvio === "number" && costoEnvio >= 0) {
@@ -195,8 +196,16 @@ export async function PATCH(
         })
 
         // Notificar cuando el cliente completa el pago (estado = pendiente)
-        console.log("=== NOTIFICANDO PAGO PENDIENTE ===", { estado, numeroOperacion, pedidoId: id })
-        if (estado === "pendiente" && numeroOperacion) {
+        console.log("=== NOTIFICANDO PAGO PENDIENTE ===", { estado, numeroOperacion, comprobantePago, pedidoId: id })
+        if (estado === "pendiente" && (numeroOperacion || comprobantePago)) {
+            // Construir mensaje de notificación
+            let mensajePago = ""
+            if (comprobantePago) {
+                mensajePago = `El cliente del pedido ${pedido.numeroOrden} ha subido un comprobante de pago. Por favor, verifica el pago.`
+            } else if (numeroOperacion) {
+                mensajePago = `El cliente del pedido ${pedido.numeroOrden} ha completado el pago. Número de operación: ${numeroOperacion}. Por favor, verifica el pago.`
+            }
+
             // Notificar a los empleados asignados si existen
             const delegados = await prisma.pedidoDelegado.findMany({
                 where: { pedidoId: id },
@@ -210,7 +219,7 @@ export async function PATCH(
                         userId: deleg.userId,
                         tipo: "pedido_pago",
                         titulo: "Pago en revisión",
-                        mensaje: `El cliente del pedido ${pedido.numeroOrden} ha completado el pago. Número de operación: ${numeroOperacion}. Por favor, verifica el pago.`,
+                        mensaje: mensajePago,
                         pedidoId: id
                     }
                 })
@@ -230,7 +239,7 @@ export async function PATCH(
                         userId: admin.id,
                         tipo: "pedido_pago",
                         titulo: "Pago en revisión",
-                        mensaje: `El cliente del pedido ${pedido.numeroOrden} ha completado el pago. Número de operación: ${numeroOperacion}. Por favor, verifica el pago.`,
+                        mensaje: mensajePago,
                         pedidoId: id
                     }
                 })

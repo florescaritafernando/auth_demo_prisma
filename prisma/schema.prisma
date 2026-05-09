@@ -213,6 +213,7 @@ model Pedido {
   // Pago
   numeroOperacion String?
   notas           String?
+  comprobantePago String? // URL del comprobante de pago (Cloudinary)
 
   // Delegación y seguimiento
   motivoRechazo String? // Motivo cuando se rechaza
