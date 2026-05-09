@@ -335,7 +335,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
     const [loadingFavoritos, setLoadingFavoritos] = useState(true)
     const [showFiltros, setShowFiltros] = useState(false)
     const [isScrolled, setIsScrolled] = useState(false)
-    const [carritoCount, setCarritoCount] = useState(false)
+    const [carritoCount, setCarritoCount] = useState(0)
     const [showCrearPedido, setShowCrearPedido] = useState(false)
     const headerRef = useRef<HTMLDivElement>(null)
 
