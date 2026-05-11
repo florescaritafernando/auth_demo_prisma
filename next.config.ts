@@ -11,6 +11,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/(.*)',
+        has: [{ type: 'host', value: 'www.manchestercollectionperu.com' }],
+        destination: 'https://manchestercollectionperu.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
