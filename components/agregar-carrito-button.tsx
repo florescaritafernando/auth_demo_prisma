@@ -201,7 +201,7 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
                 if (e.target === e.currentTarget) closeModal()
             }}
         >
-            <div className="absolute inset-0 bg-black/60" />
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
             <div className="relative bg-white w-full max-w-sm mx-4 rounded-xl shadow-2xl">
                 <div className="bg-slate-800 text-white px-4 py-3 flex justify-between items-center rounded-t-xl">
                     <div>
@@ -297,7 +297,7 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
                                     setInputValue(String(numVal))
                                 }
                             }}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900"
                         />
                     </div>
 

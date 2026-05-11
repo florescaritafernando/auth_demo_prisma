@@ -59,11 +59,11 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
 
     const getStockBadge = () => {
         if (totalStock === 0) {
-            return <Badge className="bg-red-500 text-white text-[10px] px-1.5 py-0.5">Agotado</Badge>
+            return <Badge className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0.5 rounded-full">Agotado</Badge>
         } else if (totalStock <= 5) {
-            return <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5">Pocas unidades</Badge>
+            return <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded-full">Pocas unidades</Badge>
         } else {
-            return <Badge className="bg-emerald-500 text-white text-[10px] px-1.5 py-0.5">Disponible</Badge>
+            return <Badge className="bg-emerald-100 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-full">Disponible</Badge>
         }
     }
 
@@ -74,7 +74,7 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
                 if (e.target === e.currentTarget) setShowModal(false)
             }}
         >
-            <div className="absolute inset-0 bg-black/60" />
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
             <div className="relative bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
                 <button
                     onClick={() => setShowModal(false)}
@@ -237,25 +237,25 @@ function PanelFiltros({
 
     return (
         <div className="fixed inset-0 z-[9998]">
-            <div className="absolute inset-0 bg-black/20" onClick={onClose} />
+            <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={onClose} />
             <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl p-6 overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-black flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <SlidersHorizontal className="h-5 w-5" />
                         Filtros
                     </h2>
-                    <button onClick={onClose} className="text-black hover:text-gray-600">
+                    <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
                         <X className="h-6 w-6" />
                     </button>
                 </div>
 
                 <div className="space-y-6">
                     <div>
-                        <label className="block text-sm font-semibold text-black mb-2">Categoría</label>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Categoría</label>
                         <select
                             value={filtros.categoria}
                             onChange={(e) => setFiltros({ ...filtros, categoria: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-700"
                         >
                             <option value="">Todas las categorías</option>
                             {categorias.map((cat) => (
@@ -265,7 +265,7 @@ function PanelFiltros({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-black mb-2">Color</label>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Color</label>
                         <div className="flex flex-wrap gap-2">
                             {[
                                 { nombre: "negro", codigos: ["999", "900", "901", "902", "903", "904"], hex: "#1a1a1a" },
@@ -289,7 +289,7 @@ function PanelFiltros({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-black mb-4">
+                        <label className="block text-sm font-semibold text-slate-700 mb-4">
                             Precio hasta S/ {precioMaxSel.toFixed(0)}
                         </label>
                         <Slider
@@ -300,7 +300,7 @@ function PanelFiltros({
                             onValueChange={(value) => setPrecioMaxSel(value[0])}
                             className="py-2"
                         />
-                        <div className="flex justify-between mt-2 text-xs text-black">
+                        <div className="flex justify-between mt-2 text-xs text-slate-600">
                             <span>S/ {precioMinGlobal.toFixed(0)}</span>
                             <span>S/ {precioMaxGlobal.toFixed(0)}</span>
                         </div>
@@ -312,7 +312,7 @@ function PanelFiltros({
                                 setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false, busqueda: "", color: null })
                                 setPrecioMaxSel(precioMaxGlobal)
                             }}
-                            className="w-full py-2 text-sm text-black hover:text-gray-800 flex items-center justify-center gap-2"
+                            className="w-full py-2 text-sm text-slate-600 hover:text-slate-800 flex items-center justify-center gap-2"
                         >
                             <XCircle className="h-4 w-4" />
                             Limpiar filtros
@@ -519,13 +519,13 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                 </div>
                 <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <input
                             type="text"
                             placeholder="Buscar por nombre..."
                             value={filtros.busqueda}
                             onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
-                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+                            className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 w-full md:w-64"
                         />
                     </div>
                     <button

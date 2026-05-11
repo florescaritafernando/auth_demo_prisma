@@ -686,7 +686,7 @@ export default function Home() {
           onClick={() => { setProductoSeleccionado(null); setZoomLevel(1); }}
         >
           <div
-            className="bg-white rounded-lg max-w-lg w-full overflow-hidden shadow-xl border border-slate-200"
+            className="bg-white rounded-xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200"
             onClick={e => e.stopPropagation()}
           >
             {/* Header con imagen y controles */}

@@ -284,10 +284,10 @@ const agregarItem = () => {
 
     const modalContent = (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
                 {/* Header */}
-                <div className="bg-slate-800 text-white px-6 py-4 flex justify-between items-center rounded-t-2xl sticky top-0 z-10">
+                <div className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center rounded-t-2xl sticky top-0 z-10">
                     <div>
                         <h2 className="text-xl font-bold">Crear Pedido</h2>
                         <p className="text-sm text-slate-300">Paso {step} de 2</p>
@@ -381,7 +381,7 @@ const agregarItem = () => {
                                             }
                                         }}
                                         placeholder="Buscar por nombre, RUC o DNI..."
-                                        className="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                     />
                                     {buscandoCliente && (
                                         <Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
@@ -407,7 +407,7 @@ const agregarItem = () => {
                                                     onClick={() => seleccionarCliente(c)}
                                                     className="w-full px-4 py-2 text-left hover:bg-blue-50 border-b border-slate-100 last:border-b-0"
                                                 >
-                                                    <p className="font-medium text-black">{c.nombre}</p>
+                                                    <p className="font-medium text-slate-900">{c.nombre}</p>
                                                     <p className="text-sm text-slate-500">{c.numeroDoc} • {c.telefono || "Sin teléfono"}</p>
                                                 </button>
                                             ))}
@@ -424,7 +424,7 @@ const agregarItem = () => {
                                         type="text"
                                         value={cliente.nombre}
                                         onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                     />
                                 </div>
                                 <div className="flex gap-2">
@@ -433,7 +433,7 @@ const agregarItem = () => {
                                         <select
                                             value={cliente.tipoDoc}
                                             onChange={(e) => setCliente({ ...cliente, tipoDoc: e.target.value })}
-                                            className="w-full px-2 py-2 border border-slate-300 rounded-lg text-black text-sm"
+                                            className="w-full px-2 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm"
                                         >
                                             <option value="dni">DNI</option>
                                             <option value="ruc">RUC</option>
@@ -446,7 +446,7 @@ const agregarItem = () => {
                                             type="text"
                                             value={cliente.numeroDoc}
                                             onChange={(e) => setCliente({ ...cliente, numeroDoc: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                         />
                                     </div>
                                 </div>
@@ -456,7 +456,7 @@ const agregarItem = () => {
                                         type="text"
                                         value={cliente.direccion}
                                         onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                     />
                                 </div>
                                 <div>
@@ -465,7 +465,7 @@ const agregarItem = () => {
                                         type="text"
                                         value={cliente.telefono}
                                         onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                     />
                                 </div>
                                 <div>
@@ -473,7 +473,7 @@ const agregarItem = () => {
                                     <select
                                         value={agencia}
                                         onChange={(e) => setAgencia(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                     >
                                         <option value="">Seleccionar...</option>
                                         {AGENCIAS.map(a => (
@@ -488,7 +488,7 @@ const agregarItem = () => {
                                             type="text"
                                             value={agenciaOtro}
                                             onChange={(e) => setAgenciaOtro(e.target.value)}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                         />
                                     </div>
                                 )}
@@ -538,7 +538,7 @@ const agregarItem = () => {
                                             onChange={(e) => setBusquedaProducto(e.target.value)}
                                             onFocus={() => productosEncontrados.length > 0 && setMostrarDropdownProducto(true)}
                                             placeholder="Buscar producto..."
-                                            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-black text-sm"
+                                            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                         />
                                         {mostrarDropdownProducto && productosEncontrados.length > 0 && (
                                             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
@@ -553,7 +553,7 @@ const agregarItem = () => {
                                                         }}
                                                         className="w-full px-3 py-2 text-left hover:bg-blue-50 border-b border-slate-100 last:border-b-0"
                                                     >
-                                                        <p className="font-medium text-black text-sm">{p.nombre}</p>
+                                                        <p className="font-medium text-slate-900 text-sm">{p.nombre}</p>
                                                         <p className="text-xs text-slate-500">S/ {Number(p.precio).toFixed(2)} • {p.categoria}</p>
                                                     </button>
                                                 ))}
@@ -563,7 +563,7 @@ const agregarItem = () => {
                                     <select
                                         value={itemTipo}
                                         onChange={(e) => setItemTipo(e.target.value as "metros" | "pieza")}
-                                        className="px-3 py-2 border border-slate-300 rounded-lg text-black text-sm"
+                                        className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm"
                                     >
                                         <option value="metros">Metros</option>
                                         <option value="pieza">Pieza</option>
@@ -578,7 +578,7 @@ const agregarItem = () => {
                                             onChange={(e) => setItemCantidad(Number(e.target.value))}
                                             min={itemTipo === "pieza" ? 1 : 0.1}
                                             step={itemTipo === "pieza" ? 1 : 0.1}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-black text-sm"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                         />
                                     </div>
                                     <div>
@@ -587,7 +587,7 @@ const agregarItem = () => {
                                             type="text"
                                             value={productoSeleccionado ? Number(productoSeleccionado.precio).toFixed(2) : "0.00"}
                                             disabled
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-black text-sm bg-slate-100"
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700 text-sm bg-slate-100"
                                         />
                                     </div>
                                     <div className="col-span-2">
@@ -597,7 +597,7 @@ const agregarItem = () => {
                                             value={itemIndicaciones}
                                             onChange={(e) => setItemIndicaciones(e.target.value)}
                                             placeholder="Ej: Cortar a 1.50m"
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-black text-sm"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                         />
                                     </div>
                                 </div>
@@ -631,16 +631,16 @@ const agregarItem = () => {
                                                 return (
                                                     <tr key={item.id} className="border-t border-slate-100">
                                                         <td className="px-4 py-2">
-                                                            <p className="font-medium text-black">{item.productoNombre}</p>
+                                                            <p className="font-medium text-slate-900">{item.productoNombre}</p>
                                                             <p className="text-xs text-blue-600">{item.productoCategoria}</p>
                                                             {item.indicacionesCorte && (
                                                                 <p className="text-xs text-slate-500">{item.indicacionesCorte}</p>
                                                             )}
                                                         </td>
-                                                        <td className="px-4 py-2 text-center text-black">{item.cantidad}</td>
-                                                        <td className="px-4 py-2 text-center text-black">{item.tipo === "pieza" ? "Pieza" : "Metros"}</td>
-                                                        <td className="px-4 py-2 text-right text-black">S/ {item.productoPrecio.toFixed(2)}</td>
-                                                        <td className="px-4 py-2 text-right font-medium text-black">S/ {subtotal.toFixed(2)}</td>
+                                                        <td className="px-4 py-2 text-center text-slate-900">{item.cantidad}</td>
+                                                        <td className="px-4 py-2 text-center text-slate-900">{item.tipo === "pieza" ? "Pieza" : "Metros"}</td>
+                                                        <td className="px-4 py-2 text-right text-slate-900">S/ {item.productoPrecio.toFixed(2)}</td>
+                                                        <td className="px-4 py-2 text-right font-medium text-slate-900">S/ {subtotal.toFixed(2)}</td>
                                                         <td className="px-4 py-2">
                                                             <button onClick={() => eliminarItem(item.id)} className="p-1 text-red-500 hover:bg-red-50 rounded">
                                                                 <Trash2 className="h-4 w-4" />
@@ -664,7 +664,7 @@ const agregarItem = () => {
                                 <div className="w-64 space-y-2">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">Subtotal:</span>
-                                        <span className="font-medium text-black">S/ {calcularSubtotal().toFixed(2)}</span>
+                                        <span className="font-medium text-slate-900">S/ {calcularSubtotal().toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-slate-600">Costo envío:</span>
@@ -674,7 +674,7 @@ const agregarItem = () => {
                                             onChange={(e) => setCostoEnvio(Number(e.target.value))}
                                             min={0}
                                             step={0.01}
-                                            className="w-24 px-2 py-1 border border-slate-300 rounded text-right text-black text-sm"
+                                            className="w-24 px-2 py-1 border border-slate-300 rounded text-right text-slate-900 text-sm"
                                         />
                                     </div>
                                     <div className="flex justify-between text-lg font-bold border-t pt-2">
@@ -691,7 +691,7 @@ const agregarItem = () => {
                                     value={observaciones}
                                     onChange={(e) => setObservaciones(e.target.value)}
                                     rows={3}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                                     placeholder="Observaciones adicionales..."
                                 />
                             </div>
