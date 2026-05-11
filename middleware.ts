@@ -6,6 +6,7 @@ export function middleware(request: NextRequest) {
 
   const allowedOrigins = [
     "https://manchestercollectionperu.com",
+    "https://landing-page-y-control-panel.onrender.com",
     "http://localhost:3000",
   ];
 
