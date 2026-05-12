@@ -132,6 +132,7 @@ export const auth = betterAuth({
         enabled: true,
     },
     passwordReset: {
+        enabled: true,
         sendResetEmail: async ({ user, url }: { user: any; url: string }) => {
             await resend.emails.send({
                 from: "Manchester Collection <noreply@manchestercollectionperu.com>",
