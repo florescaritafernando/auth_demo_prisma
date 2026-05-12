@@ -69,61 +69,72 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
 
     const modalContent = showModal ? (
         <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={(e) => {
                 if (e.target === e.currentTarget) setShowModal(false)
             }}
         >
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <div className="relative bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
-                <button
-                    onClick={() => setShowModal(false)}
-                    className="absolute top-4 right-4 z-10 h-10 w-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm text-slate-400 hover:text-slate-600 hover:bg-white transition-all"
-                >
-                    <X className="h-5 w-5" />
-                </button>
+            <div
+                className="bg-white rounded-lg max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200"
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="relative h-64 bg-slate-100 overflow-hidden">
+                    <div className="w-full h-full flex items-center justify-center">
+                        {producto.imagen ? (
+                            <Image
+                                src={producto.imagen}
+                                alt={producto.nombre}
+                                fill
+                                className="object-contain p-8"
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                            />
+                        ) : (
+                            <div className="text-slate-400">Sin imagen</div>
+                        )}
+                    </div>
 
-                <div className="relative aspect-[4/3] w-full bg-slate-100">
-                    <Image
-                        src={producto.imagen || "/images/D-10-001.png"}
-                        alt={producto.nombre}
-                        fill
-                        className="object-contain p-8"
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                    />
+                    <button
+                        onClick={() => setShowModal(false)}
+                        className="absolute top-3 right-3 bg-white/80 hover:bg-white p-1.5 rounded-full shadow-sm border border-slate-200 transition-colors"
+                    >
+                        <X className="w-4 h-4 text-slate-600" />
+                    </button>
                 </div>
 
-                <div className="p-6">
-                    <div className="flex items-center gap-3 mb-3">
-                        <span className="text-xs font-bold text-blue-600 uppercase tracking-widest px-3 py-1 bg-blue-50 rounded-full">
-                            {producto.categoria}
-                        </span>
+                <div className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">
+                            {producto.categoria || "Sin categoría"}
+                        </p>
                         {getStockBadge()}
                     </div>
 
-                    <h2 className="text-2xl font-bold text-slate-900 mb-4">{producto.nombre}</h2>
+                    <h2 className="text-xl font-medium text-slate-900 mb-4">
+                        {producto.nombre}
+                    </h2>
 
-                    <div className="flex items-baseline gap-2 mb-6">
-                        <span className="text-3xl font-extrabold text-slate-900">
+                    <div className="flex items-baseline gap-2 mb-5">
+                        <span className="text-2xl font-semibold text-slate-900">
                             S/ {Number(producto.precio).toFixed(2)}
                         </span>
-                        <span className="text-base text-slate-500">/ metro lineal</span>
+                        <span className="text-sm text-slate-500">/ metro lineal</span>
                     </div>
 
                     {producto.descripcion && (
-                        <div className="mb-6">
-                            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-2">Descripción</h3>
-                            <p className="text-slate-600 leading-relaxed">{producto.descripcion}</p>
+                        <div className="mb-5">
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                {producto.descripcion}
+                            </p>
                         </div>
                     )}
 
-                    <div className="flex mt-6 pt-6 border-t">
-                        <div className="w-4/5">
+                    <div className="flex gap-3 mt-6 pt-4 border-t border-slate-100">
+                        <div className="flex-1">
                             <BotonAgregarCarrito producto={producto as any} className="w-full" />
                         </div>
                         <button
                             onClick={() => setShowModal(false)}
-                            className="w-1/5 ml-3 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-sm"
+                            className="px-4 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-sm font-medium"
                         >
                             Cerrar
                         </button>
@@ -135,40 +146,40 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
 
     return (
         <>
-            <div 
+            <div
                 className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col rounded-lg overflow-hidden"
                 onClick={() => setShowModal(true)}
             >
                 <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
 
-                        {/* Botón de Favoritos */}
-                        <div className="absolute top-1 left-2 z-5">
-                            <button
-                                onClick={(e) => {
-                                    e.preventDefault(); // Evita navegación si está dentro de un Link
-                                    e.stopPropagation();
-                                    onToggleFavorito(producto.id);
-                                }}
-                                aria-label={esFavorito ? "Quitar de favoritos" : "Añadir a favoritos"}
-                                className={`h-8 w-8 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all active:scale-90 hover:scale-110 ${esFavorito ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
-                                    }`}
-                            >
-                                <Heart
-                                    className={`h-5 w-5 transition-colors ${esFavorito ? 'fill-current' : ''}`}
-                                    strokeWidth={esFavorito ? 0 : 2}
-                                />
-                            </button>
-                        </div>
+                    {/* Botón de Favoritos */}
+                    <div className="absolute top-1 left-2 z-5">
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault(); // Evita navegación si está dentro de un Link
+                                e.stopPropagation();
+                                onToggleFavorito(producto.id);
+                            }}
+                            aria-label={esFavorito ? "Quitar de favoritos" : "Añadir a favoritos"}
+                            className={`h-8 w-8 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all active:scale-90 hover:scale-110 ${esFavorito ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
+                                }`}
+                        >
+                            <Heart
+                                className={`h-5 w-5 transition-colors ${esFavorito ? 'fill-current' : ''}`}
+                                strokeWidth={esFavorito ? 0 : 2}
+                            />
+                        </button>
+                    </div>
 
-                        {/* Imagen con optimización */}
-                        <Image
-                            src={producto.imagen || "/images/D-10-001.png"}
-                            alt={producto.nombre}
-                            fill
-                            priority={false} // Solo usa true si es el primer producto de la página
-                            className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        />
+                    {/* Imagen con optimización */}
+                    <Image
+                        src={producto.imagen || "/images/D-10-001.png"}
+                        alt={producto.nombre}
+                        fill
+                        priority={false} // Solo usa true si es el primer producto de la página
+                        className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    />
                 </div>
                 <div className="p-4 flex flex-col items-center text-center justify-center min-w-0">
                     <span className="text-xs text-slate-500 uppercase tracking-wide mb-1">
@@ -272,14 +283,18 @@ function PanelFiltros({
                         <label className="block text-sm font-semibold text-slate-700 mb-2">Color</label>
                         <div className="flex flex-wrap gap-2">
                             {[
-                                { nombre: "negro", codigos: ["999", "900", "901", "902", "903", "904"], hex: "#1a1a1a" },
-                                { nombre: "azul", codigos: ["100", "101", "102", "200", "201", "300", "301"], hex: "#1e40af" },
-                                { nombre: "blanco", codigos: ["001", "002", "003", "004", "005"], hex: "#f5f5f5" },
-                                { nombre: "rojo", codigos: ["500", "501", "502", "503", "600"], hex: "#dc2626" },
-                                { nombre: "rosa", codigos: ["310", "311", "312", "313", "314", "315", "316"], hex: "#ec4899" },
-                                { nombre: "celeste", codigos: ["400", "401", "402", "410"], hex: "#0ea5e9" },
-                                { nombre: "verde olivo", codigos: ["700", "701", "702", "710"], hex: "#65a30d" },
-                                { nombre: "marron", codigos: ["800", "801", "802", "810", "820"], hex: "#78350f" },
+                                { nombre: "negro", codigos: ["999"], hex: "#1a1a1a" },
+                                { nombre: "azul", codigos: ["520", "530", "555", "560", "575"], hex: "#1e40af" },
+                                { nombre: "blanco", codigos: ["001"], hex: "#f5f5f5" },
+                                { nombre: "hueso", codigos: ["005"], hex: "#efebddef" },
+                                { nombre: "rojo", codigos: ["412"], hex: "#bb2626ff" },
+                                { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1bff" },
+                                { nombre: "rosa", codigos: ["310", "315"], hex: "#ec4899" },
+                                { nombre: "celeste", codigos: ["540"], hex: "#8ac7e3ff" },
+                                { nombre: "verde olivo", codigos: ["676"], hex: "#65a30d" },
+                                { nombre: "marron", codigos: ["720", "740"], hex: "#78350f" },
+                                { nombre: "beige", codigos: ["030", "040", "045", "D-75-745"], hex: "#bab68fff" },
+                                { nombre: "plomo", codigos: ["820", "825", "840", "845"], hex: "#827f7fff" },
                             ].map((color) => (
                                 <button
                                     key={color.nombre}
@@ -460,7 +475,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
         const parts = nombre.split("-")
         const codigo = parts[parts.length - 1]?.trim()
         if (!codigo) return null
-        
+
         for (const color of COLORES) {
             if (color.codigos.includes(codigo)) {
                 return color.nombre
@@ -644,8 +659,8 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                 />
             )}
 
-            <CrearPedidoModal 
-                isOpen={showCrearPedido} 
+            <CrearPedidoModal
+                isOpen={showCrearPedido}
                 onClose={() => setShowCrearPedido(false)}
                 userName={userName}
             />
