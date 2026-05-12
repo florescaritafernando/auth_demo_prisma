@@ -25,7 +25,7 @@ export async function enviarEmail(
 
     try {
         const { data, error } = await resend.emails.send({
-            from: "<onboarding@resend.dev>",
+            from: "Manchester Collection <noreply@manchestercollectionperu.com>",
             to,
             subject,
             html,
@@ -76,7 +76,7 @@ export const auth = betterAuth({
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
             const verifyUrl = `${appUrl}/api/verify-email?token=${token}`;
             await resend.emails.send({
-                from: "onboarding@resend.dev",
+                from: "Manchester Collection <noreply@manchestercollectionperu.com>",
                 to: user.email,
                 subject: "Verifica tu correo electrónico",
                 html: `
@@ -134,7 +134,7 @@ export const auth = betterAuth({
     passwordReset: {
         sendResetEmail: async ({ user, url }: { user: any; url: string }) => {
             await resend.emails.send({
-                from: "onboarding@resend.dev",
+                from: "Manchester Collection <noreply@manchestercollectionperu.com>",
                 to: user.email,
                 subject: "Restablece tu contraseña",
                 html: `

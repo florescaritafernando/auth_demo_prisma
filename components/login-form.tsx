@@ -142,7 +142,9 @@ export function LoginForm({
             </Button>
           </Field>
           <div className="flex items-center justify-center">
-            <a href="#">¿Olvidaste tu contraseña?</a>
+            <a href="/forgot-password" className="text-sm text-slate-600 hover:text-slate-900 hover:underline">
+              ¿Olvidaste tu contraseña?
+            </a>
           </div>
           <FieldSeparator>O</FieldSeparator>
           <Field className="grid gap-4 sm:grid-cols-1">
