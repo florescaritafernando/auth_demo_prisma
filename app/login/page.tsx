@@ -15,8 +15,8 @@ export default async function LoginPage() {
   // Las cookies se pasarán al componente y se limpiarán allí también
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-10">
+      <div className="w-full max-w-md">
         <LoginForm
           registeredEmail={registeredEmail}
           emailVerified={emailVerified === "true"}
