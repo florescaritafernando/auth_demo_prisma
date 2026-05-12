@@ -72,6 +72,8 @@ const SOCIOS_CLAVES = [
 ];
 
 function ProductCard({ prod, onClick, priority }: { prod: any, onClick?: () => void, priority?: boolean }) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
   return (
     <div
       className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col rounded-lg overflow-hidden"
@@ -79,14 +81,22 @@ function ProductCard({ prod, onClick, priority }: { prod: any, onClick?: () => v
     >
       <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
         {prod.imagen ? (
-          <Image
-            src={prod.imagen}
-            alt={prod.nombre}
-            fill
-            priority={priority}
-            className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-          />
+          <>
+            {!imageLoaded && (
+              <div className="absolute inset-0 bg-slate-200 animate-pulse z-10" />
+            )}
+            <Image
+              src={prod.imagen}
+              alt={prod.nombre}
+              fill
+              priority={priority}
+              loading="eager"
+              className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              onLoad={() => setImageLoaded(true)}
+              style={{ opacity: imageLoaded ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}
+            />
+          </>
         ) : (
           <ImageOff className="w-12 h-12 text-slate-400" />
         )}
@@ -531,6 +541,7 @@ export default function Home() {
                     width={200}
                     height={80}
                     className="object-contain"
+                    style={{ width: 'auto', height: 'auto' }}
                   />
                 </div>
                 <h3 className="font-bold text-xl mb-3">{socio.nombre}</h3>
@@ -757,6 +768,8 @@ export default function Home() {
               {/* Botón de cotización */}
               <a
                 href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%2C%20me%20interesa%20cotizar%20la%20tela%20${productoSeleccionado.nombre}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded transition-colors"
               >
                 <MessageCircle className="w-4 h-4" />
