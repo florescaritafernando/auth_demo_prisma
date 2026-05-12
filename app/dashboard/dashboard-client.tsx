@@ -135,9 +135,11 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
 
     return (
         <>
-            <div className="group relative rounded-[1.5rem] bg-white border border-slate-200 p-3 transition-all hover:shadow-xl hover:shadow-slate-200 hover:-translate-y-1 duration-300 flex flex-col h-full overflow-hidden">
-                <div className="relative aspect-[4/3] w-full rounded-[1rem] bg-slate-100/50 mb-2 shrink-0 overflow-hidden group">
-                    <div className="w-full h-full flex items-center justify-center group-hover:bg-slate-100 transition-colors">
+            <div 
+                className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col rounded-lg overflow-hidden"
+                onClick={() => setShowModal(true)}
+            >
+                <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
 
                         {/* Botón de Favoritos */}
                         <div className="absolute top-1 left-2 z-5">
@@ -164,34 +166,36 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
                             alt={producto.nombre}
                             fill
                             priority={false} // Solo usa true si es el primer producto de la página
-                            className="object-contain p-4 transition-transform duration-500 ease-out group-hover:scale-110"
+                            className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         />
-                    </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                    <span className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1 block">
+                <div className="p-4 flex flex-col items-center text-center justify-center min-w-0">
+                    <span className="text-xs text-slate-500 uppercase tracking-wide mb-1">
                         {producto.categoria}
                     </span>
-                    <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-base font-bold text-slate-900 tracking-tight line-clamp-1" title={producto.nombre}>
+                    <div className="flex items-center justify-between w-full mb-1">
+                        <h3 className="text-sm font-medium text-slate-900 line-clamp-1" title={producto.nombre}>
                             {producto.nombre}
                         </h3>
                         {getStockBadge()}
                     </div>
-                    <div className="flex items-baseline gap-1 mb-2">
-                        <span className="text-lg font-extrabold text-slate-900">
+                    <div className="flex items-baseline gap-1 mb-3">
+                        <span className="text-lg font-semibold text-slate-900">
                             S/ {Number(producto.precio).toFixed(2)}
                         </span>
                         <span className="text-xs text-slate-500">/ metro lineal</span>
                     </div>
+                    <span className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                        Ver detalles →
+                    </span>
                 </div>
                 <div className="pt-2 mt-auto flex gap-2">
                     <div className="w-1/2">
                         <BotonAgregarCarrito producto={producto as any} className="w-full" />
                     </div>
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
                         className="w-1/2 px-2 py-1.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-xs"
                     >
                         Ver detalle

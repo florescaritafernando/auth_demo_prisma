@@ -73,7 +73,7 @@ const SOCIOS_CLAVES = [
 
 function ProductCard({ prod, onClick, priority }: { prod: any, onClick?: () => void, priority?: boolean }) {
   const [imageLoaded, setImageLoaded] = useState(false);
-  
+
   return (
     <div
       className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col rounded-lg overflow-hidden"
@@ -140,14 +140,18 @@ export default function Home() {
   }, [productos, categoriaSeleccionada, searchTerm, colorSeleccionado]);
 
   const COLORES = [
-    { nombre: "negro", codigos: ["999", "900", "901", "902", "903", "904"], hex: "#1a1a1a" },
-    { nombre: "azul", codigos: ["100", "101", "102", "200", "201", "300", "301"], hex: "#1e40af" },
-    { nombre: "blanco", codigos: ["001", "002", "003", "004", "005"], hex: "#f5f5f5" },
-    { nombre: "rojo", codigos: ["500", "501", "502", "503", "600"], hex: "#dc2626" },
-    { nombre: "rosa", codigos: ["310", "311", "312", "313", "314", "315", "316"], hex: "#ec4899" },
-    { nombre: "celeste", codigos: ["400", "401", "402", "410"], hex: "#0ea5e9" },
-    { nombre: "verde olivo", codigos: ["700", "701", "702", "710"], hex: "#65a30d" },
-    { nombre: "marron", codigos: ["800", "801", "802", "810", "820"], hex: "#78350f" },
+    { nombre: "negro", codigos: ["999"], hex: "#1a1a1a" },
+    { nombre: "azul", codigos: ["520", "530", "555", "560", "575"], hex: "#1e40af" },
+    { nombre: "blanco", codigos: ["001"], hex: "#f5f5f5" },
+    { nombre: "hueso", codigos: ["005"], hex: "#efebddef" },
+    { nombre: "rojo", codigos: ["412"], hex: "#bb2626ff" },
+    { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1bff" },
+    { nombre: "rosa", codigos: ["310", "315"], hex: "#ec4899" },
+    { nombre: "celeste", codigos: ["540"], hex: "#8ac7e3ff" },
+    { nombre: "verde olivo", codigos: ["676"], hex: "#65a30d" },
+    { nombre: "marron", codigos: ["720", "740"], hex: "#78350f" },
+    { nombre: "beige", codigos: ["030", "040", "045", "D-75-745"], hex: "#bab68fff" },
+    { nombre: "plomo", codigos: ["820", "825", "840", "845"], hex: "#827f7fff" },
   ];
 
   const getColorFromNombre = (nombre: string): string | null => {
@@ -276,12 +280,14 @@ export default function Home() {
                 <a href="#contacto" onClick={() => setIsMobileMenuOpen(false)} className="w-full lg:w-auto px-4 py-2.5 text-slate-800 hover:text-slate-900 hover:bg-slate-100 rounded-md font-medium text-left lg:text-center transition-colors">
                   Contacto
                 </a>
+                {/*
                 <span className="w-full lg:w-auto px-4 py-2.5 text-slate-400 cursor-not-allowed opacity-50" title="Próximamente">
                   Login
                 </span>
                 <span className="mt-2 lg:mt-0 w-full lg:w-auto inline-flex h-10 items-center justify-center rounded-md bg-slate-300 px-6 py-2 text-sm font-medium text-slate-500 opacity-50" title="Próximamente">
                   Registrarme
                 </span>
+                 */}
               </nav>
             </div>
           </div>
@@ -391,7 +397,7 @@ export default function Home() {
           <>
             {/* Grid para móvil - 2x2 pero mostrando todos los productos del carrusel (20 max) */}
             <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
-              {productosCarrusel.slice(0, 20).map((prod, idx) => (
+              {productosCarrusel.slice(0, 16).map((prod, idx) => (
                 <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
               ))}
             </div>
