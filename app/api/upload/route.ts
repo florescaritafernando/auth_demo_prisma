@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File
     const nombreProducto = formData.get("nombreProducto") as string | null
 
+    console.log("Upload - tipo:", tipo, "nombreProducto:", nombreProducto, "file:", file?.name)
+
     if (!file) {
         return NextResponse.json({ error: "No hay archivo" }, { status: 400 })
     }
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
             ]
         }
 
-        console.log("Subiendo a Cloudinary:", { tipo, folder, resourceType, mimeType, fileName: file.name })
+        console.log("Subiendo a Cloudinary:", { tipo, folder, resourceType, mimeType, fileName: file.name, nombreProducto, publicId })
 
         const result = await cloudinary.uploader.upload(
             `data:${mimeType};base64,${buffer.toString('base64')}`,

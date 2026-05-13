@@ -145,7 +145,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
             const formData = new FormData()
             formData.append("file", imagenFile)
             formData.append("tipo", "producto")
-            formData.append("nombreProducto", form.nombre)
+            formData.append("nombreProducto", producto.nombre)
             
             const res = await fetch("/api/upload", {
                 method: "POST",
