@@ -43,6 +43,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
     const [stocks, setStocks] = useState<Record<string, number>>({})
     const [imagenFile, setImagenFile] = useState<File | null>(null)
     const [imagenPreview, setImagenPreview] = useState<string>("")
+    const [uploading, setUploading] = useState(false)
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
@@ -155,6 +156,8 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
             if (data.url) return data.url
         } catch (e) {
             console.error("Error uploading:", e)
+        } finally {
+            setUploading(false)
         }
         return imagenPreview
     }
