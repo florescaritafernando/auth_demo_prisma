@@ -5,7 +5,6 @@ import * as React from "react";
 import { useState, useEffect, useRef } from "react";
 import { Map, MapControls, MapMarker, MarkerContent } from "@/components/ui/map";
 import { Card } from "@/components/ui/card";
-import { Pagination } from "@/components/ui/pagination";
 
 const WHATSAPP_NUMBER = "51981404062"
 const WHATSAPP_MESSAGE = "Hola%20Manchester%20Collection%20Per%C3%BA,%20me%20interesa%20conocer%20m%C3%A1s%20sobre%20sus%20productos"
@@ -124,8 +123,6 @@ export default function Home() {
   const [carouselApi, setCarouselApi] = useState<any>(null);
   const [colorSeleccionado, setColorSeleccionado] = useState<string | null>(null);
   const [productosRandom, setProductosRandom] = useState<any[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(16);
 
   const shuffleArray = (array: any[]) => {
     const shuffled = [...array];
@@ -404,46 +401,27 @@ export default function Home() {
                 <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
               ))}
             </div>
-            {/* Desktop: Si > 16 productos usar grid con paginación, sino carrusel */}
-            {productosCarrusel.length > 16 ? (
-              <>
-                <div className="hidden md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-10">
-                  {productosCarrusel.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((prod, idx) => (
-                    <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
-                  ))}
-                </div>
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={Math.ceil(productosCarrusel.length / itemsPerPage)}
-                  itemsPerPage={itemsPerPage}
-                  totalItems={productosCarrusel.length}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={(value) => { setItemsPerPage(value); setCurrentPage(1); }}
-                  itemLabel="productos"
-                />
-              </>
-            ) : (
-              <Carousel
-                className="w-full max-w-[90rem] mx-auto p-4 md:py-10 hidden md:block h-[calc(100vh-200px)]"
-                opts={{
-                  loop: true,
-                  duration: 60,
-                }}
-                setApi={setCarouselApi}
-                onMouseEnter={() => { }}
-                onMouseLeave={() => { }}
-              >
-                <CarouselContent className="-ml-6 items-stretch [transition-timing-function:cubic-bezier(0.25,0.1,0.25,1)]">
-                  {productosCarrusel.map((prod, idx) => (
-                    <CarouselItem key={prod.id || prod.nombre} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
-                      <ProductCard prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="hidden md:flex -left-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
-                <CarouselNext className="hidden md:flex -right-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
-              </Carousel>
-            )}
+            {/* Carrusel para desktop */}
+            <Carousel
+              className="w-full max-w-[90rem] mx-auto p-4 md:py-10 hidden md:block h-[calc(100vh-200px)]"
+              opts={{
+                loop: true,
+                duration: 60,
+              }}
+              setApi={setCarouselApi}
+              onMouseEnter={() => { }}
+              onMouseLeave={() => { }}
+            >
+              <CarouselContent className="-ml-6 items-stretch [transition-timing-function:cubic-bezier(0.25,0.1,0.25,1)]">
+                {productosCarrusel.map((prod, idx) => (
+                  <CarouselItem key={prod.id || prod.nombre} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
+                    <ProductCard prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex -left-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
+              <CarouselNext className="hidden md:flex -right-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
+            </Carousel>
           </>
         ) : (
           <>
