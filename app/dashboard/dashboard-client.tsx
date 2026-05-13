@@ -274,25 +274,25 @@ function PanelFiltros({
 
     return (
         <div className="fixed inset-0 z-[9998]">
-            <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={onClose} />
-            <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl p-6 overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} />
+            <div className="absolute right-0 top-0 h-full w-full max-w-80 bg-white shadow-2xl p-5 overflow-y-auto">
+                <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                         <SlidersHorizontal className="h-5 w-5" />
                         Filtros
                     </h2>
                     <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
-                        <X className="h-6 w-6" />
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">Categoría</label>
                         <select
                             value={filtros.categoria}
                             onChange={(e) => setFiltros({ ...filtros, categoria: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-700"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-700 text-sm"
                         >
                             <option value="">Todas las categorías</option>
                             {categorias.map((cat) => (
@@ -308,15 +308,15 @@ function PanelFiltros({
                                 { nombre: "negro", codigos: ["999"], hex: "#1a1a1a" },
                                 { nombre: "azul", codigos: ["520", "530", "555", "560", "575"], hex: "#1e40af" },
                                 { nombre: "blanco", codigos: ["001"], hex: "#f5f5f5" },
-                                { nombre: "hueso", codigos: ["005"], hex: "#efebddef" },
-                                { nombre: "rojo", codigos: ["412"], hex: "#bb2626ff" },
-                                { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1bff" },
+                                { nombre: "hueso", codigos: ["005"], hex: "#efebdd" },
+                                { nombre: "rojo", codigos: ["412"], hex: "#bb2626" },
+                                { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1b" },
                                 { nombre: "rosa", codigos: ["310", "315"], hex: "#ec4899" },
-                                { nombre: "celeste", codigos: ["540"], hex: "#8ac7e3ff" },
+                                { nombre: "celeste", codigos: ["540"], hex: "#8ac7e3" },
                                 { nombre: "verde olivo", codigos: ["676"], hex: "#65a30d" },
                                 { nombre: "marron", codigos: ["720", "740"], hex: "#78350f" },
-                                { nombre: "beige", codigos: ["030", "040", "045", "D-75-745"], hex: "#bab68fff" },
-                                { nombre: "plomo", codigos: ["820", "825", "840", "845"], hex: "#827f7fff" },
+                                { nombre: "beige", codigos: ["030", "040", "045", "D-75-745"], hex: "#bab68f" },
+                                { nombre: "plomo", codigos: ["820", "825", "840", "845"], hex: "#827f7f" },
                             ].map((color) => (
                                 <button
                                     key={color.nombre}
@@ -483,18 +483,18 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
     const precioMax = precios.length > 0 ? Math.max(...precios) : 1000
 
     const COLORES = [
-        { nombre: "negro", codigos: ["999", "900", "901", "902", "903", "904"], hex: "#1a1a1a" },
-        { nombre: "azul", codigos: ["520", "530", "555", "560", "575", "100", "101", "102", "200", "201", "300", "301"], hex: "#1e40af" },
-        { nombre: "blanco", codigos: ["001", "002", "003", "004", "005"], hex: "#f5f5f5" },
-        { nombre: "rojo", codigos: ["412", "500", "501", "502", "503", "600"], hex: "#dc2626" },
-        { nombre: "rosa", codigos: ["310", "311", "312", "313", "314", "315", "316"], hex: "#ec4899" },
-        { nombre: "celeste", codigos: ["540", "400", "401", "402", "410"], hex: "#0ea5e9" },
-        { nombre: "verde olivo", codigos: ["676", "700", "701", "702", "710"], hex: "#65a30d" },
-        { nombre: "marron", codigos: ["720", "740", "800", "801", "802", "810", "820"], hex: "#78350f" },
+        { nombre: "negro", codigos: ["999"], hex: "#1a1a1a" },
+        { nombre: "azul", codigos: ["520", "530", "555", "560", "575"], hex: "#1e40af" },
+        { nombre: "blanco", codigos: ["001"], hex: "#f5f5f5" },
+        { nombre: "hueso", codigos: ["005"], hex: "#efebdd" },
+        { nombre: "rojo", codigos: ["412"], hex: "#bb2626" },
+        { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1b" },
+        { nombre: "rosa", codigos: ["310", "315"], hex: "#ec4899" },
+        { nombre: "celeste", codigos: ["540"], hex: "#8ac7e3" },
+        { nombre: "verde olivo", codigos: ["676"], hex: "#65a30d" },
+        { nombre: "marron", codigos: ["720", "740"], hex: "#78350f" },
         { nombre: "beige", codigos: ["030", "040", "045", "D-75-745"], hex: "#bab68f" },
         { nombre: "plomo", codigos: ["820", "825", "840", "845"], hex: "#827f7f" },
-        { nombre: "hueso", codigos: ["005", "D-75-745"], hex: "#efebdd" },
-        { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1b" },
     ]
 
     const getColorFromNombre = (nombre: string): string | null => {

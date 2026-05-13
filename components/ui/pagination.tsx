@@ -54,7 +54,7 @@ export function Pagination({
             size="sm"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="border-slate-300 hover:bg-slate-100"
+            className="border-slate-400 hover:bg-slate-200 text-slate-700"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -82,7 +82,7 @@ export function Pagination({
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="border-slate-300 hover:bg-slate-100"
+            className="border-slate-400 hover:bg-slate-200 text-slate-700"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
