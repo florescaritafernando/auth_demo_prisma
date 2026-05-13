@@ -139,9 +139,12 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
     const handleUpload = async () => {
         if (!imagenFile) return imagenPreview
         
+        setUploading(true)
         try {
             const formData = new FormData()
             formData.append("file", imagenFile)
+            formData.append("tipo", "producto")
+            formData.append("nombreProducto", form.nombre)
             
             const res = await fetch("/api/upload", {
                 method: "POST",
