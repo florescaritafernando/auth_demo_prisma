@@ -50,6 +50,7 @@ interface Filtros {
 function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Producto; esFavorito: boolean; onToggleFavorito: (id: string) => void }) {
     const [showModal, setShowModal] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
+    const [zoomLevel, setZoomLevel] = useState(1)
 
     useEffect(() => {
         setIsMounted(true)
@@ -71,7 +72,7 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
         <div
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={(e) => {
-                if (e.target === e.currentTarget) setShowModal(false)
+                if (e.target === e.currentTarget) { setShowModal(false); setZoomLevel(1); }
             }}
         >
             <div
@@ -79,22 +80,46 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
                 onClick={e => e.stopPropagation()}
             >
                 <div className="relative h-64 bg-slate-100 overflow-hidden">
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 flex items-center justify-center"
+                        style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.3s ease' }}
+                    >
                         {producto.imagen ? (
                             <Image
                                 src={producto.imagen}
                                 alt={producto.nombre}
-                                fill
-                                className="object-contain p-8"
-                                sizes="(max-width: 768px) 100vw, 50vw"
+                                width={250}
+                                height={250}
+                                className="object-contain max-w-full max-h-full"
+                                style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%' }}
                             />
                         ) : (
                             <div className="text-slate-400">Sin imagen</div>
                         )}
                     </div>
 
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white/95 rounded-full px-2 py-1 shadow-sm border border-slate-200">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setZoomLevel(Math.max(0.5, zoomLevel - 0.25)); }}
+                            className="p-1.5 hover:bg-slate-100 rounded-full"
+                        >
+                            <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                        </button>
+                        <span className="text-xs font-medium text-slate-600 w-10 text-center">{Math.round(zoomLevel * 100)}%</span>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setZoomLevel(Math.min(3, zoomLevel + 0.25)); }}
+                            className="p-1.5 hover:bg-slate-100 rounded-full"
+                        >
+                            <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    </div>
+
                     <button
-                        onClick={() => setShowModal(false)}
+                        onClick={() => { setShowModal(false); setZoomLevel(1); }}
                         className="absolute top-3 right-3 bg-white/80 hover:bg-white p-1.5 rounded-full shadow-sm border border-slate-200 transition-colors"
                     >
                         <X className="w-4 h-4 text-slate-600" />
@@ -148,7 +173,7 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
         <>
             <div
                 className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col rounded-lg overflow-hidden"
-                onClick={() => setShowModal(true)}
+                onClick={() => { setShowModal(true); setZoomLevel(1); }}
             >
                 <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
 
@@ -197,20 +222,21 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
                         </span>
                         <span className="text-xs text-slate-500">/ metro lineal</span>
                     </div>
-                    <span className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
-                        Ver detalles →
-                    </span>
                 </div>
-                <div className="pt-2 mt-auto flex gap-2">
-                    <div className="w-1/2">
-                        <BotonAgregarCarrito producto={producto as any} className="w-full" />
-                    </div>
+                <div className="mt-auto flex rounded-b-lg overflow-hidden border-t border-slate-200">
                     <button
-                        onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
-                        className="w-1/2 px-2 py-1.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-xs"
+                        onClick={(e) => { e.stopPropagation(); setShowModal(true); setZoomLevel(1); }}
+                        className="flex-1 py-3 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 border-r border-slate-200"
                     >
-                        Ver detalle
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Ver
                     </button>
+                    <div className="flex-1">
+                        <BotonAgregarCarrito producto={producto as any} className="w-full h-full rounded-none" />
+                    </div>
                 </div>
             </div>
 
@@ -462,13 +488,17 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
 
     const COLORES = [
         { nombre: "negro", codigos: ["999", "900", "901", "902", "903", "904"], hex: "#1a1a1a" },
-        { nombre: "azul", codigos: ["100", "101", "102", "200", "201", "300", "301"], hex: "#1e40af" },
+        { nombre: "azul", codigos: ["520", "530", "555", "560", "575", "100", "101", "102", "200", "201", "300", "301"], hex: "#1e40af" },
         { nombre: "blanco", codigos: ["001", "002", "003", "004", "005"], hex: "#f5f5f5" },
-        { nombre: "rojo", codigos: ["500", "501", "502", "503", "600"], hex: "#dc2626" },
+        { nombre: "rojo", codigos: ["412", "500", "501", "502", "503", "600"], hex: "#dc2626" },
         { nombre: "rosa", codigos: ["310", "311", "312", "313", "314", "315", "316"], hex: "#ec4899" },
-        { nombre: "celeste", codigos: ["400", "401", "402", "410"], hex: "#0ea5e9" },
-        { nombre: "verde olivo", codigos: ["700", "701", "702", "710"], hex: "#65a30d" },
-        { nombre: "marron", codigos: ["800", "801", "802", "810", "820"], hex: "#78350f" },
+        { nombre: "celeste", codigos: ["540", "400", "401", "402", "410"], hex: "#0ea5e9" },
+        { nombre: "verde olivo", codigos: ["676", "700", "701", "702", "710"], hex: "#65a30d" },
+        { nombre: "marron", codigos: ["720", "740", "800", "801", "802", "810", "820"], hex: "#78350f" },
+        { nombre: "beige", codigos: ["030", "040", "045", "D-75-745"], hex: "#bab68f" },
+        { nombre: "plomo", codigos: ["820", "825", "840", "845"], hex: "#827f7f" },
+        { nombre: "hueso", codigos: ["005", "D-75-745"], hex: "#efebdd" },
+        { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1b" },
     ]
 
     const getColorFromNombre = (nombre: string): string | null => {
@@ -529,37 +559,28 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
 
             <div ref={headerRef} className="mb-6 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
                 <div className="w-full md:w-auto">
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+                    <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
                         Mi Catalogo Exclusivo
                     </h1>
-                    <p className="text-slate-500 mt-2 text-lg">
+                    <p className="text-slate-500 mt-1 text-sm md:text-lg">
                         Bienvenido(a), <span className="font-semibold text-slate-700">{userName}</span>.
                     </p>
                 </div>
-                <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por nombre..."
-                            value={filtros.busqueda}
-                            onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
-                            className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 w-full md:w-64"
-                        />
-                    </div>
+                <div className="flex flex-row flex-wrap items-center gap-2 w-full md:w-auto">
                     <button
                         onClick={() => setFiltros({ ...filtros, soloFavoritos: !filtros.soloFavoritos })}
-                        className={`flex items-center gap-2 px-4 py-2 border rounded-lg font-semibold transition-colors ${filtros.soloFavoritos ? 'border-red-500 text-red-600 bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${filtros.soloFavoritos ? 'border-red-500 text-red-600 bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                         <Heart className={`h-4 w-4 ${filtros.soloFavoritos ? 'fill-current text-red-500' : ''}`} />
-                        Favoritos
+                        <span className="hidden sm:inline">Favoritos</span>
                     </button>
                     <button
                         onClick={() => setShowFiltros(true)}
-                        className={`flex items-center gap-2 px-4 py-2 border rounded-lg font-semibold transition-colors ${tieneFiltrosActivos ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${tieneFiltrosActivos ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                         <Filter className="h-4 w-4" />
-                        Filtrar {tieneFiltrosActivos && `(${productosFiltrados.length})`}
+                        <span className="hidden sm:inline">Filtrar {tieneFiltrosActivos && `(${productosFiltrados.length})`}</span>
+                        <span className="sm:hidden">{tieneFiltrosActivos && `(${productosFiltrados.length})`}</span>
                     </button>
                     <CarritoBadge />
                 </div>
