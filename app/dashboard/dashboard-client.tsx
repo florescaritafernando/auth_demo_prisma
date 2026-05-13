@@ -555,19 +555,19 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
 
             <div ref={headerRef} className="mb-6 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
                 <div className="w-full md:w-auto">
-                    <p className="text-slate-500 text-sm md:text-lg">
+                    <p className="text-slate-500 text-base md:text-xl">
                         Bienvenido(a), <span className="font-semibold text-slate-700">{userName}</span>.
                     </p>
                 </div>
-                <div className="flex flex-row flex-wrap items-center gap-2 w-full md:w-auto">
-                    <div className="relative">
+                <div className="flex flex-row flex-nowrap items-center gap-2 w-full md:w-auto">
+                    <div className="relative flex-1 md:flex-none md:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <input
                             type="text"
                             placeholder="Buscar artículo..."
                             value={filtros.busqueda}
                             onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
-                            className="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 w-full md:w-56 text-sm"
+                            className="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 w-full text-sm"
                         />
                     </div>
                     <button
