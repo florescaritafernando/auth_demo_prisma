@@ -172,8 +172,7 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
     return (
         <>
             <div
-                className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col rounded-lg overflow-hidden"
-                onClick={() => { setShowModal(true); setZoomLevel(1); }}
+                className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 h-full flex flex-col rounded-lg overflow-hidden"
             >
                 <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
 
@@ -181,7 +180,7 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
                     <div className="absolute top-1 left-2 z-5">
                         <button
                             onClick={(e) => {
-                                e.preventDefault(); // Evita navegación si está dentro de un Link
+                                e.preventDefault();
                                 e.stopPropagation();
                                 onToggleFavorito(producto.id);
                             }}
@@ -201,9 +200,10 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
                         src={producto.imagen || "/images/D-10-001.png"}
                         alt={producto.nombre}
                         fill
-                        priority={false} // Solo usa true si es el primer producto de la página
-                        className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
+                        priority={false}
+                        className="object-contain p-6 transition-transform duration-300 group-hover:scale-105 cursor-pointer"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        onClick={() => { setShowModal(true); setZoomLevel(1); }}
                     />
                 </div>
                 <div className="p-4 flex flex-col items-center text-center justify-center min-w-0">
@@ -226,15 +226,11 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
                 <div className="mt-auto flex rounded-b-lg overflow-hidden border-t border-slate-200">
                     <button
                         onClick={(e) => { e.stopPropagation(); setShowModal(true); setZoomLevel(1); }}
-                        className="flex-1 py-3 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 border-r border-slate-200"
+                        className="flex-1 py-3 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium transition-colors border-r border-slate-200"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
                         Ver
                     </button>
-                    <div className="flex-1">
+                    <div className="flex-1" onClick={(e) => e.stopPropagation()}>
                         <BotonAgregarCarrito producto={producto as any} className="w-full h-full rounded-none" />
                     </div>
                 </div>
@@ -559,14 +555,21 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
 
             <div ref={headerRef} className="mb-6 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
                 <div className="w-full md:w-auto">
-                    <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                        Mi Catalogo Exclusivo
-                    </h1>
-                    <p className="text-slate-500 mt-1 text-sm md:text-lg">
+                    <p className="text-slate-500 text-sm md:text-lg">
                         Bienvenido(a), <span className="font-semibold text-slate-700">{userName}</span>.
                     </p>
                 </div>
                 <div className="flex flex-row flex-wrap items-center gap-2 w-full md:w-auto">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar artículo..."
+                            value={filtros.busqueda}
+                            onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
+                            className="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 w-full md:w-56 text-sm"
+                        />
+                    </div>
                     <button
                         onClick={() => setFiltros({ ...filtros, soloFavoritos: !filtros.soloFavoritos })}
                         className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${filtros.soloFavoritos ? 'border-red-500 text-red-600 bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
