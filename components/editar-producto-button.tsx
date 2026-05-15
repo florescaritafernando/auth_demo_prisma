@@ -17,6 +17,8 @@ interface Producto {
     precio: number
     imagen: string | null
     activo: boolean
+    tipocolores: string | null
+    tipodiseno: string | null
     stocks: { almacenId: string; stock: number }[]
 }
 
@@ -25,6 +27,37 @@ const CATEGORIAS = [
     "LONDON FANCY SUITING",
     "MANCHESTER STRECH",
     "MANCHESTER FASHION",
+]
+
+const TIPOCOLORES = [
+    "negro",
+    "azul noche",
+    "azul marino",
+    "azul electrico",
+    "azul acero",
+    "azul barcelona",
+    "vino",
+    "rosado",
+    "rojo",
+    "verde olivo",
+    "verde",
+    "beige",
+    "hueso",
+    "blanco",
+    "marron",
+    "amarillo",
+]
+
+const TIPODISENO = [
+    "mil rayas",
+    "super 120",
+    "entero satinado",
+    "entero mate",
+    "escarchado",
+    "panal",
+    "brocado",
+    "jacket",
+    "cuadros",
 ]
 
 export function BotonEditarProducto({ producto }: { producto: Producto }) {
@@ -39,6 +72,8 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
         descripcion: "",
         precio: "",
         activo: true,
+        tipocolores: [] as string[],
+        tipodiseno: "",
     })
     const [stocks, setStocks] = useState<Record<string, number>>({})
     const [imagenFile, setImagenFile] = useState<File | null>(null)
@@ -53,12 +88,17 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
 
     useEffect(() => {
         if (producto && open) {
+            const coloresArray = producto.tipocolores 
+                ? producto.tipocolores.split(",").filter(c => c.trim())
+                : []
             setForm({
                 nombre: producto.nombre,
                 categoria: producto.categoria,
                 descripcion: producto.descripcion || "",
                 precio: String(producto.precio),
                 activo: producto.activo,
+                tipocolores: coloresArray,
+                tipodiseno: producto.tipodiseno || "",
             })
             setImagenPreview(producto.imagen || "")
             
@@ -105,6 +145,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                     ...form,
                     precio: parseFloat(form.precio),
                     imagen: imagenUrl,
+                    tipocolores: form.tipocolores.join(","),
                     stocks
                 }),
                 credentials: "include",
@@ -246,6 +287,43 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                             value={form.descripcion}
                             onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-slate-700">Tipo de Color</label>
+                        <div className="grid grid-cols-4 gap-2 p-3 border border-slate-300 rounded-lg bg-white max-h-32 overflow-y-auto">
+                            {TIPOCOLORES.map((color) => (
+                                <label key={color} className="flex items-center gap-1 text-xs cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.tipocolores.includes(color)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setForm({ ...form, tipocolores: [...form.tipocolores, color] })
+                                            } else {
+                                                setForm({ ...form, tipocolores: form.tipocolores.filter(c => c !== color) })
+                                            }
+                                        }}
+                                        className="rounded"
+                                    />
+                                    <span className="truncate">{color}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-slate-700">Tipo de Diseño</label>
+                        <select
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                            value={form.tipodiseno}
+                            onChange={(e) => setForm({ ...form, tipodiseno: e.target.value })}
+                        >
+                            <option value="">Seleccionar...</option>
+                            {TIPODISENO.map((diseno) => (
+                                <option key={diseno} value={diseno}>{diseno}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>

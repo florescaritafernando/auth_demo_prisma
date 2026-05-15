@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         })
 
         if (format === "csv") {
-            const headers = ["nombre", "categoria", "descripcion", "precio", "activo", ...almacenes.map(a => `stock_${a.nombre}`)]
+            const headers = ["nombre", "categoria", "tipocolores", "tipodiseno", "descripcion", "precio", "activo", ...almacenes.map(a => `stock_${a.nombre}`)]
             const rows = productos.map(p => {
                 const stockMap: Record<string, number> = {}
                 p.stocks.forEach(s => {
@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
                 return [
                     `"${p.nombre}"`,
                     `"${p.categoria}"`,
+                    `"${p.tipocolores || ""}"`,
+                    `"${p.tipodiseno || ""}"`,
                     `"${p.descripcion || ""}"`,
                     p.precio.toFixed(2),
                     p.activo ? "SI" : "NO",

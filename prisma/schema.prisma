@@ -101,13 +101,15 @@ model Verification {
 
 model Producto {
   id            String          @id @default(cuid())
-  nombre        String          @unique
+  nombre        String
   categoria     String          @default("MANCHESTER SUITING")
   descripcion   String?
   precio        Float
   imagen        String?
   proveedorId   String?
   activo        Boolean         @default(true)
+  tipocolores   String?
+  tipodiseno    String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   carrito       Carrito[]
@@ -115,6 +117,7 @@ model Producto {
   stocks        ProductoStock[]
   favoritos     Favorito[]
 
+  @@unique([nombre, categoria])
   @@map("producto")
 }
 

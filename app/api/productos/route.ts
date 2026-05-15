@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
     const activo = searchParams.get("activo")
     const categoria = searchParams.get("categoria")
     const search = searchParams.get("search")
+    const tipocolor = searchParams.get("tipocolor")
+    const tipodiseno = searchParams.get("tipodiseno")
 
     const where: any = {}
     
@@ -23,6 +25,12 @@ export async function GET(request: NextRequest) {
         where.OR = [
             { nombre: { contains: search, mode: "insensitive" } },
         ]
+    }
+    if (tipocolor) {
+        where.tipocolores = { contains: tipocolor, mode: "insensitive" }
+    }
+    if (tipodiseno) {
+        where.tipodiseno = tipodiseno
     }
 
     const productos = await prisma.producto.findMany({
@@ -53,9 +61,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { nombre, categoria, descripcion, precio, stocks, imagen } = body
+    const { nombre, categoria, descripcion, precio, stocks, imagen, tipocolores, tipodiseno } = body
 
     try {
+        const existing = await prisma.producto.findFirst({
+            where: { nombre, categoria }
+        })
+        
+        if (existing) {
+            return NextResponse.json({ 
+                success: false, 
+                error: `Ya existe un producto "${nombre}" en la categoría "${categoria}"` 
+            }, { status: 400 })
+        }
+
         const stocksArray = Object.entries(stocks || {})
             .map(([almacenId, stock]) => ({
                 almacenId,
@@ -71,6 +90,8 @@ export async function POST(request: NextRequest) {
                 precio: parseFloat(precio),
                 activo: true,
                 imagen: imagen || null,
+                tipocolores: tipocolores || null,
+                tipodiseno: tipodiseno || null,
                 stocks: {
                     create: stocksArray
                 }

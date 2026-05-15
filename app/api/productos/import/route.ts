@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
                 }
 
                 const categoria = row.categoria || row.Categoria || row.CATEGORIA || ""
+                const tipocolores = row.tipocolores || row.Tipocolores || row.TIPOCOLORES || ""
+                const tipodiseno = row.tipodiseno || row.Tipodiseno || row.TIPODISENO || ""
                 const descripcion = row.descripcion || row.Descripcion || row.DESCRIPCION || ""
                 const precio = parseFloat(row.precio || row.Precio || row.PRECIO) || 0
                 const activo = (row.activo || row.Activo || row.ACTIVO || "SI").toUpperCase() === "SI"
@@ -104,7 +106,7 @@ export async function POST(request: NextRequest) {
                 }
 
                 const existing = await prisma.producto.findFirst({
-                    where: { nombre }
+                    where: { nombre, categoria }
                 })
 
                 if (existing) {
@@ -112,7 +114,8 @@ export async function POST(request: NextRequest) {
                     await prisma.producto.update({
                         where: { id: existing.id },
                         data: {
-                            categoria,
+                            tipocolores: tipocolores || null,
+                            tipodiseno: tipodiseno || null,
                             descripcion,
                             precio,
                             activo
@@ -142,6 +145,8 @@ export async function POST(request: NextRequest) {
                         data: {
                             nombre,
                             categoria,
+                            tipocolores: tipocolores || null,
+                            tipodiseno: tipodiseno || null,
                             descripcion,
                             precio,
                             activo,
