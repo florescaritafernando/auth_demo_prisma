@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock, FileText, HelpCircle } from "lucide-react"
+import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, Copy, AlertCircle as AlertCircleIcon, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock, FileText, HelpCircle, Search, Loader2, Upload, File, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PackageCheck, RulerDimensionLine } from "lucide-react"
 import { UBIGEO_DATA as UBIGEO, type UbigeoType } from "@/lib/ubigeo"
@@ -19,6 +19,7 @@ interface CarritoItem {
         categoria: string
         precio: number
         imagen?: string | null
+        stocks?: { stock: number }[]
     }
     cantidadMetros: number
     tipoLabel: string
@@ -69,6 +70,13 @@ export default function CheckoutPage() {
     const [indicacionToDelete, setIndicacionToDelete] = useState<string | null>(null)
     const [successModal, setSuccessModal] = useState<{ show: boolean; message: string; orderNumber?: string }>({ show: false, message: "" })
     const [tiendas, setTiendas] = useState<{ id: string, nombre: string, direccion: string }[]>([])
+    const [buscandoDocumento, setBuscandoDocumento] = useState(false)
+    const [alertDocumento, setAlertDocumento] = useState<{ show: boolean; message: string }>({ show: false, message: "" })
+    const [toastMessage, setToastMessage] = useState<{ show: boolean; message: string; type: "error" | "success" }>({ show: false, message: "", type: "error" })
+    const [inputValues, setInputValues] = useState<Record<string, string>>({})
+    const [comprobanteFile, setComprobanteFile] = useState<File | null>(null)
+    const [comprobanteUrl, setComprobanteUrl] = useState<string>("")
+    const [subiendoComprobante, setSubiendoComprobante] = useState(false)
     const [data, setData] = useState<CheckoutData>({
         tipoDocumento: "",
         numeroDoc: "",
@@ -186,6 +194,11 @@ export default function CheckoutPage() {
                     celularRecibe: pedido.celularRecibe || "",
                     numeroOperacion: pedido.numeroOperacion === "012345678" ? "" : (pedido.numeroOperacion || "")
                 }))
+                
+                // Cargar comprobante de pago si existe
+                if (pedido.comprobantePago) {
+                    setComprobanteUrl(pedido.comprobantePago)
+                }
 
                 const itemsFromPedido = (pedido.pedidoDetalle || []).map((detalle: any) => ({
                     id: detalle.id,
@@ -205,6 +218,12 @@ export default function CheckoutPage() {
                 }))
                 console.log("Items from pedido:", itemsFromPedido)
                 setItems(itemsFromPedido)
+                // Initialize input values from fetched items
+                const initInputValues: Record<string, string> = {}
+                itemsFromPedido.forEach((item: any) => {
+                    initInputValues[item.id] = String(item.cantidad)
+                })
+                setInputValues(initInputValues)
                 setStep(4)
             }
         } catch (e) {
@@ -239,12 +258,15 @@ export default function CheckoutPage() {
                 })
                 setItems(itemsConPrecio)
 
-                // Initialize indicaciones from fetched items
+                // Initialize indicaciones and input values from fetched items
                 const initIndicaciones: Record<string, string> = {}
+                const initInputValues: Record<string, string> = {}
                     ; (json.items || []).forEach((item: any) => {
                         initIndicaciones[item.id] = item.indicacionesCorte || ""
+                        initInputValues[item.id] = String(item.cantidad)
                     })
                 setIndicaciones(initIndicaciones)
+                setInputValues(initInputValues)
             }
         } catch (e) {
             console.error("Error fetching cart:", e)
@@ -313,7 +335,33 @@ export default function CheckoutPage() {
     }, [calcularSubtotal, calcularCostoEnvio])
 
     const actualizarCantidad = async (itemId: string, nuevaCantidad: number) => {
-        if (nuevaCantidad < 1) return
+        const item = items.find(i => i.id === itemId)
+        if (!item) return
+
+        // Validación según tipo de artículo
+        if (item.tipo === "pieza") {
+            // No validar stock en frontend - solo en API
+        } else {
+            // Validación para metros
+            const MIN_METROS = 0.10
+            const MAX_METROS = 50.00
+            
+            if (nuevaCantidad < MIN_METROS) {
+                setToastMessage({ show: true, message: "La cantidad mínima es 0.10 metros", type: "error" })
+                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                return
+            }
+            if (nuevaCantidad > MAX_METROS) {
+                setToastMessage({ show: true, message: "La cantidad máxima es 50 metros", type: "error" })
+                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                return
+            }
+        }
+
+        // Validación mínimo general
+        const minVal = item.tipo === "pieza" ? 1 : 0.10
+        if (nuevaCantidad < minVal) return
+
         try {
             const res = await fetch("/api/carrito", {
                 method: "PATCH",
@@ -330,6 +378,17 @@ export default function CheckoutPage() {
                     precioTotal: item.tipo === "pieza" ? Number(item.producto.precio) * (item.cantidad * metrosPorPieza) : Number(item.producto.precio) * item.cantidad
                 }))
                 setItems(itemsConPrecio)
+                // Update input values to match new quantities
+                const newInputValues: Record<string, string> = {}
+                ;(json.items || []).forEach((item: any) => {
+                    newInputValues[item.id] = String(item.cantidad)
+                })
+                setInputValues(prev => ({ ...prev, ...newInputValues }))
+            } else {
+                setToastMessage({ show: true, message: json.error || "Error al actualizar", type: "error" })
+                setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                // Reset input value to current item quantity
+                setInputValues(prev => ({ ...prev, [itemId]: String(item.cantidad) }))
             }
         } catch (e) {
             console.error("Error updating:", e)
@@ -419,6 +478,114 @@ export default function CheckoutPage() {
             }
             return newData
         })
+    }
+
+    const buscarDocumento = async () => {
+        if (!data.tipoDocumento || !data.numeroDoc) return
+
+        setBuscandoDocumento(true)
+        setAlertDocumento({ show: false, message: "" })
+        try {
+            const res = await fetch("/api/buscar-documento", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tipo: data.tipoDocumento, numero: data.numeroDoc })
+            })
+            const result = await res.json()
+
+            if (result.success) {
+                const tieneDatos = data.tipoDocumento === "dni"
+                    ? result.nombre && result.nombre.trim() !== ""
+                    : result.razonSocial && result.razonSocial.trim() !== ""
+
+                if (!tieneDatos) {
+                    setAlertDocumento({ show: true, message: "Datos no encontrados del documento consultado" })
+                } else {
+                    if (data.tipoDocumento === "dni") {
+                        handleInputChange("nombreFactura", result.nombre)
+                    } else if (data.tipoDocumento === "ruc") {
+                        handleInputChange("nombreFactura", result.razonSocial)
+                        handleInputChange("direccion", result.direccion)
+                        
+                        // Helper to find matching key in UBIGEO
+                        const findUbigeoMatch = (value: string, options: string[]) => {
+                            if (!value) return ""
+                            const normalized = value.trim().toUpperCase()
+                            // Try exact match first
+                            const exact = options.find(o => o.toUpperCase() === normalized)
+                            if (exact) return exact
+                            // Try partial match
+                            const partial = options.find(o => o.toUpperCase().includes(normalized) || normalized.includes(o.toUpperCase()))
+                            if (partial) return partial
+                            return ""
+                        }
+                        
+                        // Find matching department
+                        const deptKeys = Object.keys(UBIGEO)
+                        const matchedDept = findUbigeoMatch(result.departamento, deptKeys)
+                        if (matchedDept) {
+                            handleInputChange("departamento", matchedDept)
+                            // Find matching province
+                            const provKeys = Object.keys(UBIGEO[matchedDept] || {})
+                            const matchedProv = findUbigeoMatch(result.provincia, provKeys)
+                            if (matchedProv) {
+                                handleInputChange("provincia", matchedProv)
+                                // Find matching district
+                                const distOptions = UBIGEO[matchedDept]?.[matchedProv] || []
+                                const matchedDist = findUbigeoMatch(result.distrito, distOptions)
+                                if (matchedDist) {
+                                    handleInputChange("distrito", matchedDist)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                setAlertDocumento({ show: true, message: result.error || "Datos no encontrados del documento consultado" })
+            }
+        } catch (e) {
+            console.error("Error buscando documento:", e)
+            setAlertDocumento({ show: true, message: "Error al consultar documento" })
+        }
+        setBuscandoDocumento(false)
+    }
+
+    const handleComprobanteChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        // Validar tamaño (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            alert("El archivo no puede superar 5MB")
+            return
+        }
+
+        setComprobanteFile(file)
+        setSubiendoComprobante(true)
+
+        try {
+            const formData = new FormData()
+            formData.append("file", file)
+            formData.append("tipo", "comprobante")
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+                credentials: "include",
+            })
+            const data = await res.json()
+
+            if (data.url) {
+                setComprobanteUrl(data.url)
+            } else if (data.error) {
+                console.error("Error del servidor:", data.error)
+                alert("Error al subir: " + data.error)
+            }
+        } catch (error) {
+            console.error("Error uploading comprobante:", error)
+            alert("Error al subir comprobante")
+        }
+        setSubiendoComprobante(false)
     }
 
     const tienePiezas = useMemo(() => {
@@ -524,6 +691,19 @@ export default function CheckoutPage() {
             setLoading(false)
         }
     }
+
+    const copiarTexto = (texto: string, key: string) => {
+        navigator.clipboard.writeText(texto)
+        setCopiado({ ...copiado, [key]: true })
+        setTimeout(() => setCopiado({ ...copiado, [key]: false }), 2000)
+    }
+
+    const [copiado, setCopiado] = useState({
+        bcp: false,
+        cci: false,
+        celular: false
+    })
+
 
     const crearPedidoConMetrajeTemporal = async () => {
         setLoading(true)
@@ -638,8 +818,8 @@ export default function CheckoutPage() {
     }
 
     const confirmarPago = async () => {
-        if (!data.numeroOperacion) {
-            setError("Por favor ingresa tu número de operación")
+        if (!data.numeroOperacion && !comprobanteUrl) {
+            setError("Por favor ingresa tu número de operación o sube un comprobante de pago")
             return
         }
 
@@ -655,7 +835,8 @@ export default function CheckoutPage() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         estado: "pendiente",
-                        numeroOperacion: data.numeroOperacion
+                        numeroOperacion: data.numeroOperacion,
+                        comprobantePago: comprobanteUrl || null
                     }),
                     credentials: "include"
                 })
@@ -699,6 +880,7 @@ export default function CheckoutPage() {
                         nombreRecibe: data.nombreRecibe || null,
                         celularRecibe: data.celularRecibe || null,
                         numeroOperacion: data.numeroOperacion,
+                        comprobantePago: comprobanteUrl || null,
                         estado: "pendiente",
                         items: itemsParaApi
                     }),
@@ -723,6 +905,18 @@ export default function CheckoutPage() {
 
     return (
         <>
+            {/* Toast flotante */}
+            {toastMessage.show && (
+                <div className="fixed top-20 right-4 z-50 animate-slide-in">
+                    <div className={`px-4 py-3 rounded-lg shadow-lg border ${
+                        toastMessage.type === "error" 
+                            ? "bg-red-50 border-red-200 text-red-800" 
+                            : "bg-green-50 border-green-200 text-green-800"
+                    }`}>
+                        <p className="font-medium">{toastMessage.message}</p>
+                    </div>
+                </div>
+            )}
             <div className="max-w-4xl mx-auto">
                 {error && (
                     <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
@@ -839,32 +1033,89 @@ export default function CheckoutPage() {
 
                                                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
                                                     <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => actualizarCantidad(item.id, item.tipo === "pieza" ? item.cantidad - 1 : item.cantidad - 0.01)}
-                                                            disabled={item.tipo === "pieza" ? item.cantidad <= 1 : item.cantidad <= 0.01}
-                                                            className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
-                                                        >
-                                                            <Minus className="h-4 w-4 text-slate-700" />
-                                                        </button>
-                                                        <input
-                                                            type="number"
-                                                            step={item.tipo === "pieza" ? "1" : "0.01"}
-                                                            min={item.tipo === "pieza" ? "1" : "0.01"}
-                                                            value={item.cantidad}
-                                                            onChange={(e) => {
-                                                                const raw = parseFloat(e.target.value)
-                                                                const value = item.tipo === "pieza" ? Math.floor(raw) || 1 : (raw || 0.01)
-                                                                const minVal = item.tipo === "pieza" ? 1 : 0.01
-                                                                if (value >= minVal) actualizarCantidad(item.id, value)
-                                                            }}
-                                                            className="w-20 text-center border-2 border-black rounded px-2 py-1 font-bold text-black"
-                                                        />
-                                                        <button
-                                                            onClick={() => actualizarCantidad(item.id, item.tipo === "pieza" ? item.cantidad + 1 : item.cantidad + 0.01)}
-                                                            className="p-2 bg-slate-100 rounded hover:bg-slate-200"
-                                                        >
-                                                            <Plus className="h-4 w-4 text-slate-700" />
-                                                        </button>
+                                                        {item.tipo === "pieza" && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const nuevaCantidad = item.cantidad - 1
+                                                                        if (nuevaCantidad < 1) {
+                                                                            setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                                                                            setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                            return
+                                                                        }
+                                                                        actualizarCantidad(item.id, nuevaCantidad)
+                                                                    }}
+                                                                    disabled={item.cantidad <= 1}
+                                                                    className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                                                                >
+                                                                    <Minus className="h-4 w-4 text-slate-700" />
+                                                                </button>
+                                                                <input
+                                                                    type="text"
+                                                                    inputMode="decimal"
+                                                                    step="1"
+                                                                    min="1"
+                                                                    value={inputValues[item.id] ?? String(item.cantidad)}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value
+                                                                        setInputValues(prev => ({ ...prev, [item.id]: val }))
+                                                                    }}
+                                                                    onBlur={(e) => {
+                                                                        const raw = parseInt(e.target.value)
+                                                                        if (isNaN(raw) || raw < 1) {
+                                                                            setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                                                                            setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                            setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                            return
+                                                                        }
+                                                                        // La validación de stock se hace en el servidor
+                                                                        actualizarCantidad(item.id, raw)
+                                                                    }}
+                                                                    className="w-20 text-center border-2 border-black rounded px-2 py-1 font-bold text-black"
+                                                                />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const nuevaCantidad = item.cantidad + 1
+                                                                        // La validación de stock se hace en el servidor
+                                                                        actualizarCantidad(item.id, nuevaCantidad)
+                                                                    }}
+                                                                    className="p-2 bg-slate-100 rounded hover:bg-slate-200"
+                                                                >
+                                                                    <Plus className="h-4 w-4 text-slate-700" />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {item.tipo === "metros" && (
+                                                            <input
+                                                                type="text"
+                                                                inputMode="decimal"
+                                                                step="0.10"
+                                                                min="0.10"
+                                                                max="50"
+                                                                value={inputValues[item.id] ?? String(item.cantidad)}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value
+                                                                    setInputValues(prev => ({ ...prev, [item.id]: val }))
+                                                                }}
+                                                                onBlur={(e) => {
+                                                                    const raw = parseFloat(e.target.value)
+                                                                    if (isNaN(raw) || raw < 0.10) {
+                                                                        setToastMessage({ show: true, message: "La cantidad mínima es 0.10 metros", type: "error" })
+                                                                        setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                        setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                        return
+                                                                    }
+                                                                    if (raw > 50) {
+                                                                        setToastMessage({ show: true, message: "La cantidad máxima es 50 metros", type: "error" })
+                                                                        setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                        setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                        return
+                                                                    }
+                                                                    actualizarCantidad(item.id, raw)
+                                                                }}
+                                                                className="w-24 text-center border-2 border-black rounded px-2 py-1 font-bold text-black"
+                                                            />
+                                                        )}
                                                     </div>
                                                     <button
                                                         onClick={() => eliminarItem(item.id)}
@@ -1033,19 +1284,53 @@ export default function CheckoutPage() {
                                         {data.tipoDocumento === "ruc" ? "Nro. de RUC *" : data.tipoDocumento === "ce" ? "Nro. de documento *" : "Nro. de documento *"}
                                         <span className="text-red-500 ml-1">*</span>
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={data.numeroDoc}
-                                        onChange={e => {
-                                            const maxLen = data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15
-                                            const filtered = e.target.value.replace(/[^0-9]/g, "").slice(0, maxLen)
-                                            handleInputChange("numeroDoc", filtered)
-                                        }}
-                                        maxLength={data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15}
-                                        className="w-full border-1 border-black rounded-lg px-3 py-2 text-black"
-                                        placeholder={data.tipoDocumento === "ruc" ? "11 dígitos" : data.tipoDocumento === "dni" ? "8 dígitos" : "15 dígitos"}
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={data.numeroDoc}
+                                            disabled={!data.tipoDocumento}
+                                            onChange={e => {
+                                                const maxLen = data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15
+                                                const filtered = e.target.value.replace(/[^0-9]/g, "").slice(0, maxLen)
+                                                handleInputChange("numeroDoc", filtered)
+                                                // Auto-búsqueda al completar dígitos
+                                                const isDocValido = data.tipoDocumento === "dni" || data.tipoDocumento === "ruc"
+                                                if (isDocValido && filtered.length === maxLen && !buscandoDocumento) {
+                                                    buscarDocumento()
+                                                }
+                                            }}
+                                            maxLength={data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15}
+                                            className={`w-full border-1 border-black rounded-lg px-3 py-2 pr-10 text-black ${!data.tipoDocumento ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                                            placeholder={!data.tipoDocumento ? "Seleccione tipo primero" : data.tipoDocumento === "ruc" ? "11 dígitos" : data.tipoDocumento === "dni" ? "8 dígitos" : "15 dígitos"}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={buscarDocumento}
+                                            disabled={buscandoDocumento || !data.numeroDoc || (data.tipoDocumento !== "dni" && data.tipoDocumento !== "ruc")}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-700 disabled:opacity-50"
+                                        >
+                                            {buscandoDocumento ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                        </button>
+</div>
                                 </div>
+                                {buscandoDocumento && (
+                                    <div className="mt-2 flex items-center gap-2 text-blue-600">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span className="text-sm">Buscando...</span>
+                                    </div>
+                                )}
+                                {alertDocumento.show && (
+                                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                                        <AlertCircleIcon className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                        <p className="text-sm text-red-700">{alertDocumento.message}</p>
+                                        <button 
+                                            onClick={() => setAlertDocumento({ show: false, message: "" })}
+                                            className="ml-auto text-red-400 hover:text-red-600"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                )}
                                 {data.tipoDocumento !== "ruc" && (
                                     <div>
                                         <label className="block text-sm font-medium text-black mb-1">
@@ -1511,7 +1796,7 @@ export default function CheckoutPage() {
                                                             {detalle.tipo === "pieza" ? (
                                                                 <>
                                                                     <PackageCheck className="h-3 w-3" />
-                                                                    <span>{detalle.cantidad} pieza(s) {(() => {
+                                                                    <span>{(continuarPedido?.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) {(() => {
                                                                         const metrajePieza = detalle.etiquetas?.reduce((s: number, e: any) => s + e.valor, 0) || 0
                                                                         return `${metrajePieza.toFixed(2)} mts`
                                                                     })()} × S/ {Number(detalle.precio).toFixed(2)}</span>
@@ -1567,6 +1852,23 @@ export default function CheckoutPage() {
                                             <p className="font-bold mb-2 text-black">Total: S/ {Number(continuarPedido.total || 0).toFixed(2)}</p>
                                         </div>
                                     </div>
+
+                                    {/* Indicador de comprobante de pago */}
+                                    {comprobanteUrl && (
+                                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                                            <File className="h-5 w-5 text-green-600" />
+                                            <span className="text-sm text-green-700 flex-1">Comprobante de pago subido</span>
+                                            <a 
+                                                href={comprobanteUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                                            >
+                                                <ExternalLink className="h-3 w-3" />
+                                                Ver
+                                            </a>
+                                        </div>
+                                    )}
 
                                     <div className="flex justify-center gap-4 mt-6 pt-4">
                                         <Button
@@ -1631,7 +1933,7 @@ export default function CheckoutPage() {
                                                             })()}
                                                             <span className="text-black font-medium">
                                                                 {detalle.tipo === "pieza"
-                                                                    ? `${detalle.cantidad} pieza(s) ${(() => {
+                                                                    ? `${(continuarPedido?.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) ${(() => {
                                                                         const metrajePieza = detalle.etiquetas?.reduce((s: number, e: any) => s + e.valor, 0) || 0
                                                                         return `${metrajePieza.toFixed(2)} mts`
                                                                     })()}`
@@ -1766,371 +2068,474 @@ export default function CheckoutPage() {
             )}
 
             {showPaymentModal && (
+
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+
                     <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl">
                         <h2 className="text-xl font-bold text-black mb-4">Métodos de Pago</h2>
 
-                        <div className="bg-slate-50 p-4 rounded-lg mb-4">
-                            <p className="font-bold text-lg text-black">Total: S/ {continuarPedido?.total ? Number(continuarPedido.total).toFixed(2) : calcularTotal().toFixed(2)}</p>
+                        <div className="bg-slate-50 p-4 rounded-lg mt-4 mb-4">
+                            <p className="font-bold text-xl text-black">Total: S/ {continuarPedido?.total ? Number(continuarPedido.total).toFixed(2) : calcularTotal().toFixed(2)}</p>
                         </div>
 
                         <div className="space-y-3 mb-4">
-                            <div className="border rounded-lg p-3">
-                                <p className="font-bold text-sm text-black mb-2">🏦 Transferencia Bancaria</p>
-                                <div className="text-sm text-slate-700 space-y-1">
-                                    <p>BBVA: 0011-0184-0202841851</p>
-                                    <p>BCP: 215-2858489001</p>
-                                    <p>Interbank: 620-3004489521</p>
-                                </div>
-                            </div>
-
-                            <div className="border rounded-lg p-3">
-                                <p className="font-bold text-sm text-black mb-2">📱 Yape / Plin</p>
-                                <div className="text-sm text-slate-700">
-                                    <p>Cel: +51 978 543 210</p>
-                                    <p>EMPRESA SAC</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium mb-1 text-black flex items-center gap-2">
-                                Número de operación:
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAyudaOperacion(true)}
-                                    className="text-blue-500 hover:text-blue-700"
-                                    title="Ver qué es el número de operación"
-                                >
-                                    <HelpCircle className="h-4 w-4" />
+                            <p className="text-black">Transferencias bancarias:</p>
+                            <img src="/images/bcp_logo.png" alt="BCP" className="w-28 h-8" />
+                            <div className="flex items-center justify-between">
+                                <p className="text-black">Cuenta corriente: 215-2858489001</p>
+                                <button onClick={() => copiarTexto("215-2858489001", "bcp")}
+                                    className={`px-2 py-1 text-xs rounded ${copiado.bcp
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                        }`}>
+                                    {copiado.bcp ? "Copiado" : "Copiar"}
                                 </button>
-                            </label>
-                            <input
-                                type="text"
-                                value={data.numeroOperacion}
-                                onChange={(e) => setData({ ...data, numeroOperacion: e.target.value })}
-                                className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
-                                placeholder="Ingresa el número de operación"
-                            />
-                        </div>
-
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={() => setShowPaymentModal(false)}
-                                variant="outline"
-                                className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                onClick={confirmarPago}
-                                disabled={loading || !data.numeroOperacion}
-                                className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
-                            >
-                                {loading ? "Procesando..." : "Confirmar Pedido"}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showAyudaOperacion && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setShowAyudaOperacion(false)}>
-                    <div className="relative max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
-                        <button
-                            onClick={() => setShowAyudaOperacion(false)}
-                            className="absolute -top-10 right-0 text-white hover:text-gray-200 font-bold text-lg flex items-center gap-1"
-                        >
-                            <X className="h-5 w-5" />
-                            Cerrar
-                        </button>
-                        <img
-                            src="/images/yape_info2.jpg"
-                            alt="Cómo encontrar el número de operación"
-                            className="w-full rounded-lg shadow-2xl"
-                        />
-                    </div>
-                </div>
-            )}
-
-            {!continuarPedido && showMetrajePopup && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <AlertTriangle className="h-6 w-6 text-yellow-600" />
                             </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-black">⚠️ Tu pedido incluye piezas</h2>
-                                <p className="text-sm text-slate-500">El metraje exacto está siendo procesado.</p>
+                            <div className="flex items-center justify-between">
+                                <p className="text-black">CCI: 620-3004489521</p>
+                                <button onClick={() => copiarTexto("620-3004489521", "cci")}
+                                    className={`px-2 py-1 text-xs rounded ${copiado.cci
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                        }`}>
+                                    {copiado.cci ? "Copiado" : "Copiar"}
+                                </button>
                             </div>
-                        </div>
+                            <div className="flex items-center gap-2">
+                                <p className="text-black">Billeteras digitales: </p>
+                            </div>
 
-                        <div className="mb-4">
-                            <p className="text-sm font-medium text-slate-700 mb-2">Artículos que requieren metraje:</p>
-                            <div className="bg-slate-50 rounded-lg p-3 max-h-32 overflow-y-auto">
-                                {items.filter(i => i.tipo === "pieza").map((item, idx) => (
-                                    <div key={idx} className="flex justify-between text-sm py-1">
-                                        <span className="text-slate-800">{item.producto.nombre}</span>
-                                        <span className="text-slate-500">{item.cantidad} piezas</span>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-3 align-center justify-center">
+                                    <div className="flex flex-row gap-2 items-center justify-center">
+                                        <img src="/images/yape_logo.png" alt="Yape" className="w-16 h-16 rounded-lg" />
+                                        <img src="/images/plin_image.jpg" alt="Plin" className="w-16 h-16 rounded-lg" />
                                     </div>
-                                ))}
+
+                                    <div className="flex items-center justify-between gap-2 items-center justify-center">
+                                        <p className="text-black font-medium">+51 978 543 210</p>
+                                        <button
+                                            onClick={() => copiarTexto("+51 978 543 210", "celular")}
+                                            className={`px-3 py-1.5 text-xs rounded font-medium ${copiado.celular
+                                                ? "bg-green-500 text-white"
+                                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                                }`}
+                                        >
+                                            {copiado.celular ? "Copiado" : "Copiar"}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-center">
+                                    <img
+                                        src="/images/QR-Yape.jpg"
+                                        alt="QR-Yape"
+                                        className="w-40 h-40 rounded-lg"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-black">Empresa: <strong>Manchester Collection Perú E.I.R.L.</strong></p>
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium mb-1 text-black flex items-center gap-2">
+                                    Número de operación:
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAyudaOperacion(true)}
+                                        className="text-blue-500 hover:text-blue-700"
+                                        title="Ver qué es el número de operación"
+                                    >
+                                        <HelpCircle className="h-4 w-4" />
+                                    </button>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={data.numeroOperacion}
+                                    onChange={(e) => setData({ ...data, numeroOperacion: e.target.value })}
+                                    className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black"
+                                    placeholder="Ingresa el número de operación"
+                                />
+                            </div>
+
+                            {/* Comprobante de pago */}
+                            <div>
+                                <label className="block text-sm font-medium text-black mb-1">
+                                    Comprobante de pago (opcional)
+                                </label>
+                                {comprobanteUrl ? (
+                                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                        <File className="h-5 w-5 text-green-600" />
+                                        <span className="text-sm text-green-700 flex-1">Comprobante subido</span>
+                                        <a 
+                                            href={comprobanteUrl} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            Ver
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <input
+                                            type="file"
+                                            accept=".jpg,.jpeg,.png,.pdf"
+                                            onChange={handleComprobanteChange}
+                                            disabled={subiendoComprobante}
+                                            className="w-full px-3 py-2 border border-black rounded-lg bg-white text-black file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                                        />
+                                        {subiendoComprobante && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-sm text-blue-600">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Subiendo...
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {comprobanteFile && !comprobanteUrl && !subiendoComprobante && (
+                                    <p className="text-xs text-orange-600 mt-1">Archivo seleccionado pero no subido</p>
+                                )}
+                            </div>
+
+                            <div className="flex gap-3">
+                                <div className="w-full gap-3">
+                                    <Button
+                                        onClick={() => setShowPaymentModal(false)}
+                                        className="w-2/5 bg-red-600 hover:bg-red-700 font-bold py-2.5 px-4 rounded-lg text-white"
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        onClick={confirmarPago}
+                                        disabled={loading || (!data.numeroOperacion && !comprobanteUrl)}
+                                        className="w-3/5 bg-green-600 hover:bg-green-700 font-bold py-2.5 px-4 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading ? "Procesando..." : "Confirmar Pedido"}
+                                    </Button>
+                                </div>
+
                             </div>
                         </div>
                     </div>
-
-                    <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
-                        <p className="text-sm text-yellow-800">
-                            Te notificaremos cuando esté listo para continuar.
-                        </p>
-                    </div>
-                    <div className="flex gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => { setShowMetrajePopup(false); router.push("/dashboard") }}
-                            className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={async () => {
-                                setShowMetrajePopup(false)
-                                await crearPedidoConMetrajeTemporal()
-                            }}
-                            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
-                        >
-                            Aceptar
-                        </Button>
-                    </div>
                 </div>
-            )}
+            )
+            }
 
-
-            {deletingId && items.find(i => i.id === deletingId) && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
-                        <div className="text-center mb-4">
-                            <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                            <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
-                            <p className="text-slate-600 mt-2">
-                                El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
-                            </p>
-                        </div>
-                        <div className="flex justify-center gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={cancelarEliminar}
-                                className="border-slate-300 text-black"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                onClick={confirmarEliminar}
-                                className="bg-red-600 hover:bg-red-700"
-                            >
-                                Sí, eliminar
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {deletingId && items.find(i => i.id === deletingId) && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
-                        <div className="text-center mb-4">
-                            <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                            <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
-                            <p className="text-slate-600 mt-2">
-                                El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
-                            </p>
-                        </div>
-                        <div className="flex justify-center gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={cancelarEliminar}
-                                className="border-slate-300 text-black"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                onClick={confirmarEliminar}
-                                className="bg-red-600 hover:bg-red-700"
-                            >
-                                Sí, eliminar
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {popupItem && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-slate-900">Indicaciones de corte</h3>
+            {
+                showAyudaOperacion && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setShowAyudaOperacion(false)}>
+                        <div className="relative max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
                             <button
-                                onClick={() => setPopupItem(null)}
-                                className="p-2 text-slate-500 hover:text-slate-700 rounded"
+                                onClick={() => setShowAyudaOperacion(false)}
+                                className="absolute -top-10 right-0 text-white hover:text-gray-200 font-bold text-lg flex items-center gap-1"
                             >
                                 <X className="h-5 w-5" />
+                                Cerrar
                             </button>
-                        </div>
-
-                        <div className="space-y-3 mb-4">
-                            <div>
-                                <p className="text-sm text-slate-500">Producto</p>
-                                <p className="font-medium text-slate-900">{popupItem.producto.nombre}</p>
-                            </div>
-
-                            <div className="flex gap-4">
-                                <div>
-                                    <p className="text-sm text-slate-500">Tipo</p>
-                                    <p className="font-medium text-slate-900">{popupItem.tipoLabel}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-slate-500">Cantidad</p>
-                                    <p className="font-medium text-slate-900">{popupItem.cantidad} {popupItem.tipo === "pieza" ? "pzs" : "m"}</p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p className="text-sm font-medium text-slate-700 mb-2">Indicaciones de corte</p>
-                                <textarea
-                                    value={indicaciones[popupItem.id] || ""}
-                                    onChange={(e) => {
-                                        const value = e.target.value.slice(0, 200)
-                                        setIndicaciones(prev => ({ ...prev, [popupItem.id]: value }))
-                                    }}
-                                    maxLength={200}
-                                    placeholder="Ej: Cortar a 2.5 metros, necesito 3 piezas de 1m cada una..."
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm text-slate-900"
-                                    rows={4}
-                                />
-                                <p className="text-xs text-slate-400 mt-1">{(indicaciones[popupItem.id] || "").length}/200 caracteres</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={async () => {
-                                    await guardarIndicacion(popupItem.id)
-                                    setPopupItem(null)
-                                }}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                            >
-                                Guardar
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setPopupItem(null)}
-                            >
-                                Cancelar
-                            </Button>
+                            <img
+                                src="/images/yape_info2.jpg"
+                                alt="Cómo encontrar el número de operación"
+                                className="w-full rounded-lg shadow-2xl"
+                            />
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {indicacionToDelete && (
-                <div
-                    className="fixed inset-0 flex items-center justify-center z-[100]"
-                    style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
-                    onClick={() => setIndicacionToDelete(null)}
-                >
-                    <div
-                        className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="text-center mb-4">
-                            <FileText className="h-12 w-12 text-amber-500 mx-auto mb-2" />
-                            <p className="text-lg font-bold text-slate-900">¿Eliminar indicación de corte?</p>
-                            <p className="text-slate-600 mt-2">
-                                La indicación para este producto será eliminada. Esta acción no se puede deshacer.
+            {
+                !continuarPedido && showMetrajePopup && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-black">⚠️ Tu pedido incluye piezas</h2>
+                                    <p className="text-sm text-slate-500">El metraje exacto está siendo procesado.</p>
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <p className="text-sm font-medium text-slate-700 mb-2">Artículos que requieren metraje:</p>
+                                <div className="bg-slate-50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                                    {items.filter(i => i.tipo === "pieza").map((item, idx) => (
+                                        <div key={idx} className="flex justify-between text-sm py-1">
+                                            <span className="text-slate-800">{item.producto.nombre}</span>
+                                            <span className="text-slate-500">{item.cantidad} piezas</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
+                            <p className="text-sm text-yellow-800">
+                                Te notificaremos cuando esté listo para continuar.
                             </p>
                         </div>
-                        <div className="flex justify-center gap-3">
+                        <div className="flex gap-3">
                             <Button
                                 variant="outline"
-                                onClick={() => setIndicacionToDelete(null)}
-                                className="border-slate-300 text-slate-700"
+                                onClick={() => { setShowMetrajePopup(false); router.push("/dashboard") }}
+                                className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
                             >
                                 Cancelar
                             </Button>
                             <Button
                                 onClick={async () => {
-                                    console.log("Confirmando eliminación...")
-                                    // Actualizar estado local
-                                    setIndicaciones(prev => ({ ...prev, [indicacionToDelete]: "" }))
-                                    // Llamar al API directamente con null para eliminar
-                                    await fetch("/api/carrito", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({
-                                            action: "actualizarIndicaciones",
-                                            carritoId: indicacionToDelete,
-                                            indicacionesCorte: null
-                                        }),
-                                        credentials: "include"
-                                    })
-                                    setIndicacionToDelete(null)
+                                    setShowMetrajePopup(false)
+                                    await crearPedidoConMetrajeTemporal()
                                 }}
-                                className="bg-red-600 hover:bg-red-700"
+                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
                             >
-                                Sí, eliminar
+                                Aceptar
                             </Button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {successModal.show && (
-                <div
-                    className="fixed inset-0 flex items-center justify-center z-50"
-                    style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-                    onClick={() => {
-                        setSuccessModal({ show: false, message: "" })
-                        router.push("/dashboard/pedidos")
-                    }}
-                >
-                    <div
-                        className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl transform scale-100"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="text-center">
-                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Check className="h-10 w-10 text-green-600" />
-                            </div>
-                            <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                                ¡Pedido Agendado!
-                            </h2>
-                            {successModal.orderNumber && (
-                                <p className="text-sm text-slate-500 mb-4">
-                                    Orden: <span className="font-semibold text-slate-700">{successModal.orderNumber}</span>
-                                </p>
-                            )}
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                                <p className="text-amber-800 text-sm">
-                                    <Clock className="inline h-4 w-4 mr-1" />
-                                    Piezas en proceso de metraje
-                                </p>
-                                <p className="text-amber-600 text-xs mt-1">
-                                    Te contactaremos pronto para confirmar los detalles.
+
+            {
+                deletingId && items.find(i => i.id === deletingId) && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
+                            <div className="text-center mb-4">
+                                <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
+                                <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
+                                <p className="text-slate-600 mt-2">
+                                    El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
                                 </p>
                             </div>
-                            <button
-                                onClick={() => {
-                                    setSuccessModal({ show: false, message: "" })
-                                    router.push("/dashboard/pedidos")
-                                }}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
-                            >
-                                Ver mis pedidos
-                            </button>
+                            <div className="flex justify-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={cancelarEliminar}
+                                    className="border-slate-300 text-black"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={confirmarEliminar}
+                                    className="bg-red-600 hover:bg-red-700"
+                                >
+                                    Sí, eliminar
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
+
+            {
+                deletingId && items.find(i => i.id === deletingId) && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
+                            <div className="text-center mb-4">
+                                <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
+                                <p className="text-lg font-bold text-black">¿Estás seguro de eliminar?</p>
+                                <p className="text-slate-600 mt-2">
+                                    El artículo <span className="font-bold text-red-600">{items.find(i => i.id === deletingId)?.producto.nombre}</span> será eliminado de tu carrito.
+                                </p>
+                            </div>
+                            <div className="flex justify-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={cancelarEliminar}
+                                    className="border-slate-300 text-black"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={confirmarEliminar}
+                                    className="bg-red-600 hover:bg-red-700"
+                                >
+                                    Sí, eliminar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                popupItem && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-slate-900">Indicaciones de corte</h3>
+                                <button
+                                    onClick={() => setPopupItem(null)}
+                                    className="p-2 text-slate-500 hover:text-slate-700 rounded"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3 mb-4">
+                                <div>
+                                    <p className="text-sm text-slate-500">Producto</p>
+                                    <p className="font-medium text-slate-900">{popupItem.producto.nombre}</p>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <div>
+                                        <p className="text-sm text-slate-500">Tipo</p>
+                                        <p className="font-medium text-slate-900">{popupItem.tipoLabel}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-slate-500">Cantidad</p>
+                                        <p className="font-medium text-slate-900">{popupItem.cantidad} {popupItem.tipo === "pieza" ? "pzs" : "m"}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-sm font-medium text-slate-700 mb-2">Indicaciones de corte</p>
+                                    <textarea
+                                        value={indicaciones[popupItem.id] || ""}
+                                        onChange={(e) => {
+                                            const value = e.target.value.slice(0, 200)
+                                            setIndicaciones(prev => ({ ...prev, [popupItem.id]: value }))
+                                        }}
+                                        maxLength={200}
+                                        placeholder="Ej: Cortar a 2.5 metros, necesito 3 piezas de 1m cada una..."
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm text-slate-900"
+                                        rows={4}
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">{(indicaciones[popupItem.id] || "").length}/200 caracteres</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <Button
+                                    onClick={async () => {
+                                        await guardarIndicacion(popupItem.id)
+                                        setPopupItem(null)
+                                    }}
+                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                >
+                                    Guardar
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setPopupItem(null)}
+                                >
+                                    Cancelar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                indicacionToDelete && (
+                    <div
+                        className="fixed inset-0 flex items-center justify-center z-[100]"
+                        style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
+                        onClick={() => setIndicacionToDelete(null)}
+                    >
+                        <div
+                            className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="text-center mb-4">
+                                <FileText className="h-12 w-12 text-amber-500 mx-auto mb-2" />
+                                <p className="text-lg font-bold text-slate-900">¿Eliminar indicación de corte?</p>
+                                <p className="text-slate-600 mt-2">
+                                    La indicación para este producto será eliminada. Esta acción no se puede deshacer.
+                                </p>
+                            </div>
+                            <div className="flex justify-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIndicacionToDelete(null)}
+                                    className="border-slate-300 text-slate-700"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={async () => {
+                                        console.log("Confirmando eliminación...")
+                                        // Actualizar estado local
+                                        setIndicaciones(prev => ({ ...prev, [indicacionToDelete]: "" }))
+                                        // Llamar al API directamente con null para eliminar
+                                        await fetch("/api/carrito", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({
+                                                action: "actualizarIndicaciones",
+                                                carritoId: indicacionToDelete,
+                                                indicacionesCorte: null
+                                            }),
+                                            credentials: "include"
+                                        })
+                                        setIndicacionToDelete(null)
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700"
+                                >
+                                    Sí, eliminar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                successModal.show && (
+                    <div
+                        className="fixed inset-0 flex items-center justify-center z-50"
+                        style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+                        onClick={() => {
+                            setSuccessModal({ show: false, message: "" })
+                            router.push("/dashboard/pedidos")
+                        }}
+                    >
+                        <div
+                            className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl transform scale-100"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="text-center">
+                                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Check className="h-10 w-10 text-green-600" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                                    ¡Pedido Agendado!
+                                </h2>
+                                {successModal.orderNumber && (
+                                    <p className="text-sm text-slate-500 mb-4">
+                                        Orden: <span className="font-semibold text-slate-700">{successModal.orderNumber}</span>
+                                    </p>
+                                )}
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                                    <p className="text-amber-800 text-sm">
+                                        <Clock className="inline h-4 w-4 mr-1" />
+                                        Piezas en proceso de metraje
+                                    </p>
+                                    <p className="text-amber-600 text-xs mt-1">
+                                        Te contactaremos pronto para confirmar los detalles.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setSuccessModal({ show: false, message: "" })
+                                        router.push("/dashboard/pedidos")
+                                    }}
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+                                >
+                                    Ver mis pedidos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </>
     )
 }

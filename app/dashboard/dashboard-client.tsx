@@ -10,7 +10,8 @@ import { Slider } from "@/components/ui/slider"
 import { Pagination } from "@/components/ui/pagination"
 import { CarritoBadge } from "@/components/carrito-badge"
 import { CarritoParticulas } from "@/components/carrito-particulas"
-import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle } from "lucide-react"
+import { CrearPedidoModal } from "@/components/crear-pedido-modal"
+import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus } from "lucide-react"
 import { BotonAgregarCarrito } from "@/components/agregar-carrito-button"
 import { cn } from "@/lib/utils"
 
@@ -42,11 +43,14 @@ interface Filtros {
     precioMax: number | null
     stock: string
     soloFavoritos: boolean
+    busqueda: string
+    color: string | null
 }
 
 function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Producto; esFavorito: boolean; onToggleFavorito: (id: string) => void }) {
     const [showModal, setShowModal] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
+    const [zoomLevel, setZoomLevel] = useState(1)
 
     useEffect(() => {
         setIsMounted(true)
@@ -56,71 +60,106 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
 
     const getStockBadge = () => {
         if (totalStock === 0) {
-            return <Badge className="bg-red-500 text-white text-[10px] px-1.5 py-0.5">Agotado</Badge>
+            return <Badge className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0.5 rounded-full">Agotado</Badge>
         } else if (totalStock <= 5) {
-            return <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5">Pocas unidades</Badge>
+            return <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded-full">Pocas unidades</Badge>
         } else {
-            return <Badge className="bg-emerald-500 text-white text-[10px] px-1.5 py-0.5">Disponible</Badge>
+            return <Badge className="bg-emerald-100 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-full">Disponible</Badge>
         }
     }
 
     const modalContent = showModal ? (
         <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={(e) => {
-                if (e.target === e.currentTarget) setShowModal(false)
+                if (e.target === e.currentTarget) { setShowModal(false); setZoomLevel(1); }
             }}
         >
-            <div className="absolute inset-0 bg-black/60" />
-            <div className="relative bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
-                <button
-                    onClick={() => setShowModal(false)}
-                    className="absolute top-4 right-4 z-10 h-10 w-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm text-slate-400 hover:text-slate-600 hover:bg-white transition-all"
-                >
-                    <X className="h-5 w-5" />
-                </button>
+            <div
+                className="bg-white rounded-lg max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200"
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="relative h-64 bg-slate-100 overflow-hidden">
+                    <div
+                        className="absolute inset-0 flex items-center justify-center"
+                        style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.3s ease' }}
+                    >
+                        {producto.imagen ? (
+                            <Image
+                                src={producto.imagen}
+                                alt={producto.nombre}
+                                width={250}
+                                height={250}
+                                className="object-contain max-w-full max-h-full"
+                                style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%' }}
+                            />
+                        ) : (
+                            <div className="text-slate-400">Sin imagen</div>
+                        )}
+                    </div>
 
-                <div className="relative aspect-[4/3] w-full bg-slate-100">
-                    <Image
-                        src={producto.imagen || "/images/D-10-001.png"}
-                        alt={producto.nombre}
-                        fill
-                        className="object-contain p-8"
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                    />
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white/95 rounded-full px-2 py-1 shadow-sm border border-slate-200">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setZoomLevel(Math.max(0.5, zoomLevel - 0.25)); }}
+                            className="p-1.5 hover:bg-slate-100 rounded-full"
+                        >
+                            <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                        </button>
+                        <span className="text-xs font-medium text-slate-600 w-10 text-center">{Math.round(zoomLevel * 100)}%</span>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setZoomLevel(Math.min(3, zoomLevel + 0.25)); }}
+                            className="p-1.5 hover:bg-slate-100 rounded-full"
+                        >
+                            <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={() => { setShowModal(false); setZoomLevel(1); }}
+                        className="absolute top-3 right-3 bg-white/80 hover:bg-white p-1.5 rounded-full shadow-sm border border-slate-200 transition-colors"
+                    >
+                        <X className="w-4 h-4 text-slate-600" />
+                    </button>
                 </div>
 
-                <div className="p-6">
-                    <div className="flex items-center gap-3 mb-3">
-                        <span className="text-xs font-bold text-blue-600 uppercase tracking-widest px-3 py-1 bg-blue-50 rounded-full">
-                            {producto.categoria}
-                        </span>
+                <div className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">
+                            {producto.categoria || "Sin categoría"}
+                        </p>
                         {getStockBadge()}
                     </div>
 
-                    <h2 className="text-2xl font-bold text-slate-900 mb-4">{producto.nombre}</h2>
+                    <h2 className="text-xl font-medium text-slate-900 mb-4">
+                        {producto.nombre}
+                    </h2>
 
-                    <div className="flex items-baseline gap-2 mb-6">
-                        <span className="text-3xl font-extrabold text-slate-900">
+                    <div className="flex items-baseline gap-2 mb-5">
+                        <span className="text-2xl font-semibold text-slate-900">
                             S/ {Number(producto.precio).toFixed(2)}
                         </span>
-                        <span className="text-base text-slate-500">/ metro lineal</span>
+                        <span className="text-sm text-slate-500">/ metro lineal</span>
                     </div>
 
                     {producto.descripcion && (
-                        <div className="mb-6">
-                            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-2">Descripción</h3>
-                            <p className="text-slate-600 leading-relaxed">{producto.descripcion}</p>
+                        <div className="mb-5">
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                {producto.descripcion}
+                            </p>
                         </div>
                     )}
 
-                    <div className="flex mt-6 pt-6 border-t">
-                        <div className="w-4/5">
+                    <div className="flex gap-3 mt-6 pt-4 border-t border-slate-100">
+                        <div className="flex-1">
                             <BotonAgregarCarrito producto={producto as any} className="w-full" />
                         </div>
                         <button
                             onClick={() => setShowModal(false)}
-                            className="w-1/5 ml-3 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-sm"
+                            className="px-4 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-sm font-medium"
                         >
                             Cerrar
                         </button>
@@ -132,67 +171,68 @@ function ProductoCard({ producto, esFavorito, onToggleFavorito }: { producto: Pr
 
     return (
         <>
-            <div className="group relative rounded-[1.5rem] bg-white border border-slate-200 p-3 transition-all hover:shadow-xl hover:shadow-slate-200 hover:-translate-y-1 duration-300 flex flex-col h-full overflow-hidden">
-                <div className="relative aspect-[4/3] w-full rounded-[1rem] bg-slate-100/50 mb-2 shrink-0 overflow-hidden group">
-                    <div className="w-full h-full flex items-center justify-center group-hover:bg-slate-100 transition-colors">
+            <div
+                className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 h-full flex flex-col rounded-lg overflow-hidden"
+            >
+                <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
 
-                        {/* Botón de Favoritos */}
-                        <div className="absolute top-1 left-2 z-5">
-                            <button
-                                onClick={(e) => {
-                                    e.preventDefault(); // Evita navegación si está dentro de un Link
-                                    e.stopPropagation();
-                                    onToggleFavorito(producto.id);
-                                }}
-                                aria-label={esFavorito ? "Quitar de favoritos" : "Añadir a favoritos"}
-                                className={`h-8 w-8 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all active:scale-90 hover:scale-110 ${esFavorito ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
-                                    }`}
-                            >
-                                <Heart
-                                    className={`h-5 w-5 transition-colors ${esFavorito ? 'fill-current' : ''}`}
-                                    strokeWidth={esFavorito ? 0 : 2}
-                                />
-                            </button>
-                        </div>
-
-                        {/* Imagen con optimización */}
-                        <Image
-                            src={producto.imagen || "/images/D-10-001.png"}
-                            alt={producto.nombre}
-                            fill
-                            priority={false} // Solo usa true si es el primer producto de la página
-                            className="object-contain p-4 transition-transform duration-500 ease-out group-hover:scale-110"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        />
+                    {/* Botón de Favoritos */}
+                    <div className="absolute top-1 left-2 z-5">
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onToggleFavorito(producto.id);
+                            }}
+                            aria-label={esFavorito ? "Quitar de favoritos" : "Añadir a favoritos"}
+                            className={`h-8 w-8 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all active:scale-90 hover:scale-110 ${esFavorito ? 'text-red-500' : 'text-slate-400 hover:text-red-500'
+                                }`}
+                        >
+                            <Heart
+                                className={`h-5 w-5 transition-colors ${esFavorito ? 'fill-current' : ''}`}
+                                strokeWidth={esFavorito ? 0 : 2}
+                            />
+                        </button>
                     </div>
+
+                    {/* Imagen con optimización */}
+                    <Image
+                        src={producto.imagen || "/images/D-10-001.png"}
+                        alt={producto.nombre}
+                        fill
+                        priority={false}
+                        className="object-contain p-6 transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        onClick={() => { setShowModal(true); setZoomLevel(1); }}
+                    />
                 </div>
-                <div className="flex-1 min-w-0">
-                    <span className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1 block">
+                <div className="p-4 flex flex-col items-center text-center justify-center min-w-0">
+                    <span className="text-xs text-slate-500 uppercase tracking-wide mb-1">
                         {producto.categoria}
                     </span>
-                    <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-base font-bold text-slate-900 tracking-tight line-clamp-1" title={producto.nombre}>
+                    <div className="flex items-center justify-between w-full mb-1">
+                        <h3 className="text-sm font-medium text-slate-900 line-clamp-1" title={producto.nombre}>
                             {producto.nombre}
                         </h3>
                         {getStockBadge()}
                     </div>
-                    <div className="flex items-baseline gap-1 mb-2">
-                        <span className="text-lg font-extrabold text-slate-900">
+                    <div className="flex items-baseline gap-1 mb-3">
+                        <span className="text-lg font-semibold text-slate-900">
                             S/ {Number(producto.precio).toFixed(2)}
                         </span>
                         <span className="text-xs text-slate-500">/ metro lineal</span>
                     </div>
                 </div>
-                <div className="pt-2 mt-auto flex gap-2">
-                    <div className="w-1/2">
-                        <BotonAgregarCarrito producto={producto as any} className="w-full" />
-                    </div>
+                <div className="mt-auto flex rounded-b-lg overflow-hidden border-t border-slate-200">
                     <button
-                        onClick={() => setShowModal(true)}
-                        className="w-1/2 px-2 py-1.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-xs"
+                        onClick={(e) => { e.stopPropagation(); setShowModal(true); setZoomLevel(1); }}
+                        className="flex-1 py-3 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium transition-colors border-r border-slate-200"
                     >
-                        Ver detalle
+                        Ver
                     </button>
+                    <div className="flex-1" onClick={(e) => e.stopPropagation()}>
+                        <BotonAgregarCarrito producto={producto as any} className="w-full h-full rounded-none" />
+                    </div>
                 </div>
             </div>
 
@@ -234,25 +274,25 @@ function PanelFiltros({
 
     return (
         <div className="fixed inset-0 z-[9998]">
-            <div className="absolute inset-0 bg-black/20" onClick={onClose} />
-            <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl p-6 overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-black flex items-center gap-2">
+            <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} />
+            <div className="absolute right-0 top-0 h-full w-full max-w-80 bg-white shadow-2xl p-5 overflow-y-auto">
+                <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                         <SlidersHorizontal className="h-5 w-5" />
                         Filtros
                     </h2>
-                    <button onClick={onClose} className="text-black hover:text-gray-600">
-                        <X className="h-6 w-6" />
+                    <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                     <div>
-                        <label className="block text-sm font-semibold text-black mb-2">Categoría</label>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Categoría</label>
                         <select
                             value={filtros.categoria}
                             onChange={(e) => setFiltros({ ...filtros, categoria: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-700 text-sm"
                         >
                             <option value="">Todas las categorías</option>
                             {categorias.map((cat) => (
@@ -262,7 +302,35 @@ function PanelFiltros({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-black mb-4">
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Color</label>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { nombre: "negro", codigos: ["999"], hex: "#1a1a1a" },
+                                { nombre: "azul", codigos: ["520", "530", "555", "560", "575"], hex: "#1e40af" },
+                                { nombre: "blanco", codigos: ["001"], hex: "#f5f5f5" },
+                                { nombre: "hueso", codigos: ["005"], hex: "#efebdd" },
+                                { nombre: "rojo", codigos: ["412"], hex: "#bb2626" },
+                                { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1b" },
+                                { nombre: "rosa", codigos: ["310", "315"], hex: "#ec4899" },
+                                { nombre: "celeste", codigos: ["540"], hex: "#8ac7e3" },
+                                { nombre: "verde olivo", codigos: ["676"], hex: "#65a30d" },
+                                { nombre: "marron", codigos: ["720", "740"], hex: "#78350f" },
+                                { nombre: "beige", codigos: ["030", "040", "045", "D-75-745"], hex: "#bab68f" },
+                                { nombre: "plomo", codigos: ["820", "825", "840", "845"], hex: "#827f7f" },
+                            ].map((color) => (
+                                <button
+                                    key={color.nombre}
+                                    onClick={() => setFiltros({ ...filtros, color: filtros.color === color.nombre ? null : color.nombre })}
+                                    className={`w-8 h-8 rounded-full border-2 transition-all ${filtros.color === color.nombre ? "border-slate-900 scale-110 shadow-md" : "border-slate-300 hover:border-slate-400"}`}
+                                    style={{ backgroundColor: color.hex }}
+                                    title={color.nombre.charAt(0).toUpperCase() + color.nombre.slice(1)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-4">
                             Precio hasta S/ {precioMaxSel.toFixed(0)}
                         </label>
                         <Slider
@@ -273,7 +341,7 @@ function PanelFiltros({
                             onValueChange={(value) => setPrecioMaxSel(value[0])}
                             className="py-2"
                         />
-                        <div className="flex justify-between mt-2 text-xs text-black">
+                        <div className="flex justify-between mt-2 text-xs text-slate-600">
                             <span>S/ {precioMinGlobal.toFixed(0)}</span>
                             <span>S/ {precioMaxGlobal.toFixed(0)}</span>
                         </div>
@@ -282,10 +350,10 @@ function PanelFiltros({
                     <div>
                         <button
                             onClick={() => {
-                                setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false })
+                                setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false, busqueda: "", color: null })
                                 setPrecioMaxSel(precioMaxGlobal)
                             }}
-                            className="w-full py-2 text-sm text-black hover:text-gray-800 flex items-center justify-center gap-2"
+                            className="w-full py-2 text-sm text-slate-600 hover:text-slate-800 flex items-center justify-center gap-2"
                         >
                             <XCircle className="h-4 w-4" />
                             Limpiar filtros
@@ -309,6 +377,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
     const [showFiltros, setShowFiltros] = useState(false)
     const [isScrolled, setIsScrolled] = useState(false)
     const [carritoCount, setCarritoCount] = useState(0)
+    const [showCrearPedido, setShowCrearPedido] = useState(false)
     const headerRef = useRef<HTMLDivElement>(null)
 
     const [filtros, setFiltros] = useState<Filtros>({
@@ -316,7 +385,9 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
         precioMin: null,
         precioMax: null,
         stock: "",
-        soloFavoritos: false
+        soloFavoritos: false,
+        busqueda: "",
+        color: null
     })
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(12)
@@ -411,6 +482,34 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
     const precioMin = precios.length > 0 ? Math.min(...precios) : 0
     const precioMax = precios.length > 0 ? Math.max(...precios) : 1000
 
+    const COLORES = [
+        { nombre: "negro", codigos: ["999"], hex: "#1a1a1a" },
+        { nombre: "azul", codigos: ["520", "530", "555", "560", "575"], hex: "#1e40af" },
+        { nombre: "blanco", codigos: ["001"], hex: "#f5f5f5" },
+        { nombre: "hueso", codigos: ["005"], hex: "#efebdd" },
+        { nombre: "rojo", codigos: ["412"], hex: "#bb2626" },
+        { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1b" },
+        { nombre: "rosa", codigos: ["310", "315"], hex: "#ec4899" },
+        { nombre: "celeste", codigos: ["540"], hex: "#8ac7e3" },
+        { nombre: "verde olivo", codigos: ["676"], hex: "#65a30d" },
+        { nombre: "marron", codigos: ["720", "740"], hex: "#78350f" },
+        { nombre: "beige", codigos: ["030", "040", "045", "D-75-745"], hex: "#bab68f" },
+        { nombre: "plomo", codigos: ["820", "825", "840", "845"], hex: "#827f7f" },
+    ]
+
+    const getColorFromNombre = (nombre: string): string | null => {
+        const parts = nombre.split("-")
+        const codigo = parts[parts.length - 1]?.trim()
+        if (!codigo) return null
+
+        for (const color of COLORES) {
+            if (color.codigos.includes(codigo)) {
+                return color.nombre
+            }
+        }
+        return null
+    }
+
     const productosFiltrados = productos.filter(prod => {
         if (filtros.categoria && prod.categoria !== filtros.categoria) return false
 
@@ -419,36 +518,72 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
 
         if (filtros.soloFavoritos && !favoritos.has(prod.id)) return false
 
+        if (filtros.busqueda && !prod.nombre.toLowerCase().includes(filtros.busqueda.toLowerCase())) return false
+
+        if (filtros.color) {
+            const colorProducto = getColorFromNombre(prod.nombre)
+            if (colorProducto !== filtros.color) return false
+        }
+
         return true
     })
 
-    const tieneFiltrosActivos = filtros.categoria || filtros.precioMin !== null || filtros.precioMax !== null || filtros.soloFavoritos
+    const tieneFiltrosActivos = filtros.categoria || filtros.precioMin !== null || filtros.precioMax !== null || filtros.soloFavoritos || filtros.busqueda || filtros.color
 
     return (
         <div className="p-6 md:p-10 font-sans">
+            {/* Tarjetas para empleados */}
+            {userRole === "empleado" && (
+                <div className="max-w-7xl mx-auto mb-8">
+                    <h2 className="text-lg font-semibold text-slate-700 mb-4">Acciones Rápidas</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <button
+                            onClick={() => setShowCrearPedido(true)}
+                            className="flex items-center gap-4 p-4 bg-white border-2 border-blue-500 rounded-xl hover:bg-blue-50 transition-colors text-left group"
+                        >
+                            <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                                <FilePlus className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-slate-900">Crear Pedido</p>
+                                <p className="text-sm text-slate-500">Nuevo pedido para cliente</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div ref={headerRef} className="mb-6 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                        Mi Catalogo Exclusivo
-                    </h1>
-                    <p className="text-slate-500 mt-2 text-lg">
+                <div className="w-full md:w-auto">
+                    <p className="text-slate-500 text-base md:text-xl">
                         Bienvenido(a), <span className="font-semibold text-slate-700">{userName}</span>.
                     </p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-row flex-nowrap items-center gap-2 w-full md:w-auto">
+                    <div className="relative flex-1 md:flex-none md:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar artículo..."
+                            value={filtros.busqueda}
+                            onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
+                            className="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 w-full text-sm"
+                        />
+                    </div>
                     <button
                         onClick={() => setFiltros({ ...filtros, soloFavoritos: !filtros.soloFavoritos })}
-                        className={`flex items-center gap-2 px-4 py-2 border rounded-lg font-semibold transition-colors ${filtros.soloFavoritos ? 'border-red-500 text-red-600 bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${filtros.soloFavoritos ? 'border-red-500 text-red-600 bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                         <Heart className={`h-4 w-4 ${filtros.soloFavoritos ? 'fill-current text-red-500' : ''}`} />
-                        Favoritos
+                        <span className="hidden sm:inline">Favoritos</span>
                     </button>
                     <button
                         onClick={() => setShowFiltros(true)}
-                        className={`flex items-center gap-2 px-4 py-2 border rounded-lg font-semibold transition-colors ${tieneFiltrosActivos ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${tieneFiltrosActivos ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                         <Filter className="h-4 w-4" />
-                        Filtrar {tieneFiltrosActivos && `(${productosFiltrados.length})`}
+                        <span className="hidden sm:inline">Filtrar {tieneFiltrosActivos && `(${productosFiltrados.length})`}</span>
+                        <span className="sm:hidden">{tieneFiltrosActivos && `(${productosFiltrados.length})`}</span>
                     </button>
                     <CarritoBadge />
                 </div>
@@ -458,6 +593,12 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                 <div className="max-w-7xl mx-auto mb-4">
                     <div className="flex flex-wrap gap-2 items-center">
                         <span className="text-sm text-slate-500">Filtros activos:</span>
+                        {filtros.busqueda && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                "{filtros.busqueda}"
+                                <button onClick={() => setFiltros({ ...filtros, busqueda: "" })}><X className="h-3 w-3" /></button>
+                            </span>
+                        )}
                         {filtros.categoria && (
                             <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
                                 {filtros.categoria}
@@ -483,7 +624,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                             </span>
                         )}
                         <button
-                            onClick={() => setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false })}
+                            onClick={() => setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false, busqueda: "", color: null })}
                             className="text-xs text-slate-500 hover:text-slate-700 underline"
                         >
                             Limpiar todo
@@ -496,7 +637,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                 {productosFiltrados.length === 0 ? (
                     <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
                         <p className="text-slate-500 mb-4">No hay productos que coincidan con los filtros.</p>
-                        <Button onClick={() => setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false })}>
+                        <Button onClick={() => setFiltros({ categoria: "", precioMin: null, precioMax: null, stock: "", soloFavoritos: false, busqueda: "", color: null })}>
                             Limpiar filtros
                         </Button>
                     </div>
@@ -541,6 +682,12 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                     onClose={() => setShowFiltros(false)}
                 />
             )}
+
+            <CrearPedidoModal
+                isOpen={showCrearPedido}
+                onClose={() => setShowCrearPedido(false)}
+                userName={userName}
+            />
 
             <CarritoParticulas showFloatingCart={isScrolled} />
 

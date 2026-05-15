@@ -34,6 +34,8 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
     const [error, setError] = useState("")
     const [isMounted, setIsMounted] = useState(false)
     const [procesando, setProcesando] = useState(false)
+    const [toastMessage, setToastMessage] = useState<{ show: boolean; message: string; type: "error" | "success" }>({ show: false, message: "", type: "error" })
+    const [cantidadEnCarrito, setCantidadEnCarrito] = useState(0)
 
     useEffect(() => {
         setInputValue(cantidad === 0 ? "" : String(cantidad))
@@ -43,12 +45,50 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
         setIsMounted(true)
     }, [])
 
+    useEffect(() => {
+        if (toastMessage.show) {
+            const timer = setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+            return () => clearTimeout(timer)
+        }
+    }, [toastMessage.show])
+
     const handleAgregar = async () => {
         if (procesando) return
 
-        if (cantidad <= 0) {
-            setError("La cantidad debe ser mayor a 0")
-            return
+        const inputNum = parseFloat(inputValue.replace(",", "."))
+        const stockTotal = producto.stocks?.reduce((sum: number, s: any) => sum + (s.stock || 0), 0) || 0
+
+        if (tipoPedido === "pieza") {
+            const disponible = stockTotal - cantidadEnCarrito
+            if (isNaN(inputNum) || inputNum < 1) {
+                setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                return
+            }
+            if (inputNum > disponible) {
+                const maximo = disponible > 0 ? disponible : 0
+                setToastMessage({ show: true, message: maximo > 0 ? `Stock insuficiente. Máximo disponible: ${maximo} piezas` : "Stock insuficiente", type: "error" })
+                return
+            }
+            if (Math.floor(inputNum) !== cantidad) {
+                setCantidad(Math.floor(inputNum))
+            }
+        } else {
+            const disponibleMetros = (stockTotal - cantidadEnCarrito) * 50
+            if (isNaN(inputNum) || inputNum < 0.10) {
+                setToastMessage({ show: true, message: "La cantidad mínima es 0.10 metros", type: "error" })
+                return
+            }
+            if (inputNum > 50) {
+                setToastMessage({ show: true, message: "La cantidad máxima es 50 metros", type: "error" })
+                return
+            }
+            if (inputNum > disponibleMetros) {
+                setToastMessage({ show: true, message: `Stock insuficiente. Máximo disponible: ${disponibleMetros.toFixed(1)} metros`, type: "error" })
+                return
+            }
+            if (inputNum !== cantidad) {
+                setCantidad(inputNum)
+            }
         }
 
         setLoading(true)
@@ -66,7 +106,7 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
                 body: JSON.stringify({
                     action: "agregar",
                     productoId: producto.id,
-                    cantidad: cantidad,
+                    cantidad: tipoPedido === "pieza" ? Math.floor(inputNum) : inputNum,
                     tipo: tipoPedido
                 }),
                 credentials: "include",
@@ -128,8 +168,24 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
     const precioPorUnidad = tipoPedido === "pieza" ? Number(producto.precio) * 50 : Number(producto.precio)
     const precioTotal = precioPorUnidad * cantidad
 
-    const openModal = () => {
+    const openModal = async () => {
         setInputValue(cantidad === 0 ? "" : String(cantidad))
+        
+        // Obtener cantidad actual en carrito para este producto y tipo
+        try {
+            const res = await fetch("/api/carrito", { credentials: "include" })
+            const json = await res.json()
+            if (json.success && json.items) {
+                const existente = json.items.find((item: any) => 
+                    item.productoId === producto.id && item.tipo === tipoPedido
+                )
+                setCantidadEnCarrito(existente ? existente.cantidad : 0)
+            }
+        } catch (e) {
+            console.error("Error fetching cart:", e)
+            setCantidadEnCarrito(0)
+        }
+        
         setShowModal(true)
     }
 
@@ -145,7 +201,7 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
                 if (e.target === e.currentTarget) closeModal()
             }}
         >
-            <div className="absolute inset-0 bg-black/60" />
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
             <div className="relative bg-white w-full max-w-sm mx-4 rounded-xl shadow-2xl">
                 <div className="bg-slate-800 text-white px-4 py-3 flex justify-between items-center rounded-t-xl">
                     <div>
@@ -207,17 +263,41 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
                             onBlur={(e) => {
                                 const val = e.target.value.replace(",", ".")
                                 const numVal = parseFloat(val)
+                                const stockTotal = producto.stocks?.reduce((sum: number, s: any) => sum + (s.stock || 0), 0) || 0
                                 if (tipoPedido === "pieza") {
-                                    const finalVal = isNaN(numVal) || numVal < 1 ? 1 : Math.floor(numVal)
+                                    const disponible = stockTotal - cantidadEnCarrito
+                                    if (isNaN(numVal) || numVal < 1) {
+                                        setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                                        return
+                                    }
+                                    if (numVal > disponible) {
+                                        setToastMessage({ show: true, message: disponible > 0 ? `Stock insuficiente. Máximo disponible: ${disponible} piezas` : "Stock insuficiente", type: "error" })
+                                        return
+                                    }
+                                    const finalVal = Math.floor(numVal)
                                     setCantidad(finalVal)
                                     setInputValue(String(finalVal))
                                 } else {
-                                    const finalVal = isNaN(numVal) || numVal < 0.01 ? 0.1 : numVal
-                                    setCantidad(finalVal)
-                                    setInputValue(String(finalVal))
+                                    const MIN_METROS = 0.10
+                                    const MAX_METROS = 50.00
+                                    const disponibleMetros = (stockTotal - cantidadEnCarrito) * 50
+                                    if (isNaN(numVal) || numVal < MIN_METROS) {
+                                        setToastMessage({ show: true, message: "La cantidad mínima es 0.10 metros", type: "error" })
+                                        return
+                                    }
+                                    if (numVal > MAX_METROS) {
+                                        setToastMessage({ show: true, message: "La cantidad máxima es 50 metros", type: "error" })
+                                        return
+                                    }
+                                    if (numVal > disponibleMetros) {
+                                        setToastMessage({ show: true, message: `Stock insuficiente. Máximo disponible: ${disponibleMetros.toFixed(1)} metros`, type: "error" })
+                                        return
+                                    }
+                                    setCantidad(numVal)
+                                    setInputValue(String(numVal))
                                 }
                             }}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900"
                         />
                     </div>
 
@@ -249,7 +329,7 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
                         <button
                             onClick={handleAgregar}
                             disabled={loading}
-                            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            className="flex-1 px-3 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                         >
                             {loading ? "Agregando..." : "Agregar"}
                         </button>
@@ -261,10 +341,21 @@ export function BotonAgregarCarrito({ producto, className = "" }: Props) {
 
     return (
         <>
+            {toastMessage.show && (
+                <div className="fixed top-20 right-4 z-[10000] animate-slide-in">
+                    <div className={`px-4 py-3 rounded-lg shadow-lg border ${
+                        toastMessage.type === "error" 
+                            ? "bg-red-50 border-red-200 text-red-800" 
+                            : "bg-green-50 border-green-200 text-green-800"
+                    }`}>
+                        <p className="font-medium">{toastMessage.message}</p>
+                    </div>
+                </div>
+            )}
             <button
                 onClick={openModal}
                 data-producto={producto.id}
-                className={`flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium w-full ${className}`}
+                className={`flex items-center justify-center gap-2 px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 transition-colors text-sm font-medium w-full ${className}`}
             >
                 <ShoppingCart className="h-4 w-4" />
                 Agregar

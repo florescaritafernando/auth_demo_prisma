@@ -51,14 +51,14 @@ export function CarritoBadge() {
         <div className="relative" data-carrito-badge>
             <Link href="/dashboard/carrito" className="relative inline-flex">
                 <div className={cn(
-                    "flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg font-semibold shadow-md transition-all",
+                    "flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-lg font-semibold shadow-md transition-all text-sm",
                     animacion && "scale-110"
                 )}>
                     <ShoppingCart className={cn("h-4 w-4 transition-transform", animacion && "animate-bounce")} />
-                    <span>Ver Mi Carrito</span>
+                    <span className="hidden sm:inline">Mi Carrito</span>
                 </div>
                 {cantidad > 0 && (
-                    <span className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center bg-red-500 text-white text-md font-bold rounded-full">
+                    <span className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full">
                         {cantidad}
                     </span>
                 )}

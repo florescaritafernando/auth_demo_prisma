@@ -1,21 +1,22 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
-import { Search, X, Calendar } from "lucide-react"
-import { Package, Clock, CheckCircle, XCircle, Truck, Wallet, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info, PackageCheck } from "lucide-react"
+import { Search, X, Calendar, File, ExternalLink } from "lucide-react"
+import { Package, Clock, CheckCircle, XCircle, Truck, Wallet, AlertCircle, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info, CircleDollarSign, PackageCheck } from "lucide-react"
 import { FeedbackModal } from "./FeedbackModal"
 import { QuejaModal } from "./QuejaModal"
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string; icon: any }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800", icon: Clock },
-    metraje_confirmado: { label: "Confirmado", color: "bg-green-100", colorTexto: "text-green-800", icon: CheckCircle },
-    pendiente: { label: "Pago en revision", color: "bg-blue-100", colorTexto: "text-blue-800", icon: Package },
-    confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900", icon: CheckCircle },
-    pedido_enviado: { label: "En transito", color: "bg-yellow-100", colorTexto: "text-yellow-800", icon: Package },
+    metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800", icon: CheckCircle },
+    pendiente: { label: "Pago en revisión", color: "bg-blue-100", colorTexto: "text-blue-800", icon: CircleDollarSign },
+    confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900", icon: Wallet },
+    pedido_enviado: { label: "Pedido en transito", color: "bg-yellow-100", colorTexto: "text-yellow-800", icon: Truck },
     rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800", icon: XCircle },
     completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800", icon: CheckCircle },
 }
@@ -57,6 +58,7 @@ interface PedidoItem {
     nombreRecibe: string
     dniRecibe: string
     numeroOperacion: string
+    comprobantePago: string | null
     motivoRechazo: string | null
     pedidoDetalle?: Array<{
         id: string
@@ -95,7 +97,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
     const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
     const deliveryLabel = pedido.delivery ? (DELIVERY_LABELS[pedido.delivery] || pedido.deliveryOtro) : null
 
-    const ocultarPrecio = pedido.estado === "metraje_en_proceso"
+    const ocultarPrecio = pedido.estado === "metraje_en_proceso" || pedido.estado === "rechazado"
     const mostrarContinuar = pedido.estado === "metraje_confirmado"
     const ocultarPago = ocultarPrecio || pedido.estado === "metraje_confirmado"
     const tieneReclamo = (pedido as any).reclamos?.length > 0
@@ -194,19 +196,23 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                             <>
                                 <Button
                                     onClick={() => setFeedbackModal({ pedidoId: pedido.id, numeroOrden: pedido.numeroOrden })}
-                                    className="bg-green-600 hover:bg-green-700 text-sm"
+                                    className="bg-blue-700 hover:bg-blue-800 text-sm text-white"
                                 >
                                     <PackageCheck className="h-4 w-4 mr-1" />
                                     Recibí mi pedido
                                 </Button>
                                 <Button
-                                    variant="outline"
                                     onClick={() => !tieneReclamo && setQuejaModal({ pedidoId: pedido.id, numeroOrden: pedido.numeroOrden })}
                                     disabled={tieneReclamo}
-                                    className={`text-sm border-red-300 ${tieneReclamo ? "text-slate-400 bg-slate-50 cursor-not-allowed" : "text-red-600 hover:bg-red-50"}`}
+                                    className={`text-sm gap-1.5 ${tieneReclamo
+                                        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                                        : "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+                                        }`}
                                 >
+                                    <AlertCircle className="h-4 w-4" />
                                     {tieneReclamo ? "Reclamo registrado" : "Queja"}
                                 </Button>
+
                             </>
                         )}
 
@@ -245,7 +251,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                             {pedido.pedidoDetalle?.map((detalle, idx) => {
                                 const isPiezaPendingMetraje = pedido.estado === "metraje_en_proceso" && detalle.tipo === "pieza"
                                 const estadoArticulo = getEstadoArticulo(detalle)
-                                const mostrarBadge = estadoArticulo && (pedido.estado === "metraje_confirmado" || pedido.estado === "pedido_enviado")
+                                const mostrarBadge = estadoArticulo && (pedido.estado === "metraje_confirmado")
                                 return (
                                     <div key={idx} className={`flex justify-between items-center text-sm bg-white p-2 rounded border ${isPiezaPendingMetraje ? "border-amber-300 bg-amber-50" : "border-slate-200"}`}>
                                         <div className="text-slate-800 flex-1">
@@ -257,7 +263,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                             ) : (
                                                 <p className="text-md text-slate-500">
                                                     {detalle.tipo === "pieza"
-                                                        ? `${detalle.cantidad} pieza(s) ${(detalle.etiquetas?.reduce((sum: number, e: any) => sum + e.valor, 0) || 0).toFixed(2)} mts × S/ ${Number(detalle.precio).toFixed(2)}`
+                                                        ? `${(pedido.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) ${(detalle.etiquetas?.reduce((sum: number, e: any) => sum + e.valor, 0) || 0).toFixed(2)} mts × S/ ${Number(detalle.precio).toFixed(2)}`
                                                         : detalle.metraje
                                                             ? `${detalle.metraje} mts × S/ ${Number(detalle.precio).toFixed(2)}`
                                                             : `${detalle.cantidad} mts × S/ ${Number(detalle.precio).toFixed(2)}`
@@ -272,9 +278,8 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                             {detalle.indicacionesCorte && pedido.estado !== "completado" && (
                                                 <button
                                                     onClick={() => setIndicacionModal({ nombre: detalle.producto?.nombre || "", texto: detalle.indicacionesCorte || "" })}
-                                                    className="mt-2 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-colors"
+                                                    className="mt-2 flex items-center gap-1 px-2 py-1 text-xs font-medium bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors "
                                                 >
-                                                    <span>📋</span>
                                                     <span>Ver indicaciones</span>
                                                 </button>
                                             )}
@@ -402,10 +407,35 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                         </div>
 
                         <div className="space-y-3">
-                            <div className="bg-slate-50 p-3 rounded-lg">
-                                <p className="text-sm text-slate-500">Número de operación:</p>
-                                <p className="font-bold text-slate-800">{pedido.numeroOperacion || "No registrado"}</p>
-                            </div>
+                            {/* Comprobante de pago - siempre mostrar si existe */}
+                            {pedido.comprobantePago && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <p className="text-sm text-green-700 font-medium mb-2">Comprobante de pago:</p>
+                                    {pedido.comprobantePago.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                                        <div className="relative w-full h-48 bg-slate-100 rounded-lg overflow-hidden">
+                                            <Image 
+                                                src={pedido.comprobantePago} 
+                                                alt="Comprobante de pago" 
+                                                fill
+                                                className="object-contain"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-slate-200">
+                                            <File className="h-8 w-8 text-red-500" />
+                                            <span className="text-sm text-slate-700">Archivo PDF subido</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Número de operación - solo mostrar si es diferente de "012345678" */}
+                            {pedido.numeroOperacion && pedido.numeroOperacion !== "012345678" && (
+                                <div className="bg-slate-50 p-3 rounded-lg">
+                                    <p className="text-sm text-slate-500">Número de operación:</p>
+                                    <p className="font-bold text-slate-800">{pedido.numeroOperacion}</p>
+                                </div>
+                            )}
 
                             <div className="bg-slate-50 p-3 rounded-lg">
                                 <p className="text-sm text-slate-500">Estado del pago:</p>
@@ -429,7 +459,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                     <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold text-amber-700 flex items-center gap-2">
-                                📋 Indicación de corte
+                                Indicación de corte
                             </h2>
                             <button onClick={() => setIndicacionModal(null)} className="text-slate-400 hover:text-slate-600">
                                 <XCircle className="h-5 w-5" />

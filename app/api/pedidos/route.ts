@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
             departamento, provincia, distrito,
             metodoEnvio, tiendaId, tipoEnvio, agencia, agenciaOtro, delivery, deliveryOtro,
             dniRecibe, nombreRecibe, celularRecibe,
-            numeroOperacion, items
+            numeroOperacion, comprobantePago, items
         } = body
 
         if (!items || items.length === 0) {
@@ -184,6 +184,7 @@ export async function POST(request: NextRequest) {
                 nombreRecibe,
                 celularRecibe,
                 numeroOperacion: numeroOperacionFinal,
+                comprobantePago: comprobantePago || null,
                 pedidoDetalle: {
                     create: itemsArray.map((item: any) => ({
                         productoId: item.productoId,

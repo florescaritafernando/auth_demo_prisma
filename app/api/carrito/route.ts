@@ -199,11 +199,11 @@ export async function POST(request: NextRequest) {
                     where: { id: carritoId }
                 })
 
-                const items = await prisma.carrito.findMany({
-                    where: { userId: session.user.id },
-                    include: { producto: true },
-                    orderBy: { createdAt: "desc" }
-                })
+const items = await prisma.carrito.findMany({
+            where: { userId: session.user.id },
+            include: { producto: { include: { stocks: true } } },
+            orderBy: { createdAt: "desc" }
+        })
 
 const metrosPorPieza = 50
         const itemsWithTotal = items.map(item => {
@@ -356,6 +356,36 @@ export async function PATCH(request: NextRequest) {
 
         if (!itemId) {
             return NextResponse.json({ success: false, error: "Item requerido" }, { status: 400 })
+        }
+
+        // Obtener el item actual para validar
+        const itemActual = await prisma.carrito.findUnique({
+            where: { id: itemId },
+            include: { producto: { include: { stocks: true } } }
+        })
+
+        if (!itemActual) {
+            return NextResponse.json({ success: false, error: "Item no encontrado" }, { status: 404 })
+        }
+
+        // Validación de stock para piezas
+        if (itemActual.tipo === "pieza") {
+            const stockTotal = itemActual.producto.stocks?.reduce((sum, s) => sum + (s.stock || 0), 0) || 0
+            // Si no hay stock info, permitir
+            if (stockTotal > 0 && cantidad > stockTotal) {
+                return NextResponse.json({ success: false, error: "Stock insuficiente" }, { status: 400 })
+            }
+        } else {
+            // Validación para metros
+            const MIN_METROS = 0.10
+            const MAX_METROS = 50.00
+            
+            if (cantidad < MIN_METROS) {
+                return NextResponse.json({ success: false, error: "La cantidad mínima es 0.10 metros" }, { status: 400 })
+            }
+            if (cantidad > MAX_METROS) {
+                return NextResponse.json({ success: false, error: "La cantidad máxima es 50 metros" }, { status: 400 })
+            }
         }
 
         await prisma.carrito.update({

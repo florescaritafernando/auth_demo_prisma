@@ -61,6 +61,7 @@ export function BotonNuevoProducto() {
         e.preventDefault()
         setLoading(true)
         setError("")
+        console.log("handleSubmit - form.nombre:", form.nombre)
 
         try {
             let imagenUrl = ""
@@ -123,9 +124,13 @@ export function BotonNuevoProducto() {
         if (!imagenFile) return null
 
         setUploading(true)
+        console.log("handleUpload - nombre:", form.nombre)
         try {
             const formData = new FormData()
             formData.append("file", imagenFile)
+            formData.append("tipo", "producto")
+            formData.append("nombreProducto", form.nombre)
+            console.log("FormData enviado:", form.nombre)
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -133,14 +138,16 @@ export function BotonNuevoProducto() {
                 credentials: "include",
             })
             const data = await res.json()
+            console.log("Respuesta upload:", data)
 
             if (data.url) {
                 return data.url
             }
         } catch (e) {
             console.error("Error uploading:", e)
+        } finally {
+            setUploading(false)
         }
-        setUploading(false)
         return null
     }
 

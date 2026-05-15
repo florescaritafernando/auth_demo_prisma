@@ -213,6 +213,7 @@ model Pedido {
   // Pago
   numeroOperacion String?
   notas           String?
+  comprobantePago String? // URL del comprobante de pago (Cloudinary)
 
   // Delegación y seguimiento
   motivoRechazo String? // Motivo cuando se rechaza
@@ -408,4 +409,24 @@ model DatosDireccionEnvios {
 
   @@index([userId])
   @@map("datos_direccion_envios")
+}
+
+model ClientePedido {
+  id              String   @id @default(cuid())
+  nombre          String
+  tipoDoc         String   // "dni" | "ruc" | "ce"
+  numeroDoc       String
+  razonSocial     String?  // para RUC
+  direccion       String?
+  telefono        String?
+  agencia         String?  // "shalom" | "flores" | "marvisur" | "otros"
+  agenciaOtro     String?
+  guiaRemision    Boolean  @default(false)
+  departamento   String?
+  provincia       String?
+  distrito       String?
+  createdAt       DateTime @default(now())
+
+  @@index([numeroDoc])
+  @@map("cliente_pedido")
 }

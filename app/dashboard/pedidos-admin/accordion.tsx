@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { ChevronDown, ChevronUp, FileText, UserCheck, UserPlus, Printer } from "lucide-react"
+import Image from "next/image"
+import { ChevronDown, ChevronUp, FileText, UserCheck, ExternalLink, UserPlus, Printer, X, File } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { AdminPedidoActions } from "./actions"
@@ -40,6 +41,7 @@ interface Pedido {
     nombreRecibe: string | null
     celularRecibe: string | null
     numeroOperacion: string | null
+    comprobantePago: string | null
     motivoRechazo: string | null
     createdAt: Date
     user: { id: string; name: string | null; email: string | null } | null
@@ -83,6 +85,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [currentPage, setCurrentPage] = useState(1)
     const [pedidoImprimir, setPedidoImprimir] = useState<any>(null)
+    const [comprobantePreview, setComprobantePreview] = useState<string | null>(null)
 
     const isExpandedCheck = (id: string) => {
         const result = expandedIds?.has(id) || expandedId === id
@@ -152,10 +155,10 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                     const isExpanded = isExpandedCheck(pedido.id)
 
                     return (
-                        <div 
-                        key={pedido.id} 
-                        className={`border-b border-slate-100 last:border-b-0 transition-all duration-300 ${expandedId && expandedId !== pedido.id ? "blur-sm opacity-50 pointer-events-none" : ""}`}
-                    >
+                        <div
+                            key={pedido.id}
+                            className="border-b border-slate-100 last:border-b-0"
+                        >
                             <div
                                 onClick={() => toggleExpand(pedido.id)}
                                 className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer"
@@ -209,18 +212,18 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 </div>
                                             ) : (
                                                 (role === "admin" || (role === "empleado" && pedido.estado !== "completado" && pedido.estado !== "pedido_enviado")) && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="text-xs h-6 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        tomarPedido(pedido.id)
-                                                    }}
-                                                >
-                                                    <UserPlus className="h-3 w-3 mr-1" />
-                                                    Tomar Pedido
-                                                </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="text-xs h-6 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            tomarPedido(pedido.id)
+                                                        }}
+                                                    >
+                                                        <UserPlus className="h-3 w-3 mr-1" />
+                                                        Tomar Pedido
+                                                    </Button>
                                                 )
                                             )}
                                         </div>
@@ -260,8 +263,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 {pedido.pedidoDetalle.map((detalle) => {
                                                     const tieneEtiquetas = detalle.etiquetas && detalle.etiquetas.length > 0;
                                                     // Cambiamos e.metraje por e.valor según lo que indica tu error de TypeScript
-                                                    const metrajeTotal = detalle.etiquetas?.reduce((sum, e) => sum + (e.valor || 0), 0)
-                                                        ?? (detalle.metraje || 0);
+                                                    const metrajeTotal = Number((detalle.etiquetas?.reduce((sum, e) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2));
 
                                                     const precioTotal = detalle.tipo === "pieza"
                                                         ? Number(detalle.precio) * metrajeTotal
@@ -273,7 +275,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                                 <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
                                                                 <p className="text-xs text-slate-500">
                                                                     {detalle.tipo === "pieza"
-                                                                        ? `${detalle.cantidad} pieza(s)`
+                                                                        ? `${(pedido.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s)`
                                                                         : `${detalle.cantidad} metros`
                                                                     }
                                                                 </p>
@@ -300,17 +302,17 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                             return (
                                                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                                                     <h3 className="font-bold text-amber-800 flex items-center gap-2 text-sm mb-2">
-                                                        📋 Indicaciones de corte
+                                                        Indicaciones de corte
                                                     </h3>
                                                     <div className="space-y-2">
                                                         {detallesConIndicaciones.map((detalle: any) => {
-                                                            const metrajeTotal = detalle.etiquetas?.reduce((sum: number, e: any) => sum + (e.valor || 0), 0) ?? (detalle.metraje || 0)
+                                                            const metrajeTotal = Number((detalle.etiquetas?.reduce((sum: number, e: any) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2))
                                                             return (
                                                                 <div key={detalle.id} className="bg-white rounded p-2 text-sm">
                                                                     <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
                                                                     <p className="text-xs text-slate-500">
-                                                                        {detalle.tipo === "pieza" 
-                                                                            ? `${detalle.cantidad} pieza(s) • ${metrajeTotal.toFixed(2)}m`
+                                                                        {detalle.tipo === "pieza"
+                                                                            ? `${(pedido.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) • ${metrajeTotal.toFixed(2)}m`
                                                                             : `${detalle.cantidad} metros`
                                                                         }
                                                                     </p>
@@ -336,12 +338,26 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                     <span className="text-slate-600">Nombre:</span>
                                                     <span className="font-bold text-slate-900">{pedido.nombreFactura}</span>
                                                 </div>
+                                                {pedido.numeroOperacion && pedido.numeroOperacion !== "012345678" && (
                                                 <div className="flex justify-between">
                                                     <span className={`font-bold ${pedido.estado === "pendiente" ? "text-yellow-700" : "text-slate-600"}`}>Nro. Operación:</span>
                                                     <span className={`font-bold ${pedido.estado === "pendiente" ? "text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded" : "text-slate-900"}`}>
-                                                        {pedido.numeroOperacion || "No registrado"}
+                                                        {pedido.numeroOperacion}
                                                     </span>
                                                 </div>
+                                                )}
+{pedido.comprobantePago && (
+                                                    <div className="flex justify-between items-center mt-2">
+                                                        <span className="text-slate-600">Comprobante:</span>
+                                                        <button 
+                                                            onClick={() => setComprobantePreview(pedido.comprobantePago)}
+                                                            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                                        >
+                                                            <File className="h-3 w-3" />
+                                                            Ver comprobante
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm pt-4">
@@ -437,10 +453,40 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
             />
 
             {pedidoImprimir && (
-                <ImprimirPedidoModal 
-                    pedido={pedidoImprimir} 
-                    onClose={() => setPedidoImprimir(null)} 
+                <ImprimirPedidoModal
+                    pedido={pedidoImprimir}
+                    onClose={() => setPedidoImprimir(null)}
                 />
+            )}
+
+            {/* Modal de previsualización del comprobante */}
+            {comprobantePreview && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setComprobantePreview(null)}>
+                    <div className="bg-white rounded-xl w-full max-w-2xl p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-black">Comprobante de Pago</h2>
+                            <button onClick={() => setComprobantePreview(null)} className="text-slate-400 hover:text-slate-600">
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+                        <div className="relative w-full h-[500px] bg-slate-100 rounded-lg overflow-hidden">
+                            {comprobantePreview.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                                <Image 
+                                    src={comprobantePreview} 
+                                    alt="Comprobante de pago" 
+                                    fill
+                                    className="object-contain"
+                                />
+                            ) : (
+                                <iframe 
+                                    src={comprobantePreview}
+                                    className="w-full h-full"
+                                    title="Comprobante de pago PDF"
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )
