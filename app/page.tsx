@@ -214,21 +214,23 @@ export default function Home() {
 
   const COLOR_HEX: Record<string, string> = {
     "negro": "#1a1a1a",
-    "azul noche": "#090e1cff",
-    "azul barcelona": "#2c104bff",
-    "azul electrico": "#2b1ea4ff",
-    "azul acero": "#2b3486ff",
-    "celeste": "#478eaeff",
-    "vino": "#8cc092ff",
+    "azul noche": "#090e1c",
+    "azul barcelona": "#2c104b",
+    "azul electrico": "#2b1ea4",
+    "azul acero": "#2b3486",
+    "celeste": "#478eae",
+    "vino": "#4f1919ff",
     "rosado": "#ec4899",
     "rojo": "#dc2626",
-    "verde olivo": "#451a03",
-    "verde": "#2e5a3fff",
+    "verde olivo": "#80bb99ff",
+    "verde": "#2e5a3f",
     "beige": "#d4c9a9",
-    "hueso": "#c9c4b1ff",
+    "hueso": "#c9c4b1",
     "blanco": "#f5f5f5",
-    "marron": "#452a1bff",
+    "marron": "#452a1b",
     "amarillo": "#fcd34d",
+    "plomo oscuro": "#2e2e2e",
+    "plomo plata": "#b4b3b3ff",
   };
 
   const COLORES = coloresUnicos.map(color => ({

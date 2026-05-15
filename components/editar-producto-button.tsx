@@ -36,29 +36,32 @@ const COLOR_HEX: Record<string, string> = {
     "azul electrico": "#2b1ea4",
     "azul acero": "#2b3486",
     "celeste": "#478eae",
-    "vino": "#8cc092",
+    "vino": "#4f1919ff",
     "rosado": "#ec4899",
     "rojo": "#dc2626",
-    "verde olivo": "#451a03",
+    "verde olivo": "#80bb99ff",
     "verde": "#2e5a3f",
     "beige": "#d4c9a9",
     "hueso": "#c9c4b1",
     "blanco": "#f5f5f5",
     "marron": "#452a1b",
     "amarillo": "#fcd34d",
-  }
+    "plomo oscuro": "#2e2e2e",
+    "plomo plata": "#b4b3b3ff",
+}
 
-  const TIPOCOLORES = Object.keys(COLOR_HEX)
+const TIPOCOLORES = Object.keys(COLOR_HEX)
 
 const TIPODISENO = [
     "Mil Rayas",
+    "Jacket",
     "Super 120",
     "Entero Satinado",
+    "Entero Semi Satinado",
     "Entero Mate",
     "Escarchado",
     "Panal",
     "Brocado",
-    "Jacket",
     "Cuadros",
 ]
 
@@ -296,13 +299,12 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                         <label className="block text-sm font-medium mb-1 text-slate-700">Tipo de Color</label>
                         <div className="grid grid-cols-4 gap-2 p-3 border border-slate-300 rounded-lg bg-white max-h-40 overflow-y-auto">
                             {TIPOCOLORES.map((color) => (
-                                <label 
-                                    key={color} 
-                                    className={`flex items-center gap-2 text-xs cursor-pointer p-2 rounded-lg border transition-all ${
-                                        form.tipocolores.includes(color) 
-                                            ? "border-slate-400 bg-slate-100" 
-                                            : "border-transparent hover:bg-slate-50"
-                                    }`}
+                                <label
+                                    key={color}
+                                    className={`flex items-center gap-2 text-xs cursor-pointer p-2 rounded-lg border transition-all ${form.tipocolores.includes(color)
+                                        ? "border-slate-400 bg-slate-100"
+                                        : "border-transparent hover:bg-slate-50"
+                                        }`}
                                 >
                                     <input
                                         type="checkbox"
@@ -316,7 +318,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                                         }}
                                         className="hidden"
                                     />
-                                    <span 
+                                    <span
                                         className={`w-4 h-4 rounded-full border border-slate-300 flex-shrink-0 ${form.tipocolores.includes(color) ? "ring-2 ring-slate-400 ring-offset-1" : ""}`}
                                         style={{ backgroundColor: COLOR_HEX[color] }}
                                     />
