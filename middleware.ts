@@ -5,6 +5,7 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   const allowedOrigins = [
+    "https://manchestercollectionperu.tech",
     "https://manchestercollectionperu.com",
     "https://landing-page-y-control-panel.onrender.com",
     "http://localhost:3000",
