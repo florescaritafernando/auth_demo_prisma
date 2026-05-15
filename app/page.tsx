@@ -280,7 +280,7 @@ export default function Home() {
                   >
                     {tiposDisenoUnicos.map(td => (
                       <option key={td} value={td}>
-                        {td === "todos" ? "P.D." : td}
+                        {td === "todos" ? "Por Diseño" : td}
                       </option>
                     ))}
                   </select>
@@ -325,7 +325,7 @@ export default function Home() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Buscar..."
+                placeholder="Buscar por código"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm"
@@ -339,7 +339,7 @@ export default function Home() {
               >
                 {tiposDisenoUnicos.map(td => (
                   <option key={td} value={td}>
-                    {td === "todos" ? "P.D." : td}
+                    {td === "todos" ? "Por Diseño" : td}
                   </option>
                 ))}
               </select>

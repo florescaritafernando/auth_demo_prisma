@@ -20,6 +20,10 @@ interface Producto {
     precio: number
     activo: boolean
     stocks: Stock[]
+    tipocolores: string | null
+    tipodiseno: string | null
+    descripcion: string | null
+    imagen: string | null
 }
 
 interface Props {

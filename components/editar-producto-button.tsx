@@ -29,25 +29,26 @@ const CATEGORIAS = [
     "MANCHESTER FASHION",
 ]
 
-const TIPOCOLORES = [
-    "negro",
-    "azul noche",
-    "azul marino",
-    "azul electrico",
-    "azul acero",
-    "azul barcelona",
-    "celeste",
-    "vino",
-    "rosado",
-    "rojo",
-    "verde olivo",
-    "verde",
-    "beige",
-    "hueso",
-    "blanco",
-    "marron",
-    "amarillo",
-]
+const COLOR_HEX: Record<string, string> = {
+    "negro": "#1a1a1a",
+    "azul noche": "#090e1c",
+    "azul barcelona": "#2c104b",
+    "azul electrico": "#2b1ea4",
+    "azul acero": "#2b3486",
+    "celeste": "#478eae",
+    "vino": "#8cc092",
+    "rosado": "#ec4899",
+    "rojo": "#dc2626",
+    "verde olivo": "#451a03",
+    "verde": "#2e5a3f",
+    "beige": "#d4c9a9",
+    "hueso": "#c9c4b1",
+    "blanco": "#f5f5f5",
+    "marron": "#452a1b",
+    "amarillo": "#fcd34d",
+  }
+
+  const TIPOCOLORES = Object.keys(COLOR_HEX)
 
 const TIPODISENO = [
     "Mil Rayas",
@@ -147,6 +148,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                     precio: parseFloat(form.precio),
                     imagen: imagenUrl,
                     tipocolores: form.tipocolores.join(","),
+                    tipodiseno: form.tipodiseno,
                     stocks
                 }),
                 credentials: "include",
@@ -292,9 +294,16 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
 
                     <div>
                         <label className="block text-sm font-medium mb-1 text-slate-700">Tipo de Color</label>
-                        <div className="grid grid-cols-4 gap-2 p-3 border border-slate-300 rounded-lg bg-white max-h-32 overflow-y-auto">
+                        <div className="grid grid-cols-4 gap-2 p-3 border border-slate-300 rounded-lg bg-white max-h-40 overflow-y-auto">
                             {TIPOCOLORES.map((color) => (
-                                <label key={color} className="flex items-center gap-1 text-xs cursor-pointer">
+                                <label 
+                                    key={color} 
+                                    className={`flex items-center gap-2 text-xs cursor-pointer p-2 rounded-lg border transition-all ${
+                                        form.tipocolores.includes(color) 
+                                            ? "border-slate-400 bg-slate-100" 
+                                            : "border-transparent hover:bg-slate-50"
+                                    }`}
+                                >
                                     <input
                                         type="checkbox"
                                         checked={form.tipocolores.includes(color)}
@@ -305,9 +314,13 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                                                 setForm({ ...form, tipocolores: form.tipocolores.filter(c => c !== color) })
                                             }
                                         }}
-                                        className="rounded"
+                                        className="hidden"
                                     />
-                                    <span className="truncate">{color}</span>
+                                    <span 
+                                        className={`w-4 h-4 rounded-full border border-slate-300 flex-shrink-0 ${form.tipocolores.includes(color) ? "ring-2 ring-slate-400 ring-offset-1" : ""}`}
+                                        style={{ backgroundColor: COLOR_HEX[color] }}
+                                    />
+                                    <span className="truncate capitalize">{color}</span>
                                 </label>
                             ))}
                         </div>
