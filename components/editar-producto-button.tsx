@@ -36,6 +36,7 @@ const TIPOCOLORES = [
     "azul electrico",
     "azul acero",
     "azul barcelona",
+    "celeste",
     "vino",
     "rosado",
     "rojo",
@@ -88,7 +89,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
 
     useEffect(() => {
         if (producto && open) {
-            const coloresArray = producto.tipocolores 
+            const coloresArray = producto.tipocolores
                 ? producto.tipocolores.split(",").filter(c => c.trim())
                 : []
             setForm({
@@ -101,7 +102,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                 tipodiseno: producto.tipodiseno || "",
             })
             setImagenPreview(producto.imagen || "")
-            
+
             const stockMap: Record<string, number> = {}
             producto.stocks.forEach(s => {
                 stockMap[s.almacenId] = s.stock
@@ -151,7 +152,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                 credentials: "include",
             })
             const data = await res.json()
-            
+
             if (data.success) {
                 setOpen(false)
                 router.refresh()
@@ -180,14 +181,14 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
 
     const handleUpload = async () => {
         if (!imagenFile) return imagenPreview
-        
+
         setUploading(true)
         try {
             const formData = new FormData()
             formData.append("file", imagenFile)
             formData.append("tipo", "producto")
             formData.append("nombreProducto", producto.nombre)
-            
+
             const res = await fetch("/api/upload", {
                 method: "POST",
                 body: formData,
@@ -232,7 +233,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                     <h2 className="text-lg font-bold text-slate-900">Editar Articulo</h2>
                     <button onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 rounded text-slate-600">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6 6 18M6 6l12 12"/>
+                            <path d="M18 6 6 18M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -334,12 +335,12 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                             onChange={handleFileChange}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 file:font-medium file:cursor-pointer"
                         />
-{imagenPreview && (
-                                <div className="mt-2">
-                                    <img src={imagenPreview} alt="Preview" className="w-48 h-48 object-contain rounded-lg border bg-white p-2" />
-                                    <p className="text-xs text-slate-500 mt-1">Imagen actual - click para cambiar</p>
-                                </div>
-                            )}
+                        {imagenPreview && (
+                            <div className="mt-2">
+                                <img src={imagenPreview} alt="Preview" className="w-48 h-48 object-contain rounded-lg border bg-white p-2" />
+                                <p className="text-xs text-slate-500 mt-1">Imagen actual - click para cambiar</p>
+                            </div>
+                        )}
                     </div>
 
                     <div>

@@ -215,16 +215,20 @@ export default function Home() {
   const COLOR_HEX: Record<string, string> = {
     "negro": "#1a1a1a",
     "azul noche": "#0e152c",
+    "azul barcelona": "#240844ff",
+    "azul electrico": "#2b1ea4ff",
+    "azul acero": "#2b3486ff",
+    "celeste": "#478eaeff",
+    "vino": "#8cc092ff",
+    "rosado": "#ec4899",
+    "rojo": "#dc2626",
+    "verde olivo": "#451a03",
+    "verde": "#2e5a3fff",
+    "beige": "#d4c9a9",
+    "hueso": "#c9c4b1ff",
     "blanco": "#f5f5f5",
-    "hueso": "#efebdd",
-    "rojo": "#bb2626",
-    "vinotinto": "#591b1b",
-    "rosa": "#ec4899",
-    "celeste": "#8ac7e3",
-    "verde olivo": "#65a30d",
-    "marron": "#78350f",
-    "beige": "#bab68f",
-    "plomo": "#827f7f",
+    "marron": "#452a1bff",
+    "amarillo": "#fcd34d",
   };
 
   const COLORES = coloresUnicos.map(color => ({
@@ -259,23 +263,23 @@ export default function Home() {
               {/* Barra de busqueda + Filtro por diseño (Desktop) */}
               <div className="flex w-full lg:w-[450px] xl:w-[520px] items-center mt-4 lg:mt-0 gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-4 text-slate-400 h-5 w-5" />
+                  <Search className="absolute left-3 text-slate-400 h-4 w-4" />
                   <input
                     type="text"
-                    placeholder="Buscar telas, códigos..."
+                    placeholder="Buscar..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 lg:py-2.5 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm placeholder:text-slate-400 shadow-sm"
+                    className="w-full pl-9 pr-3 py-3 lg:py-2.5 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm placeholder:text-slate-400 shadow-sm"
                   />
                 </div>
                 <select
                   value={tipoDisenoSeleccionado}
                   onChange={(e) => setTipoDisenoSeleccionado(e.target.value)}
-                  className="flex-1 py-3 lg:py-2.5 px-3 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm shadow-sm cursor-pointer"
+                  className="flex-1 py-3 lg:py-2.5 px-3 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm shadow-sm cursor-pointer font-medium"
                 >
                   {tiposDisenoUnicos.map(td => (
                     <option key={td} value={td}>
-                      {td === "todos" ? "Por diseño" : td}
+                      {td === "todos" ? "P.D." : td}
                     </option>
                   ))}
                 </select>
@@ -331,7 +335,7 @@ export default function Home() {
             >
               {tiposDisenoUnicos.map(td => (
                 <option key={td} value={td}>
-                  {td === "todos" ? "Por diseño" : td}
+                  {td === "todos" ? "P.D." : td}
                 </option>
               ))}
             </select>
