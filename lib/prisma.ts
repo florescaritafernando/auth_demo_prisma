@@ -1,50 +1,31 @@
 import { PrismaClient } from "@/lib/generated/prisma/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
-function getConnectionString(): string {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) return "";
-  
-  if (dbUrl.includes("sslmode")) return dbUrl;
-  return dbUrl + (dbUrl.includes("?") ? "&" : "?") + "sslmode=verify-full";
-}
+// 1. Limpiamos la URL para evitar errores de parsing en Linux
+const connectionString = process.env.DATABASE_URL!;
 
-let prismaInstance: PrismaClient | undefined;
-
-function createPrismaClient(): PrismaClient {
-  const connectionString = getConnectionString();
-  
-  if (!connectionString) {
-    throw new Error("DATABASE_URL environment variable is not set");
-  }
-
-  // @ts-expect-error - El adapter de Neon tiene problemas de tipos con Prisma v7
-  const adapter = new PrismaNeon(connectionString);
-  return new PrismaClient({ adapter });
-}
-
-function getPrisma(): PrismaClient {
-  const globalForPrisma = global as unknown as {
-    prisma: PrismaClient | undefined;
-  };
-
-  if (process.env.NODE_ENV === "production") {
-    if (!prismaInstance) {
-      prismaInstance = createPrismaClient();
-    }
-    return prismaInstance;
-  }
-
-  if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = createPrismaClient();
-  }
-  return globalForPrisma.prisma;
-}
-
-const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop) {
-    return getPrisma()[prop as keyof PrismaClient];
-  },
+// 2. Creamos un Pool de conexiones (forma recomendada para el adaptador)
+const pool = new Pool({
+  connectionString,
+  // Forzamos SSL pero de forma más flexible para la VPS
+  ssl: connectionString.includes("sslmode=disable") ? false : { rejectUnauthorized: false }
 });
+
+const adapter = new PrismaPg(pool);
+
+const globalForPrisma = global as unknown as {
+  prisma: PrismaClient;
+};
+
+const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    adapter,
+  });
+
+// En producción no es necesario llamar a $connect() manualmente aquí, 
+// Prisma lo hace en la primera consulta.
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export default prisma;
