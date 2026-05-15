@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 /* Iconos de Lucide */
-import { Award, CircleDollarSign, Scissors, ArrowRight, Search, Menu, X, ImageOff, ZoomIn, ZoomOut, MessageCircle } from "lucide-react"
+import { Award, CircleDollarSign, Scissors, ArrowRight, Search, Menu, X, ImageOff, ZoomIn, ZoomOut, MessageCircle, ChevronDown } from "lucide-react"
 
 const RESENAS_CLIENTES = [
   {
@@ -214,8 +214,8 @@ export default function Home() {
 
   const COLOR_HEX: Record<string, string> = {
     "negro": "#1a1a1a",
-    "azul noche": "#0e152c",
-    "azul barcelona": "#240844ff",
+    "azul noche": "#090e1cff",
+    "azul barcelona": "#2c104bff",
     "azul electrico": "#2b1ea4ff",
     "azul acero": "#2b3486ff",
     "celeste": "#478eaeff",
@@ -233,7 +233,7 @@ export default function Home() {
 
   const COLORES = coloresUnicos.map(color => ({
     nombre: color.toLowerCase(),
-    hex: COLOR_HEX[color.toLowerCase()] || "#888888",
+    hex: COLOR_HEX[color.toLowerCase()] || "#ffffffff",
   }));
 
   return (
@@ -263,26 +263,29 @@ export default function Home() {
               {/* Barra de busqueda + Filtro por diseño (Desktop) */}
               <div className="flex w-full lg:w-[450px] xl:w-[520px] items-center mt-4 lg:mt-0 gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 text-slate-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
                     type="text"
-                    placeholder="Buscar..."
+                    placeholder="Buscar por código"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-9 pr-3 py-3 lg:py-2.5 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm placeholder:text-slate-400 shadow-sm"
                   />
                 </div>
-                <select
-                  value={tipoDisenoSeleccionado}
-                  onChange={(e) => setTipoDisenoSeleccionado(e.target.value)}
-                  className="flex-1 py-3 lg:py-2.5 px-3 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm shadow-sm cursor-pointer font-medium"
-                >
-                  {tiposDisenoUnicos.map(td => (
-                    <option key={td} value={td}>
-                      {td === "todos" ? "P.D." : td}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative flex-1">
+                  <select
+                    value={tipoDisenoSeleccionado}
+                    onChange={(e) => setTipoDisenoSeleccionado(e.target.value)}
+                    className="w-full py-3 lg:py-2.5 pl-3 pr-8 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm shadow-sm cursor-pointer font-medium appearance-none"
+                  >
+                    {tiposDisenoUnicos.map(td => (
+                      <option key={td} value={td}>
+                        {td === "todos" ? "P.D." : td}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
               </div>
 
               {/* Navegación responsiva */}
@@ -328,17 +331,20 @@ export default function Home() {
                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm"
               />
             </div>
-            <select
-              value={tipoDisenoSeleccionado}
-              onChange={(e) => setTipoDisenoSeleccionado(e.target.value)}
-              className="py-2 px-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm cursor-pointer"
-            >
-              {tiposDisenoUnicos.map(td => (
-                <option key={td} value={td}>
-                  {td === "todos" ? "P.D." : td}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={tipoDisenoSeleccionado}
+                onChange={(e) => setTipoDisenoSeleccionado(e.target.value)}
+                className="w-full py-2 pl-2 pr-6 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm cursor-pointer font-medium appearance-none"
+              >
+                {tiposDisenoUnicos.map(td => (
+                  <option key={td} value={td}>
+                    {td === "todos" ? "P.D." : td}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            </div>
           </div>
         </div>
 

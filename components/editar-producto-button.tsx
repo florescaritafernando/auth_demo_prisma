@@ -50,15 +50,15 @@ const TIPOCOLORES = [
 ]
 
 const TIPODISENO = [
-    "mil rayas",
-    "super 120",
-    "entero satinado",
-    "entero mate",
-    "escarchado",
-    "panal",
-    "brocado",
-    "jacket",
-    "cuadros",
+    "Mil Rayas",
+    "Super 120",
+    "Entero Satinado",
+    "Entero Mate",
+    "Escarchado",
+    "Panal",
+    "Brocado",
+    "Jacket",
+    "Cuadros",
 ]
 
 export function BotonEditarProducto({ producto }: { producto: Producto }) {
