@@ -122,6 +122,7 @@ export default function Home() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [carouselApi, setCarouselApi] = useState<any>(null);
   const [colorSeleccionado, setColorSeleccionado] = useState<string | null>(null);
+  const [tipoDisenoSeleccionado, setTipoDisenoSeleccionado] = useState<string>("todos");
   const [productosRandom, setProductosRandom] = useState<any[]>([]);
 
   const shuffleArray = (array: any[]) => {
@@ -134,38 +135,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (categoriaSeleccionada === "todas" && searchTerm === "" && !colorSeleccionado && productos.length > 0) {
+    if (categoriaSeleccionada === "todas" && searchTerm === "" && !colorSeleccionado && tipoDisenoSeleccionado === "todos" && productos.length > 0) {
       setProductosRandom(shuffleArray(productos).slice(0, 20));
     }
-  }, [productos, categoriaSeleccionada, searchTerm, colorSeleccionado]);
-
-  const COLORES = [
-    { nombre: "negro", codigos: ["999"], hex: "#1a1a1a" },
-    { nombre: "azul", codigos: ["520", "530", "555", "560", "575"], hex: "#1e40af" },
-    { nombre: "blanco", codigos: ["001"], hex: "#f5f5f5" },
-    { nombre: "hueso", codigos: ["005"], hex: "#efebddef" },
-    { nombre: "rojo", codigos: ["412"], hex: "#bb2626ff" },
-    { nombre: "vinotinto", codigos: ["430", "440"], hex: "#591b1bff" },
-    { nombre: "rosa", codigos: ["310", "315"], hex: "#ec4899" },
-    { nombre: "celeste", codigos: ["540"], hex: "#8ac7e3ff" },
-    { nombre: "verde olivo", codigos: ["676"], hex: "#65a30d" },
-    { nombre: "marron", codigos: ["720", "740"], hex: "#78350f" },
-    { nombre: "beige", codigos: ["030", "040", "045", "D-75-745"], hex: "#bab68fff" },
-    { nombre: "plomo", codigos: ["820", "825", "840", "845"], hex: "#827f7fff" },
-  ];
-
-  const getColorFromNombre = (nombre: string): string | null => {
-    const parts = nombre.split("-");
-    const codigo = parts[parts.length - 1]?.trim();
-    if (!codigo) return null;
-
-    for (const color of COLORES) {
-      if (color.codigos.includes(codigo)) {
-        return color.nombre;
-      }
-    }
-    return null;
-  };
+  }, [productos, categoriaSeleccionada, searchTerm, colorSeleccionado, tipoDisenoSeleccionado]);
 
   const ORDEN_CATEGORIAS = [
     "MANCHESTER SUITING",
@@ -201,8 +174,13 @@ export default function Home() {
     .filter(p => categoriaSeleccionada === "todas" || p.categoria === categoriaSeleccionada)
     .filter(p => {
       if (colorSeleccionado) {
-        const colorProducto = getColorFromNombre(p.nombre);
-        if (colorProducto !== colorSeleccionado) return false;
+        if (!p.tipocolores || p.tipocolores.toLowerCase() !== colorSeleccionado) return false;
+      }
+      return true;
+    })
+    .filter(p => {
+      if (tipoDisenoSeleccionado !== "todos") {
+        if (p.tipodiseno !== tipoDisenoSeleccionado) return false;
       }
       return true;
     })
@@ -219,7 +197,7 @@ export default function Home() {
       return (a.nombre || "").localeCompare(b.nombre || "");
     });
 
-  const productosCarrusel = categoriaSeleccionada === "todas" && searchTerm === "" && !colorSeleccionado
+  const productosCarrusel = categoriaSeleccionada === "todas" && searchTerm === "" && !colorSeleccionado && tipoDisenoSeleccionado === "todos"
     ? productosRandom
     : productosOrdenados;
 
@@ -229,6 +207,30 @@ export default function Home() {
       if (b === "todas") return 1;
       return getOrdenCategoria(a) - getOrdenCategoria(b);
     });
+
+  const tiposDisenoUnicos = ["todos", ...new Set(productos.map(p => p.tipodiseno).filter(Boolean))];
+
+  const coloresUnicos = [...new Set(productos.map(p => p.tipocolores).filter(Boolean))] as string[];
+
+  const COLOR_HEX: Record<string, string> = {
+    "negro": "#1a1a1a",
+    "azul noche": "#0e152c",
+    "blanco": "#f5f5f5",
+    "hueso": "#efebdd",
+    "rojo": "#bb2626",
+    "vinotinto": "#591b1b",
+    "rosa": "#ec4899",
+    "celeste": "#8ac7e3",
+    "verde olivo": "#65a30d",
+    "marron": "#78350f",
+    "beige": "#bab68f",
+    "plomo": "#827f7f",
+  };
+
+  const COLORES = coloresUnicos.map(color => ({
+    nombre: color.toLowerCase(),
+    hex: COLOR_HEX[color.toLowerCase()] || "#888888",
+  }));
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -254,16 +256,29 @@ export default function Home() {
             {/* Contenedor Colapsable (Móvil) / Fila (Desktop) */}
             <div className={`w-full lg:flex lg:items-center lg:justify-end gap-6 transition-all duration-300 ${isMobileMenuOpen ? 'block' : 'hidden lg:flex'}`}>
 
-              {/* Barra de busqueda Responsiva */}
-              <div className="relative w-full lg:w-[350px] xl:w-[400px] flex items-center mt-4 lg:mt-0">
-                <Search className="absolute left-4 text-slate-400 h-5 w-5" />
-                <input
-                  type="text"
-                  placeholder="Buscar telas, códigos, categorías..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 lg:py-2.5 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm placeholder:text-slate-400 shadow-sm"
-                />
+              {/* Barra de busqueda + Filtro por diseño (Desktop) */}
+              <div className="flex w-full lg:w-[450px] xl:w-[520px] items-center mt-4 lg:mt-0 gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 text-slate-400 h-5 w-5" />
+                  <input
+                    type="text"
+                    placeholder="Buscar telas, códigos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 lg:py-2.5 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm placeholder:text-slate-400 shadow-sm"
+                  />
+                </div>
+                <select
+                  value={tipoDisenoSeleccionado}
+                  onChange={(e) => setTipoDisenoSeleccionado(e.target.value)}
+                  className="flex-1 py-3 lg:py-2.5 px-3 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm shadow-sm cursor-pointer"
+                >
+                  {tiposDisenoUnicos.map(td => (
+                    <option key={td} value={td}>
+                      {td === "todos" ? "Por diseño" : td}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Navegación responsiva */}
@@ -296,17 +311,30 @@ export default function Home() {
 
       {/* Catálogo de Productos */}
       <section id="catalogo" className="w-full pt-6 pb-16 px-3 md:px-10 bg-slate-50 min-h-screen">
-        {/* Barra de búsqueda móvil - arriba de todo en móvil */}
+        {/* Barra de búsqueda móvil + filtro diseño - 50/50 */}
         <div className="mb-4 px-2 md:hidden">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Buscar telas, códigos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm"
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm"
+              />
+            </div>
+            <select
+              value={tipoDisenoSeleccionado}
+              onChange={(e) => setTipoDisenoSeleccionado(e.target.value)}
+              className="py-2 px-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm cursor-pointer"
+            >
+              {tiposDisenoUnicos.map(td => (
+                <option key={td} value={td}>
+                  {td === "todos" ? "Por diseño" : td}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -327,6 +355,7 @@ export default function Home() {
                     setCategoriaSeleccionada(cat);
                     setSearchTerm("");
                     setColorSeleccionado(null);
+                    setTipoDisenoSeleccionado("todos");
                   }}
                   className={`px-4 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 flex-shrink-0 ${categoriaSeleccionada === cat
                     ? "bg-slate-900 text-white border-slate-900"
@@ -355,9 +384,9 @@ export default function Home() {
                 title={color.nombre.charAt(0).toUpperCase() + color.nombre.slice(1)}
               />
             ))}
-            {colorSeleccionado && (
+            {(colorSeleccionado || tipoDisenoSeleccionado !== "todos") && (
               <button
-                onClick={() => setColorSeleccionado(null)}
+                onClick={() => { setColorSeleccionado(null); setTipoDisenoSeleccionado("todos"); }}
                 className="px-3 py-1 text-xs text-slate-500 hover:text-slate-700 underline flex-shrink-0 self-center"
               >
                 Limpiar
@@ -378,7 +407,9 @@ export default function Home() {
               <p className="text-slate-500 mb-6">
                 {colorSeleccionado
                   ? `No hay productos con color ${colorSeleccionado}. Prueba con otro color.`
-                  : "No hay productos que coincidan con tu búsqueda."}
+                  : tipoDisenoSeleccionado !== "todos"
+                    ? `No hay productos con diseño ${tipoDisenoSeleccionado}. Prueba con otro diseño.`
+                    : "No hay productos que coincidan con tu búsqueda."}
               </p>
               <Button
                 variant="outline"
@@ -387,13 +418,14 @@ export default function Home() {
                   setSearchTerm("");
                   setCategoriaSeleccionada("todas");
                   setColorSeleccionado(null);
+                  setTipoDisenoSeleccionado("todos");
                 }}
               >
                 Ver todo el catálogo
               </Button>
             </div>
           </div>
-        ) : searchTerm.trim() === "" && !colorSeleccionado ? (
+        ) : searchTerm.trim() === "" && !colorSeleccionado && tipoDisenoSeleccionado === "todos" ? (
           <>
             {/* Grid para móvil - 2x2 pero mostrando todos los productos del carrusel (20 max) */}
             <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
