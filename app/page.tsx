@@ -208,7 +208,7 @@ export default function Home() {
       return getOrdenCategoria(a) - getOrdenCategoria(b);
     });
 
-  const tiposDisenoUnicos = ["todos", ...new Set(productos.map(p => p.tipodiseno).filter(Boolean))];
+  const tiposDisenoUnicos = ["todos", ...[...new Set(productos.map(p => p.tipodiseno).filter(Boolean))].sort()];
 
   const coloresUnicos = [...new Set(productos.map(p => p.tipocolores).filter(Boolean))] as string[];
 
@@ -282,7 +282,7 @@ export default function Home() {
                   >
                     {tiposDisenoUnicos.map(td => (
                       <option key={td} value={td}>
-                        {td === "todos" ? "Por Diseño" : td}
+                        {td === "todos" ? "Buscar por diseño" : td}
                       </option>
                     ))}
                   </select>
@@ -341,7 +341,7 @@ export default function Home() {
               >
                 {tiposDisenoUnicos.map(td => (
                   <option key={td} value={td}>
-                    {td === "todos" ? "Por Diseño" : td}
+                    {td === "todos" ? "Buscar por diseño" : td}
                   </option>
                 ))}
               </select>
