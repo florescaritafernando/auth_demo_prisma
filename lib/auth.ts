@@ -48,7 +48,7 @@ export async function enviarEmail(
 }
 
 export const auth = betterAuth({
-    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
@@ -117,14 +117,14 @@ export const auth = betterAuth({
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-            redirectURI: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/callback/google`,
+            redirectURI: `${process.env.BETTER_AUTH_URL || "http://localhost:3000"}/api/auth/callback/google`,
         },
     },
     emailVerification: {
         sendVerificationEmail: async ({ user, url }) => {
             const urlObj = new URL(url);
             const token = urlObj.searchParams.get("token");
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+            const appUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
             const verifyUrl = `${appUrl}/api/verify-email?token=${token}`;
             await resend.emails.send({
                 from: EMAIL_FROM,
