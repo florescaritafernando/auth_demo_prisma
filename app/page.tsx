@@ -221,6 +221,7 @@ export default function Home() {
     "celeste": "#478eae",
     "vino": "#4f1919ff",
     "rosado": "#ec4899",
+    "lila": "#d29bfd",
     "rojo": "#dc2626",
     "verde olivo": "#80bb99ff",
     "verde": "#2e5a3f",
@@ -229,7 +230,7 @@ export default function Home() {
     "blanco": "#f5f5f5",
     "marron": "#452a1b",
     "amarillo": "#fcd34d",
-    "plomo oscuro": "#2e2e2e",
+    "plomo oscuro": "#363535ff",
     "plomo plata": "#b4b3b3ff",
   };
 
