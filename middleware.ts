@@ -3,11 +3,14 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();
+  const { pathname } = request.nextUrl;
 
+  if (pathname === "/login") {
+    return NextResponse.next();
+  }
   const allowedOrigins = [
     "https://manchestercollectionperu.tech",
     "https://www.manchestercollectionperu.com",
-
     "https://manchestercollectionperu.com",
     "https://landing-page-y-control-panel.onrender.com",
     "http://localhost:3000",
@@ -26,5 +29,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
 };

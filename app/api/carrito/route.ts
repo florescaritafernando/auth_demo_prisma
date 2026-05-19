@@ -9,14 +9,14 @@ export async function GET() {
         const session = await auth.api.getSession({
             headers: headersList
         })
-        
+
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
         }
 
         const items = await prisma.carrito.findMany({
             where: { userId: session.user.id },
-            include: { 
+            include: {
                 producto: {
                     include: {
                         stocks: true
@@ -70,16 +70,16 @@ export async function POST(request: NextRequest) {
         console.error("Session error:", e.message)
         return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
     }
-    
+
     if (!session?.user) {
         return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
     }
 
     let body
     let action, productoId, cantidad, tipo, direccion, notas, carritoId, nuevaCantidad
-    
+
     const contentType = request.headers.get("content-type") || ""
-    
+
     if (contentType.includes("application/json")) {
         try {
             body = await request.json()
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
             console.error("JSON parse error:", e.message)
             return NextResponse.json({ success: false, error: "Datos inválidos" }, { status: 400 })
         }
-        ;({ action, productoId, cantidad, tipo, direccion, notas, carritoId, cantidad: nuevaCantidad } = body)
+        ; ({ action, productoId, cantidad, tipo, direccion, notas, carritoId, cantidad: nuevaCantidad } = body)
     } else {
         const formData = await request.formData()
         action = formData.get("action") as string
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         carritoId = formData.get("carritoId") as string
         nuevaCantidad = formData.get("cantidad") ? Number(formData.get("cantidad")) : undefined
     }
-    
+
     console.log("Carrito POST action:", action)
 
     try {
@@ -130,12 +130,12 @@ export async function POST(request: NextRequest) {
                 const metrosPorPieza = 50
                 const totalStockMetros = producto.stocks.reduce((sum, s) => sum + (s.stock * metrosPorPieza), 0)
                 console.log("Stock total metros:", totalStockMetros, "stocks:", producto.stocks)
-                
+
                 const esPieza = tipoRecibido === "pieza"
-                
+
                 // cantidad means pieces or meters - convert all to metros for stock check
                 const cantidadEnMetros = esPieza ? cantidad * metrosPorPieza : cantidad
-                
+
                 console.log("Checking:", { cantidad, cantidadEnMetros, esPieza, totalStockMetros })
 
                 // Get existing item in cart using the composite unique constraint
@@ -149,28 +149,28 @@ export async function POST(request: NextRequest) {
                     }
                 })
 
-                const currentQtyMetros = existente ? 
-                    (existente.tipo === "pieza" ? existente.cantidad * metrosPorPieza : existente.cantidad) 
+                const currentQtyMetros = existente ?
+                    (existente.tipo === "pieza" ? existente.cantidad * metrosPorPieza : existente.cantidad)
                     : 0
-                
+
                 const newTotalMetros = currentQtyMetros + cantidadEnMetros
 
                 console.log("Stock check:", { currentQtyMetros, newTotalMetros, totalStockMetros })
 
                 // Check stock
                 if (newTotalMetros > totalStockMetros) {
-                    return NextResponse.json({ 
-                        success: false, 
-                        error: "Stock insuficiente" 
+                    return NextResponse.json({
+                        success: false,
+                        error: "Stock insuficiente"
                     }, { status: 400 })
                 }
 
                 const finalCantidad = cantidad
-                
+
                 if (existente) {
                     await prisma.carrito.update({
                         where: { id: existente.id },
-                        data: { 
+                        data: {
                             cantidad: existente.cantidad + finalCantidad,
                             tipo: tipo || "metros"
                         }
@@ -199,28 +199,28 @@ export async function POST(request: NextRequest) {
                     where: { id: carritoId }
                 })
 
-const items = await prisma.carrito.findMany({
-            where: { userId: session.user.id },
-            include: { producto: { include: { stocks: true } } },
-            orderBy: { createdAt: "desc" }
-        })
+                const items = await prisma.carrito.findMany({
+                    where: { userId: session.user.id },
+                    include: { producto: { include: { stocks: true } } },
+                    orderBy: { createdAt: "desc" }
+                })
 
-const metrosPorPieza = 50
-        const itemsWithTotal = items.map(item => {
-            const precioPorMetro = Number(item.producto.precio)
-            const precioUnitario = item.tipo === "pieza" ? precioPorMetro * metrosPorPieza : precioPorMetro
-            const precioTotal = item.tipo === "pieza" ? item.cantidad * precioPorMetro * metrosPorPieza : item.cantidad * precioPorMetro
-            const precioTotalXPieza = item.tipo === "pieza" ? item.cantidad * precioPorMetro : 0
-            return {
-                ...item,
-                cantidadMetros: item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad,
-                tipoLabel: item.tipo === "pieza" ? "Por pieza" : "Por metro",
-                metrosPorPieza,
-                precioUnitario,
-                precioTotal,
-                precioTotalXPieza
-            }
-        })
+                const metrosPorPieza = 50
+                const itemsWithTotal = items.map(item => {
+                    const precioPorMetro = Number(item.producto.precio)
+                    const precioUnitario = item.tipo === "pieza" ? precioPorMetro * metrosPorPieza : precioPorMetro
+                    const precioTotal = item.tipo === "pieza" ? item.cantidad * precioPorMetro * metrosPorPieza : item.cantidad * precioPorMetro
+                    const precioTotalXPieza = item.tipo === "pieza" ? item.cantidad * precioPorMetro : 0
+                    return {
+                        ...item,
+                        cantidadMetros: item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad,
+                        tipoLabel: item.tipo === "pieza" ? "Por pieza" : "Por metro",
+                        metrosPorPieza,
+                        precioUnitario,
+                        precioTotal,
+                        precioTotalXPieza
+                    }
+                })
 
                 const total = itemsWithTotal.reduce((sum, item) => sum + item.precioTotal, 0)
 
@@ -264,9 +264,9 @@ const metrosPorPieza = 50
                 if (!body || typeof body !== "object") {
                     return NextResponse.json({ success: false, error: "Datos requeridos" }, { status: 400 })
                 }
-                
+
                 console.log("Checkout body:", JSON.stringify(body).substring(0, 200))
-                
+
                 const items = await prisma.carrito.findMany({
                     where: { userId: session.user.id },
                     include: { producto: { include: { stocks: true } } }
@@ -345,7 +345,7 @@ export async function PATCH(request: NextRequest) {
     } catch (e: any) {
         return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
     }
-    
+
     if (!session?.user) {
         return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
     }
@@ -379,7 +379,7 @@ export async function PATCH(request: NextRequest) {
             // Validación para metros
             const MIN_METROS = 0.10
             const MAX_METROS = 50.00
-            
+
             if (cantidad < MIN_METROS) {
                 return NextResponse.json({ success: false, error: "La cantidad mínima es 0.10 metros" }, { status: 400 })
             }
@@ -431,7 +431,7 @@ export async function DELETE(request: NextRequest) {
     } catch (e: any) {
         return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
     }
-    
+
     if (!session?.user) {
         return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
     }
