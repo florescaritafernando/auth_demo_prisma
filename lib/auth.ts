@@ -179,4 +179,16 @@ export const auth = betterAuth({
     emailSignIn: {
         enabled: true,
     },
+    // 1. Dile a Better Auth que confíe en el origen con www
+    trustedOrigins: [
+        "https://www.manchestercollectionperu.com"
+    ],
+
+    advanced: {
+        // 2. Permite compartir las cookies de sesión entre ambos dominios
+        crossSubDomainCookies: {
+            enabled: true,
+            domain: ".manchestercollectionperu.com", // IMPORTANTE: Nota el punto inicial "."
+        }
+    }
 });
