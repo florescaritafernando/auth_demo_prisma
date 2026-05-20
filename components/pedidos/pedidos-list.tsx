@@ -7,9 +7,10 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { Search, X, Calendar, File, ExternalLink } from "lucide-react"
-import { Package, Clock, CheckCircle, XCircle, Truck, Wallet, AlertCircle, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info, CircleDollarSign, PackageCheck } from "lucide-react"
+import { Package, Clock, CheckCircle, XCircle, Truck, Wallet, AlertCircle, MapPin, CreditCard, Phone, FileText, PlayCircle, ChevronDown, ChevronUp, Eye, Info, CircleDollarSign, PackageCheck, Printer } from "lucide-react"
 import { FeedbackModal } from "./FeedbackModal"
 import { QuejaModal } from "./QuejaModal"
+import { ImprimirPedidoModal } from "./ImprimirPedidoModal"
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string; icon: any }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800", icon: Clock },
@@ -111,6 +112,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
     const setExpanded = isExpanded !== undefined ? onToggle! : setInternalExpanded
     const [showMotivo, setShowMotivo] = useState(false)
     const [showPagoDetails, setShowPagoDetails] = useState(false)
+    const [showImprimir, setShowImprimir] = useState(false)
     const [indicacionModal, setIndicacionModal] = useState<{ nombre: string; texto: string } | null>(null)
     const config = ESTADO_CONFIG[pedido.estado] || ESTADO_CONFIG.metraje_en_proceso
     const IconComponent = config.icon
@@ -257,6 +259,17 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                 </select>
                             </form>
                         )}
+
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setShowImprimir(true)
+                            }}
+                            className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                            title="Imprimir / Descargar PDF"
+                        >
+                            <Printer className="h-4 w-4" />
+                        </button>
 
                         <div className="w-8 h-8 flex items-center justify-center">
                             {expanded ? (
@@ -608,6 +621,13 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showImprimir && (
+                <ImprimirPedidoModal
+                    pedido={pedido as any}
+                    onClose={() => setShowImprimir(false)}
+                />
             )}
         </div>
     )

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Printer, X, FileText } from "lucide-react"
+import { Printer, X, FileText, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface Etiqueta {
@@ -83,6 +83,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                 if (d.tipo === "pieza") {
                     return {
                         nombre: d.producto.nombre,
+                        categoria: d.producto.categoria,
                         cantidad: sinEtiquetasAun
                             ? `${d.cantidad} pzs (por confirmar)`
                             : `${piezasRegistradas} pzs (${metrajeTotal.toFixed(2)}m)`,
@@ -96,6 +97,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
 
                 return {
                     nombre: d.producto.nombre,
+                    categoria: d.producto.categoria,
                     cantidad: `${d.cantidad} metros`,
                     piezasRegistradas: null,
                     sinEtiquetasAun: false,
@@ -162,28 +164,36 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
             `
             : `
                 <style>
-                    @page { size: A4; margin: 20mm; }
+                    @page { size: A4; margin: 10mm; }
                     body { 
                         font-family: Arial, sans-serif; 
-                        font-size: 12px; 
+                        font-size: 11px; 
                         max-width: 210mm; 
                         margin: 0 auto; 
-                        padding: 20px;
+                        padding: 10mm;
                     }
-                    .header { text-align: center; border: 2px solid #000; padding: 20px; margin-bottom: 20px; }
-                    .title { font-size: 24px; font-weight: bold; }
-                    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-                    .info-box { border: 1px solid #ddd; padding: 10px; }
-                    .info-label { font-weight: bold; color: #666; font-size: 10px; }
-                    .info-value { font-size: 14px; }
-                    .productos-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    .productos-table th { background: #333; color: white; padding: 10px; text-align: left; }
-                    .productos-table td { border: 1px solid #ddd; padding: 8px; }
+                    .header { text-align: center; border: 2px solid #000; padding: 15px; margin-bottom: 15px; position: relative; page-break-inside: avoid; }
+                    .logo { position: absolute; left: 45px; top: 50%; transform: translateY(-50%); height: 50px; width: 150px; }
+                    .title { font-size: 22px; font-weight: bold; }
+                    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; page-break-inside: avoid; }
+                    .info-box { border: 1px solid #ddd; padding: 8px; }
+                    .info-label { font-weight: bold; color: #666; font-size: 9px; }
+                    .info-value { font-size: 12px; }
+                    .productos-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
+                    .productos-table th { background: #333; color: white; padding: 8px 6px; text-align: left; font-size: 10px; }
+                    .productos-table td { border: 1px solid #ddd; padding: 6px; font-size: 11px; word-wrap: break-word; overflow-wrap: break-word; }
+                    .productos-table .col-num { width: 4%; }
+                    .productos-table .col-nombre { width: 32%; }
+                    .productos-table .col-cat { width: 22%; }
+                    .productos-table .col-cant { width: 14%; }
+                    .productos-table .col-precio { width: 13%; }
+                    .productos-table .col-total { width: 15%; }
                     .productos-table .nombre { font-weight: bold; }
                     .productos-table .resaltado { background: #fff3cd; font-weight: bold; }
-                    .totales { border-top: 2px solid #000; padding-top: 15px; }
-                    .totales-row { display: flex; justify-content: space-between; padding: 5px 0; }
-                    .gran-total { font-size: 18px; font-weight: bold; border-top: 2px solid #000; padding-top: 10px; margin-top: 10px; }
+                    .productos-table tr { page-break-inside: avoid; }
+                    .totales { border-top: 2px solid #000; padding-top: 12px; page-break-inside: avoid; }
+                    .totales-row { display: flex; justify-content: space-between; padding: 4px 0; }
+                    .gran-total { font-size: 16px; font-weight: bold; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
                 </style>
             `
 
@@ -258,6 +268,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                 <head><title>Pedido ${pedido.numeroOrden}</title>${estilos}</head>
                 <body>
                     <div class="header">
+                        <img src="/images/logo_manchester.png" class="logo" alt="Logo" />
                         <div class="title">PEDIDO</div>
                         <div style="font-size: 18px; margin-top: 10px;">${pedido.numeroOrden}</div>
                     </div>
@@ -291,23 +302,25 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     <table class="productos-table">
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>Producto</th>
-                                <th>Cantidad</th>
-                                <th>Precio</th>
-                                <th>Total</th>
+                                <th class="col-num">#</th>
+                                <th class="col-nombre">Producto</th>
+                                <th class="col-cat">Categoría</th>
+                                <th class="col-cant">Cantidad</th>
+                                <th class="col-precio">Precio</th>
+                                <th class="col-total">Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${productos.map((p, i) => `
                                 <tr>
-                                    <td>${i + 1}</td>
+                                    <td class="col-num">${i + 1}</td>
                                     <td class="nombre">${p.nombre}</td>
+                                    <td>${p.categoria || "N/A"}</td>
                                     <td class="resaltado">${p.cantidad}</td>
                                     <td>S/ ${p.precio.toFixed(2)}</td>
                                     <td>S/ ${p.total.toFixed(2)}</td>
                                 </tr>
-                                ${p.indicaciones ? `<tr><td colspan="5" style="font-style: italic; font-size: 10px; background: #fff3cd;">📋 Nota: ${p.indicaciones}</td></tr>` : ""}
+                                ${p.indicaciones ? `<tr><td colspan="6" style="font-style: italic; font-size: 10px; background: #fff3cd; padding-left: 12px;">📋 Nota: ${p.indicaciones}</td></tr>` : ""}
                             `).join("")}
                         </tbody>
                     </table>
@@ -337,6 +350,388 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
         setTimeout(() => {
             printWindow.print()
         }, 500)
+    }
+
+    const generarHTMLA4 = () => {
+        const estilosA4 = `
+            @page { size: A4; margin: 10mm; }
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        font-size: 11px; 
+                        max-width: 210mm; 
+                        margin: 0 auto; 
+                        padding: 10mm;
+                    }
+                    .header { text-align: center; border: 2px solid #000; padding: 15px; margin-bottom: 15px; position: relative; page-break-inside: avoid; }
+                    .logo { position: absolute; left: 25px; top: 50%; transform: translateY(-50%); height: 50px; width: 150px; }
+                    .title { font-size: 22px; font-weight: bold; }
+                    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; page-break-inside: avoid; }
+                    .info-box { border: 1px solid #ddd; padding: 8px; }
+                    .info-label { font-weight: bold; color: #666; font-size: 9px; }
+                    .info-value { font-size: 12px; }
+                    .productos-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
+                    .productos-table th { background: #333; color: white; padding: 8px 6px; text-align: left; font-size: 10px; }
+                    .productos-table td { border: 1px solid #ddd; padding: 6px; font-size: 11px; word-wrap: break-word; overflow-wrap: break-word; }
+                    .productos-table .col-num { width: 4%; }
+                    .productos-table .col-nombre { width: 32%; }
+                    .productos-table .col-cat { width: 22%; }
+                    .productos-table .col-cant { width: 14%; }
+                    .productos-table .col-precio { width: 13%; }
+                    .productos-table .col-total { width: 15%; }
+                    .productos-table .nombre { font-weight: bold; }
+                    .productos-table .resaltado { background: #fff3cd; font-weight: bold; }
+                    .productos-table tr { page-break-inside: avoid; }
+                    .totales { border-top: 2px solid #000; padding-top: 12px; page-break-inside: avoid; }
+                    .totales-row { display: flex; justify-content: space-between; padding: 4px 0; }
+                    .gran-total { font-size: 16px; font-weight: bold; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
+        `
+
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head><title>Pedido ${pedido.numeroOrden}</title>${estilosA4}</head>
+            <body>
+                <div class="header">
+                    <img src="/images/logo_manchester.png" class="logo" alt="Logo" />
+                    <div class="title">PEDIDO</div>
+                    <div style="font-size: 18px; margin-top: 10px;">${pedido.numeroOrden}</div>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-box">
+                        <div class="info-label">FECHA</div>
+                        <div class="info-value">${fecha}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label">ESTADO</div>
+                        <div class="info-value">${pedido.estado.toUpperCase()}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label">CLIENTE</div>
+                        <div class="info-value">${(pedido.nombreFactura || "").toUpperCase()}</div>
+                        <div class="info-value" style="font-size: 11px;">${pedido.tipoDocumento?.toUpperCase()}: ${pedido.numeroDoc || ""}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-label">COLABORADORES ASIGNADOS</div>
+                        <div class="info-value">${colaboradores}</div>
+                    </div>
+                    <div class="info-box" style="grid-column: span 2;">
+                        <div class="info-label">DATOS DE ENVÍO</div>
+                        <div class="info-value">${metodoEnvioLabel}</div>
+                        ${pedido.direccion ? `<div class="info-value">Dir: ${pedido.direccion.toUpperCase()}</div>` : ""}
+                        ${pedido.departamento ? `<div class="info-value">${pedido.departamento} - ${pedido.provincia} - ${pedido.distrito}</div>` : ""}
+                    </div>
+                </div>
+                
+                <table class="productos-table">
+                    <thead>
+                        <tr>
+                            <th class="col-num">#</th>
+                            <th class="col-nombre">Producto</th>
+                            <th class="col-cat">Categoría</th>
+                            <th class="col-cant">Cantidad</th>
+                            <th class="col-precio">Precio</th>
+                            <th class="col-total">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${productos.map((p, i) => `
+                            <tr>
+                                <td class="col-num">${i + 1}</td>
+                                <td class="nombre">${p.nombre}</td>
+                                <td>${p.categoria || "N/A"}</td>
+                                <td class="resaltado">${p.cantidad}</td>
+                                <td>S/ ${p.precio.toFixed(2)}</td>
+                                <td>S/ ${p.total.toFixed(2)}</td>
+                            </tr>
+                            ${p.indicaciones ? `<tr><td colspan="6" style="font-style: italic; font-size: 10px; background: #fff3cd; padding-left: 12px;">Nota: ${p.indicaciones}</td></tr>` : ""}
+                        `).join("")}
+                    </tbody>
+                </table>
+                
+                <div class="totales">
+                    <div class="totales-row">
+                        <span>Subtotal:</span>
+                        <span>S/ ${(pedido.total - pedido.costoEnvio).toFixed(2)}</span>
+                    </div>
+                    <div class="totales-row">
+                        <span>Costo de envío:</span>
+                        <span>S/ ${pedido.costoEnvio.toFixed(2)}</span>
+                    </div>
+                    <div class="totales-row gran-total">
+                        <span>TOTAL A PAGAR:</span>
+                        <span>S/ ${pedido.total.toFixed(2)}</span>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    }
+
+    const handleDescargarPDF = async () => {
+        const { jsPDF } = await import("jspdf")
+
+        const pdf = new jsPDF("p", "mm", "a4")
+        const pageWidth = pdf.internal.pageSize.getWidth()
+        const pageHeight = pdf.internal.pageSize.getHeight()
+        const margin = 15
+        const contentWidth = pageWidth - margin * 2
+        const rowHeight = 10
+        const headerHeight = 38
+        const footerHeight = 28
+        const tableHeaderH = 10
+
+        let logoBase64: string | null = null
+        try {
+            const imgResponse = await fetch("/images/logo_manchester.png")
+            const imgBlob = await imgResponse.blob()
+            const reader = new FileReader()
+            logoBase64 = await new Promise<string>((resolve) => {
+                reader.onloadend = () => resolve(reader.result as string)
+                reader.readAsDataURL(imgBlob)
+            })
+        } catch {
+            // continuar sin logo
+        }
+
+        const drawHeader = (yPos: number) => {
+            if (logoBase64) {
+                pdf.addImage(logoBase64, "PNG", margin + 1, yPos + 3, 50, 22)
+            }
+            pdf.setFont("helvetica", "bold")
+            pdf.setFontSize(20)
+            pdf.text("PEDIDO", pageWidth / 2, yPos + 12, { align: "center" })
+            pdf.setFontSize(14)
+            pdf.text(pedido.numeroOrden, pageWidth / 2, yPos + 21, { align: "center" })
+            pdf.setDrawColor(0, 0, 0)
+            pdf.setLineWidth(0.8)
+            pdf.rect(margin, yPos, contentWidth, 28)
+        }
+
+        const drawInfoSection = (yPos: number) => {
+            pdf.setFont("helvetica", "normal")
+            pdf.setFontSize(7)
+            pdf.setTextColor(100, 100, 100)
+            pdf.text("FECHA", margin + 3, yPos + 5)
+            pdf.text("ESTADO", margin + contentWidth / 2 + 3, yPos + 5)
+            pdf.setTextColor(0, 0, 0)
+            pdf.setFontSize(10)
+            pdf.text(fecha, margin + 3, yPos + 11)
+            pdf.text(pedido.estado.toUpperCase(), margin + contentWidth / 2 + 3, yPos + 11)
+            pdf.setDrawColor(220, 220, 220)
+            pdf.setLineWidth(0.2)
+            pdf.rect(margin, yPos, contentWidth / 2 - 2, 16)
+            pdf.rect(margin + contentWidth / 2 + 2, yPos, contentWidth / 2 - 2, 16)
+
+            const y2 = yPos + 20
+            pdf.setFontSize(7)
+            pdf.setTextColor(100, 100, 100)
+            pdf.text("CLIENTE", margin + 3, y2 + 5)
+            pdf.setTextColor(0, 0, 0)
+            pdf.setFontSize(10)
+            pdf.text((pedido.nombreFactura || "N/A").toUpperCase(), margin + 3, y2 + 11)
+            pdf.setFontSize(8)
+            pdf.text(`${pedido.tipoDocumento?.toUpperCase() || ""}: ${pedido.numeroDoc || ""}`, margin + 3, y2 + 17)
+            pdf.setDrawColor(220, 220, 220)
+            pdf.rect(margin, y2, contentWidth / 2 - 2, 22)
+
+            pdf.setFontSize(7)
+            pdf.setTextColor(100, 100, 100)
+            pdf.text("COLABORADORES", margin + contentWidth / 2 + 3, y2 + 5)
+            pdf.setTextColor(0, 0, 0)
+            pdf.setFontSize(9)
+            const colabShort = colaboradores.length > 40 ? colaboradores.substring(0, 40) + "..." : colaboradores
+            pdf.text(colabShort, margin + contentWidth / 2 + 3, y2 + 11)
+            pdf.setDrawColor(220, 220, 220)
+            pdf.rect(margin + contentWidth / 2 + 2, y2, contentWidth / 2 - 2, 22)
+
+            const y3 = y2 + 26
+            pdf.setFontSize(7)
+            pdf.setTextColor(100, 100, 100)
+            pdf.text("DATOS DE ENVÍO", margin + 3, y3 + 5)
+            pdf.setTextColor(0, 0, 0)
+            pdf.setFontSize(9)
+            pdf.text(metodoEnvioLabel, margin + 3, y3 + 11)
+            let envioY = y3 + 17
+            if (pedido.direccion) {
+                pdf.setFontSize(8)
+                pdf.text(`DIRECCIÓN: ${pedido.direccion.toUpperCase()}`, margin + 3, envioY)
+                envioY += 5
+            }
+            if (pedido.departamento) {
+                pdf.setFontSize(8)
+                pdf.text(`${pedido.departamento} - ${pedido.provincia} - ${pedido.distrito}`, margin + 3, envioY)
+                envioY += 5
+            }
+            const envioH = Math.max(envioY - y3 + 2, 22)
+            pdf.setDrawColor(220, 220, 220)
+            pdf.rect(margin, y3, contentWidth, envioH)
+
+            return envioY + 4
+        }
+
+        const colX = {
+            num: margin + contentWidth * 0.02,
+            nombre: margin + contentWidth * 0.08,
+            cat: margin + contentWidth * 0.38,
+            cant: margin + contentWidth * 0.60,
+            precio: margin + contentWidth * 0.74,
+            total: margin + contentWidth * 0.87
+        }
+
+        const drawTableHeader = (yPos: number) => {
+            pdf.setFillColor(240,240,240)
+            pdf.rect(margin, yPos, contentWidth, tableHeaderH, "F")
+            pdf.setTextColor(40, 40, 40)
+            pdf.setFont("helvetica", "bold")
+            pdf.setFontSize(8)
+            pdf.text("#", colX.num, yPos + 6.5)
+            pdf.text("Producto", colX.nombre, yPos + 6.5)
+            pdf.text("Categoría", colX.cat, yPos + 6.5)
+            pdf.text("Cantidad", colX.cant, yPos + 6.5)
+            pdf.text("Precio", colX.precio, yPos + 6.5)
+            pdf.text("Total", colX.total, yPos + 6.5)
+        }
+
+        const drawTotals = (yPos: number) => {
+            pdf.setDrawColor(0, 0, 0)
+            pdf.setLineWidth(0.5)
+            pdf.line(margin, yPos, margin + contentWidth, yPos)
+            yPos += 7
+            pdf.setFont("helvetica", "normal")
+            pdf.setFontSize(10)
+            pdf.setTextColor(0, 0, 0)
+            pdf.text("Subtotal:", margin + 3, yPos + 5)
+            pdf.text(`S/ ${(pedido.total - pedido.costoEnvio).toFixed(2)}`, pageWidth - margin - 3, yPos + 5, { align: "right" })
+            yPos += 7
+            pdf.text("Costo de envío:", margin + 3, yPos + 5)
+            pdf.text(`S/ ${pedido.costoEnvio.toFixed(2)}`, pageWidth - margin - 3, yPos + 5, { align: "right" })
+            yPos += 9
+            pdf.setLineWidth(0.6)
+            pdf.line(margin, yPos, margin + contentWidth, yPos)
+            yPos += 8
+            pdf.setFont("helvetica", "bold")
+            pdf.setFontSize(13)
+            pdf.text("TOTAL A PAGAR:", margin + 3, yPos + 6)
+            pdf.text(`S/ ${pedido.total.toFixed(2)}`, pageWidth - margin - 3, yPos + 6, { align: "right" })
+        }
+
+        const drawPageFooter = (pageNum: number, totalPages: number) => {
+            const footerY = pageHeight - 10
+            pdf.setFont("helvetica", "normal")
+            pdf.setFontSize(8)
+            pdf.setTextColor(150, 150, 150)
+            pdf.text(`Pedido ${pedido.numeroOrden}`, margin, footerY)
+            pdf.text(`Página ${pageNum} de ${totalPages}`, pageWidth - margin, footerY, { align: "right" })
+        }
+
+        // ===== PRIMERA PÁGINA =====
+        drawHeader(margin)
+        const infoBottom = drawInfoSection(margin + headerHeight)
+
+        let y = infoBottom + 5
+        drawTableHeader(y)
+        y += tableHeaderH
+
+        const availableForTable = pageHeight - margin - infoBottom - 5 - footerHeight
+        const maxRowsPerPage = Math.floor((availableForTable - tableHeaderH) / rowHeight)
+
+        // Calcular páginas necesarias
+        let totalPagesNeeded = 1
+        let rowsOnPage = 0
+        productos.forEach((p) => {
+            const rowsForItem = p.indicaciones ? 2 : 1
+            if (rowsOnPage + rowsForItem > maxRowsPerPage) {
+                totalPagesNeeded++
+                rowsOnPage = rowsForItem
+            } else {
+                rowsOnPage += rowsForItem
+            }
+        })
+
+        // Renderizar productos con paginación
+        let currentPage = 1
+        let rowCount = 0
+
+        productos.forEach((p, i) => {
+            const itemRows = p.indicaciones ? 2 : 1
+            const spaceNeeded = itemRows * rowHeight
+
+            if (rowCount + itemRows > maxRowsPerPage) {
+                drawPageFooter(currentPage, totalPagesNeeded)
+                pdf.addPage()
+                currentPage++
+                drawHeader(margin)
+                const nextPageInfoBottom = drawInfoSection(margin + headerHeight)
+                y = nextPageInfoBottom + 5
+                drawTableHeader(y)
+                y += tableHeaderH
+                rowCount = 0
+            }
+
+            pdf.setDrawColor(220, 220, 220)
+            pdf.setLineWidth(0.15)
+            pdf.line(margin, y, margin + contentWidth, y)
+
+            pdf.setTextColor(0, 0, 0)
+            pdf.setFont("helvetica", "normal")
+            pdf.setFontSize(8)
+            pdf.text(`${i + 1}`, colX.num, y + 6.5)
+
+            pdf.setFont("helvetica", "bold")
+            const nombreMax = 28
+            pdf.text(p.nombre.substring(0, nombreMax), colX.nombre, y + 6.5)
+
+            pdf.setFont("helvetica", "normal")
+            pdf.text((p.categoria || "N/A").substring(0, 22), colX.cat, y + 6.5)
+
+            pdf.setFont("helvetica", "bold")
+            pdf.text(`${p.cantidad}`, colX.cant, y + 6.5)
+
+            pdf.setFont("helvetica", "normal")
+            pdf.text(`S/ ${p.precio.toFixed(2)}`, colX.precio, y + 6.5)
+            pdf.text(`S/ ${p.total.toFixed(2)}`, colX.total, y + 6.5)
+
+            if (p.indicaciones) {
+                pdf.setFont("helvetica", "oblique")
+                pdf.setFontSize(7)
+                pdf.setTextColor(100, 100, 100)
+                const notaText = `Nota: ${p.indicaciones}`.substring(0, 90)
+                pdf.text(notaText, colX.nombre, y + 13)
+                pdf.setTextColor(0, 0, 0)
+                pdf.setFontSize(8)
+            }
+
+            y += rowHeight
+            rowCount += itemRows
+        })
+
+        // Línea final de la tabla
+        pdf.setDrawColor(180, 180, 180)
+        pdf.setLineWidth(0.3)
+        pdf.line(margin, y, margin + contentWidth, y)
+
+        // Verificar si hay espacio para totales, si no, nueva página
+        const spaceForTotals = 35
+        if (y + spaceForTotals > pageHeight - margin) {
+            drawPageFooter(currentPage, totalPagesNeeded)
+            pdf.addPage()
+            currentPage++
+            drawHeader(margin)
+            const totalsPageInfoBottom = drawInfoSection(margin + headerHeight)
+            y = totalsPageInfoBottom + 5
+            drawTableHeader(y)
+            y += tableHeaderH
+            pdf.setDrawColor(180, 180, 180)
+            pdf.line(margin, y, margin + contentWidth, y)
+        }
+
+        drawTotals(y + 5)
+
+        // Footer de última página
+        drawPageFooter(currentPage, totalPagesNeeded)
+
+        pdf.save(`Pedido_${pedido.numeroOrden}.pdf`)
     }
 
     return (
@@ -394,9 +789,13 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     <Button onClick={onClose} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
                         Cancelar
                     </Button>
+                    <Button onClick={handleDescargarPDF} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                        <Download className="h-4 w-4 mr-2" />
+                        Descargar PDF
+                    </Button>
                     <Button onClick={handleImprimir} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                         <Printer className="h-4 w-4 mr-2" />
-                        Generar PDF
+                        Imprimir
                     </Button>
                 </div>
             </div>

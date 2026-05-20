@@ -69,6 +69,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
     const [toastMessage, setToastMessage] = useState<{ show: boolean; message: string; type: "error" | "success" }>({ show: false, message: "", type: "error" })
     const [errorDoc, setErrorDoc] = useState("")
     const [errorTel, setErrorTel] = useState("")
+    const [showConfirmClose, setShowConfirmClose] = useState(false)
 
     const [empresa, setEmpresa] = useState("")
     const [metodoPago, setMetodoPago] = useState("")
@@ -461,6 +462,19 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
         setMostrarUbicacion(false)
     }
 
+    const isFormDirty = () => {
+        return !!(empresa || metodoPago || cliente.nombre || cliente.numeroDoc ||
+            cliente.direccion || cliente.telefono || agencia || items.length > 0 || observaciones)
+    }
+
+    const handleClose = () => {
+        if (isFormDirty()) {
+            setShowConfirmClose(true)
+        } else {
+            onClose()
+        }
+    }
+
     if (!isOpen) return null
 
     const inputBase = "w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
@@ -469,8 +483,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
 
     const modalContent = (
         <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-0 sm:p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white w-full max-w-4xl h-screen sm:h-auto sm:max-h-[90vh] sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={handleClose} />
+            <div className="relative bg-white w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="bg-white border-b border-slate-100 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
@@ -484,7 +498,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                             <p className="text-xs text-slate-400">{step === 1 ? "Datos del cliente" : "Artículos y total"}</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                    <button onClick={handleClose} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
                         <X className="h-4 w-4 text-slate-400" />
                     </button>
                 </div>
@@ -1148,9 +1162,9 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    </div>
-                                                )
+            </div>
+        </div>
+    )
                                             })}
                                         </div>
                                     </div>
@@ -1211,11 +1225,11 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                 </div>
 
                 {/* Sticky Footer */}
-                <div className="border-t border-slate-100 bg-white px-4 sm:px-6 py-3 shrink-0">
+                <div className="border-t border-slate-100 bg-white px-4 sm:px-6 py-3 pb-4 sm:pb-3 shrink-0">
                     <div className="flex items-center justify-between gap-2">
                         <Button 
                             variant="outline" 
-                            onClick={() => step === 1 ? onClose() : setStep(1)} 
+                            onClick={() => step === 1 ? handleClose() : setStep(1)} 
                             className="text-slate-600 border-slate-200 hover:bg-slate-50 text-sm h-9 px-3"
                         >
                             {step === 1 ? (
@@ -1277,6 +1291,21 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                             {a.label}
                         </button>
                     ))}
+                </div>
+            )}
+
+            {/* Confirmación de cierre */}
+            {showConfirmClose && (
+                <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60" onClick={() => setShowConfirmClose(false)} />
+                    <div className="relative bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <p className="font-semibold text-slate-900 text-lg mb-1">¿Desea salir?</p>
+                        <p className="text-sm text-slate-500 mb-6">Se perderán los datos ingresados.</p>
+                        <div className="flex gap-2 justify-end">
+                            <Button variant="outline" onClick={() => setShowConfirmClose(false)}>Cancelar</Button>
+                            <Button onClick={() => { setShowConfirmClose(false); onClose() }}>Salir</Button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
