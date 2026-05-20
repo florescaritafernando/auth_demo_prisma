@@ -54,9 +54,27 @@ export async function POST(request: NextRequest) {
         const tienePiezas = items.some((item: any) => item.tipo === "pieza")
         const estado = tienePiezas ? "metraje_en_proceso" : "pendiente"
 
-        // Crear cliente_pedido (copia de los datos del cliente)
-        const clientePedido = await prisma.clientePedido.create({
-            data: {
+        // Upsert cliente_pedido por nombre + numeroDoc
+        const clientePedido = await prisma.clientePedido.upsert({
+            where: {
+                nombre_numeroDoc: {
+                    nombre: cliente.nombre,
+                    numeroDoc: cliente.numeroDoc
+                }
+            },
+            update: {
+                tipoDoc: cliente.tipoDoc || "dni",
+                razonSocial: cliente.razonSocial || null,
+                direccion: cliente.direccion || null,
+                telefono: cliente.telefono || null,
+                agencia: agencia || null,
+                agenciaOtro: agencia === "otros" ? cliente.agenciaOtro : null,
+                guiaRemision: guiaRemision || false,
+                departamento: cliente.departamento || null,
+                provincia: cliente.provincia || null,
+                distrito: cliente.distrito || null
+            },
+            create: {
                 nombre: cliente.nombre,
                 tipoDoc: cliente.tipoDoc || "dni",
                 numeroDoc: cliente.numeroDoc,
@@ -95,11 +113,9 @@ export async function POST(request: NextRequest) {
                 metodoEnvio: agencia ? "agencia" : null,
                 agencia: agencia || null,
                 agenciaOtro: agencia === "otros" ? cliente.agenciaOtro : null,
-                departamento: cliente.departamento || null,
-                provincia: cliente.provincia || null,
-                distrito: cliente.distrito || null,
                 costoEnvio: Number(costoEnvio) || 0,
                 notas: observaciones || null,
+                clientePedidoId: clientePedido.id,
                 pedidoDetalle: {
                     create: items.map((item: any) => ({
                         productoId: item.productoId,
@@ -108,6 +124,14 @@ export async function POST(request: NextRequest) {
                         precio: Number(item.precio),
                         indicacionesCorte: item.indicacionesCorte || null
                     }))
+                },
+                pedidoEmpleadoInfo: {
+                    create: {
+                        empresa: empresa || null,
+                        metodoPago: metodoPago || null,
+                        telefono: cliente.telefono || null,
+                        guiaRemision: guiaRemision || false
+                    }
                 }
             },
             include: {
@@ -133,6 +157,14 @@ export async function POST(request: NextRequest) {
                 tipo: "pedido",
                 pedidoId: pedido.id
             }))
+        })
+
+        // Auto-asignar empleado como delegado del pedido
+        await prisma.pedidoDelegado.create({
+            data: {
+                pedidoId: pedido.id,
+                userId: session.user.id
+            }
         })
 
         return NextResponse.json({ 

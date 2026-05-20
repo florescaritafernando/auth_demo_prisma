@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, Copy, AlertCircle as AlertCircleIcon, AlertCircle, AlertTriangle, Package, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock, FileText, HelpCircle, Search, Loader2, Upload, File, ExternalLink } from "lucide-react"
+import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Check, Copy, AlertCircle as AlertCircleIcon, AlertCircle, AlertTriangle, MapPin, User, CreditCard, Phone, Truck, Store, Plus, Minus, X, Clock, FileText, HelpCircle, Search, Loader2, Upload, File, ExternalLink, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PackageCheck, RulerDimensionLine } from "lucide-react"
 import { UBIGEO_DATA as UBIGEO, type UbigeoType } from "@/lib/ubigeo"
@@ -165,6 +165,10 @@ export default function CheckoutPage() {
             fetchTiendas()
         }
     }, [])
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" })
+    }, [step])
 
     const fetchPedido = async (id: string) => {
         setLoading(true)
@@ -926,67 +930,120 @@ export default function CheckoutPage() {
                 )}
 
                 {step < 5 && (
-                    <div className="mb-8">
-                        {continuarPedido && (
-                            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                                    <Check className="h-5 w-5 text-green-600" />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-green-800">¡Metraje Confirmado!</p>
-                                    <p className="text-sm text-green-700">
-                                        Orden {continuarPedido.numeroOrden} - Ahora puedes completar el pago
-                                    </p>
-                                </div>
+                <div className="mb-4 md:mb-6">
+                    {continuarPedido && (
+                        <div className="mb-3 md:mb-4 p-3 md:p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+                            <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                                <Check className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                             </div>
-                        )}
+                            <div>
+                                <p className="font-bold text-green-800 text-sm md:text-base">¡Metraje Confirmado!</p>
+                                <p className="text-xs md:text-sm text-green-700">
+                                    Orden {continuarPedido.numeroOrden} - Ahora puedes completar el pago
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
-                        {continuarPedido ? (
-                            <div className="bg-slate-100 rounded-xl p-4 text-center">
-                                <p className="font-bold text-slate-700 text-lg">Paso 4: Resumen y Pago</p>
-                                <p className="text-sm text-slate-500">Revisa el resumen y completa el pago</p>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-between mb-2">
+                    {/* Stepper responsive */}
+                    {continuarPedido ? (
+                        <div className="bg-slate-100 rounded-xl p-3 md:p-4 text-center">
+                            <p className="font-bold text-slate-700 text-base md:text-lg">Paso 4: Resumen y Pago</p>
+                            <p className="text-xs md:text-sm text-slate-500">Revisa el resumen y completa el pago</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Mobile: compact horizontal */}
+                            <div className="flex items-center justify-center gap-0 sm:hidden mb-3">
                                 {PASOS.map((p, idx) => (
-                                    <div key={p.num} className="flex items-center flex-1">
-                                        <div className={`flex flex-col items-center ${idx > 0 ? 'flex-1' : ''}`}>
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${step === p.num
-                                                ? "bg-slate-900 text-white ring-4 ring-yellow-400"
-                                                : step > p.num
-                                                    ? "bg-green-600 text-white"
-                                                    : "bg-slate-200 text-slate-500"
-                                                }`}>
-                                                {step > p.num ? <Check className="h-6 w-6" /> : p.num}
+                                    <div key={p.num} className="flex items-center">
+                                        <div className="flex flex-col items-center">
+                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-200 ${
+                                                step === p.num
+                                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110"
+                                                    : step > p.num
+                                                        ? "bg-green-500 text-white"
+                                                        : "bg-slate-100 text-slate-400 border-2 border-slate-200"
+                                            }`}>
+                                                {step > p.num ? <Check className="h-4 w-4" /> : p.num}
                                             </div>
-                                            <span className="text-xs mt-1 font-medium text-black">
+                                            <span className="text-[9px] mt-1 font-medium text-slate-500 truncate max-w-[60px]">
                                                 {p.titulo}
                                             </span>
                                         </div>
                                         {idx < PASOS.length - 1 && (
-                                            <div className={`h-1 flex-1 mx-2 rounded ${step > p.num ? 'bg-green-600' : 'bg-slate-200'}`} />
+                                            <div className={`w-4 md:w-8 h-0.5 mx-1 rounded transition-colors duration-200 ${step > p.num ? 'bg-green-500' : 'bg-slate-200'}`} />
                                         )}
                                     </div>
                                 ))}
                             </div>
-                        )}
-                    </div>
+
+                            {/* Desktop: full horizontal */}
+                            <div className="hidden sm:flex items-center justify-between mb-3">
+                                {PASOS.map((p, idx) => (
+                                    <div key={p.num} className="flex items-center flex-1">
+                                        <div className={`flex flex-col items-center ${idx > 0 ? 'flex-1' : ''}`}>
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-200 ${
+                                                step === p.num
+                                                    ? "bg-blue-600 text-white ring-4 ring-blue-200 shadow-lg"
+                                                    : step > p.num
+                                                        ? "bg-green-500 text-white"
+                                                        : "bg-slate-100 text-slate-400 border-2 border-slate-200"
+                                            }`}>
+                                                {step > p.num ? <Check className="h-5 w-5" /> : p.num}
+                                            </div>
+                                            <span className="text-xs mt-2 font-semibold text-slate-700">
+                                                {p.titulo}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400">
+                                                {p.desc}
+                                            </span>
+                                        </div>
+                                        {idx < PASOS.length - 1 && (
+                                            <div className={`h-1 flex-1 mx-3 rounded transition-colors duration-200 ${step > p.num ? 'bg-green-500' : 'bg-slate-200'}`} />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Step header - shows current step info */}
+                            <div className="bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl p-3 md:p-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                        Paso {step} de 4
+                                    </span>
+                                    <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                                            style={{ width: `${(step / 4) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                                <h3 className="text-base md:text-lg font-bold text-slate-900 mt-2">
+                                    {PASOS[step - 1].titulo}
+                                </h3>
+                                <p className="text-sm text-slate-500">
+                                    {PASOS[step - 1].desc}
+                                </p>
+                            </div>
+                        </>
+                    )}
+                </div>
                 )}
 
-                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
                     {step === 1 && (
                         <div>
-                            <h2 className="text-xl font-bold text-black mb-4">Tu Carrito</h2>
                             {items.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <ShoppingCart className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                                    <p className="text-slate-500 mb-4">Tu carrito está vacío</p>
-                                    <Button onClick={() => router.push("/dashboard")}>
+                                <div className="text-center py-8 md:py-12">
+                                    <ShoppingCart className="h-12 w-12 md:h-16 md:w-16 text-slate-300 mx-auto mb-4" />
+                                    <p className="text-sm text-slate-500 mb-4">Tu carrito está vacío</p>
+                                    <Button onClick={() => router.push("/dashboard")} className="text-sm">
                                         Ver Productos
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-3 md:space-y-4">
                                     {items.map(item => {
                                         const precioUnitario = Number(item.producto.precio)
                                         const cantidadMetros = item.tipo === "pieza" ? item.cantidad * metrosPorPieza : item.cantidad
@@ -999,92 +1056,91 @@ export default function CheckoutPage() {
                                             : 0
 
                                         return (
-                                            <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                                                <div className="flex gap-4">
+                                            <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-3 md:p-4">
+                                                <div className="flex gap-3 md:gap-4">
                                                     {item.producto.imagen ? (
                                                         <img
                                                             src={item.producto.imagen}
                                                             alt={item.producto.nombre}
-                                                            className="w-24 h-24 object-cover rounded-lg shrink-0"
+                                                            className="w-16 h-16 md:w-24 md:h-24 object-cover rounded-lg shrink-0"
                                                         />
                                                     ) : (
-                                                        <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                                                            <ShoppingCart className="h-8 w-8 text-slate-400" />
+                                                        <div className="w-16 h-16 md:w-24 md:h-24 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
+                                                            <ShoppingCart className="h-6 w-6 md:h-8 md:w-8 text-slate-400" />
                                                         </div>
                                                     )}
 
-                                                    <div className="flex-1">
-                                                        <h3 className="font-bold text-black text-lg">{item.producto.nombre}</h3>
-                                                        <p className="text-sm text-slate-600 font-medium">{item.producto.categoria}</p>
-                                                        <p className="text-sm text-blue-700 font-medium">{item.tipoLabel}</p>
-                                                        <p className="text-sm text-slate-600 font-medium">Precio del artículo por metro: S/ {precioUnitario.toFixed(2)}</p>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="font-bold text-black text-sm md:text-lg truncate">{item.producto.nombre}</h3>
+                                                        <p className="text-xs md:text-sm text-slate-600 font-medium">{item.producto.categoria}</p>
+                                                        <p className="text-xs md:text-sm text-blue-700 font-medium">{item.tipoLabel}</p>
+                                                        <p className="text-xs md:text-sm text-slate-600 font-medium hidden sm:block">Precio del artículo por metro: S/ {precioUnitario.toFixed(2)}</p>
                                                     </div>
 
-                                                    <div className="text-right">
-                                                        <p className="font-bold text-black text-lg">S/ {precioTotal.toFixed(2)}</p>
+                                                    <div className="text-right shrink-0">
+                                                        <p className="font-bold text-black text-sm md:text-lg">S/ {precioTotal.toFixed(2)}</p>
                                                         {item.tipo === "pieza" && (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-[10px] md:text-xs font-bold rounded-full mt-1">
                                                                 <Clock className="h-3 w-3" />
-                                                                Metraje en revisión
+                                                                <span className="hidden sm:inline">Metraje en revisión</span>
+                                                                <span className="sm:hidden">Metraje</span>
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
-                                                    <div className="flex items-center gap-2">
-                                                        {item.tipo === "pieza" && (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const nuevaCantidad = item.cantidad - 1
-                                                                        if (nuevaCantidad < 1) {
-                                                                            setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
-                                                                            setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
-                                                                            return
-                                                                        }
-                                                                        actualizarCantidad(item.id, nuevaCantidad)
-                                                                    }}
-                                                                    disabled={item.cantidad <= 1}
-                                                                    className="p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
-                                                                >
-                                                                    <Minus className="h-4 w-4 text-slate-700" />
-                                                                </button>
-                                                                <input
-                                                                    type="text"
-                                                                    inputMode="decimal"
-                                                                    step="1"
-                                                                    min="1"
-                                                                    value={inputValues[item.id] ?? String(item.cantidad)}
-                                                                    onChange={(e) => {
-                                                                        const val = e.target.value
-                                                                        setInputValues(prev => ({ ...prev, [item.id]: val }))
-                                                                    }}
-                                                                    onBlur={(e) => {
-                                                                        const raw = parseInt(e.target.value)
-                                                                        if (isNaN(raw) || raw < 1) {
-                                                                            setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
-                                                                            setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
-                                                                            setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
-                                                                            return
-                                                                        }
-                                                                        // La validación de stock se hace en el servidor
-                                                                        actualizarCantidad(item.id, raw)
-                                                                    }}
-                                                                    className="w-20 text-center border-2 border-black rounded px-2 py-1 font-bold text-black"
-                                                                />
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const nuevaCantidad = item.cantidad + 1
-                                                                        // La validación de stock se hace en el servidor
-                                                                        actualizarCantidad(item.id, nuevaCantidad)
-                                                                    }}
-                                                                    className="p-2 bg-slate-100 rounded hover:bg-slate-200"
-                                                                >
-                                                                    <Plus className="h-4 w-4 text-slate-700" />
-                                                                </button>
-                                                            </>
-                                                        )}
+                                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                                            <div className="flex items-center gap-2">
+                                                {item.tipo === "pieza" && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => {
+                                                                const nuevaCantidad = item.cantidad - 1
+                                                                if (nuevaCantidad < 1) {
+                                                                    setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                                                                    setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                    return
+                                                                }
+                                                                actualizarCantidad(item.id, nuevaCantidad)
+                                                            }}
+                                                            disabled={item.cantidad <= 1}
+                                                            className="p-1.5 md:p-2 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                                                        >
+                                                            <Minus className="h-3 w-3 md:h-4 md:w-4 text-slate-700" />
+                                                        </button>
+                                                        <input
+                                                            type="text"
+                                                            inputMode="decimal"
+                                                            step="1"
+                                                            min="1"
+                                                            value={inputValues[item.id] ?? String(item.cantidad)}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value
+                                                                setInputValues(prev => ({ ...prev, [item.id]: val }))
+                                                            }}
+                                                            onBlur={(e) => {
+                                                                const raw = parseInt(e.target.value)
+                                                                if (isNaN(raw) || raw < 1) {
+                                                                    setToastMessage({ show: true, message: "La cantidad mínima es 1 pieza", type: "error" })
+                                                                    setTimeout(() => setToastMessage({ show: false, message: "", type: "error" }), 3000)
+                                                                    setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
+                                                                    return
+                                                                }
+                                                                actualizarCantidad(item.id, raw)
+                                                            }}
+                                                            className="w-14 md:w-20 text-center border-2 border-black rounded px-2 py-1 font-bold text-black text-sm"
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                const nuevaCantidad = item.cantidad + 1
+                                                                actualizarCantidad(item.id, nuevaCantidad)
+                                                            }}
+                                                            className="p-1.5 md:p-2 bg-slate-100 rounded hover:bg-slate-200"
+                                                        >
+                                                            <Plus className="h-3 w-3 md:h-4 md:w-4 text-slate-700" />
+                                                        </button>
+                                                    </>
+                                                )}
                                                         {item.tipo === "metros" && (
                                                             <input
                                                                 type="text"
@@ -1171,18 +1227,19 @@ export default function CheckoutPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-4 mt-6">
-                                        <Link href="/dashboard" className="flex-1">
-                                            <Button variant="outline" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black">
-                                                <ArrowLeft className="h-4 w-4 mr-2" />
-                                                Seguir Comprando
+                                    <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 -mx-4 md:static md:bg-transparent md:backdrop-blur-none md:border-t-0 md:px-0 md:py-0 md:mx-0">
+                                        <div className="flex flex-col-reverse sm:flex-row gap-3 max-w-lg mx-auto">
+                                            <Link href="/dashboard" className="w-full sm:w-auto">
+                                                <Button variant="outline" className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow">
+                                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                                    Seguir Comprando
+                                                </Button>
+                                            </Link>
+                                            <Button onClick={() => setStep(2)} className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed">
+                                                Continuar
+                                                <ArrowRight className="h-4 w-4 ml-2" />
                                             </Button>
-                                        </Link>
-
-                                        <Button onClick={() => setStep(2)} className="flex-1 bg-green-600 hover:bg-green-700 text-lg">
-                                            Continuar
-                                            <ArrowRight className="h-4 w-4 ml-2" />
-                                        </Button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -1191,9 +1248,8 @@ export default function CheckoutPage() {
 
                     {step === 2 && (
                         <div>
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-black">Datos de Facturación</h2>
-                                <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                                <div className="flex gap-2 w-full sm:w-auto">
                                     {facturacionTemplates.length > 0 && (
                                         <select
                                             onChange={(e) => {
@@ -1213,9 +1269,9 @@ export default function CheckoutPage() {
                                                 }
                                                 e.target.value = ""
                                             }}
-                                            className="text-sm border border-slate-300 rounded px-2 py-1 text-black"
+                                            className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg px-3 py-2 text-black bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
                                         >
-                                            <option value="">📂 Cargar plantilla</option>
+                                            <option value="">Cargar plantilla</option>
                                             {facturacionTemplates.map(t => (
                                                 <option key={t.id} value={t.id}>{t.nombre}</option>
                                             ))}
@@ -1256,13 +1312,13 @@ export default function CheckoutPage() {
                                             }
                                         }}
                                         variant="outline"
-                                        className="text-black border-black hover:bg-slate-100"
+                                        className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg h-10 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
                                     >
-                                        💾 Guardar
+                                        <Save className="h-4 w-4 mr-1" /> Guardar
                                     </Button>
                                 </div>
                             </div>
-                            <div className="space-y-4">
+                            <div className="space-y-3 md:space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-black mb-1">
                                         Tipo de Documento
@@ -1284,7 +1340,7 @@ export default function CheckoutPage() {
                                         {data.tipoDocumento === "ruc" ? "Nro. de RUC *" : data.tipoDocumento === "ce" ? "Nro. de documento *" : "Nro. de documento *"}
                                         <span className="text-red-500 ml-1">*</span>
                                     </label>
-                                    <div className="relative">
+                                    <div className="flex gap-2">
                                         <input
                                             type="text"
                                             value={data.numeroDoc}
@@ -1293,25 +1349,22 @@ export default function CheckoutPage() {
                                                 const maxLen = data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15
                                                 const filtered = e.target.value.replace(/[^0-9]/g, "").slice(0, maxLen)
                                                 handleInputChange("numeroDoc", filtered)
-                                                // Auto-búsqueda al completar dígitos
-                                                const isDocValido = data.tipoDocumento === "dni" || data.tipoDocumento === "ruc"
-                                                if (isDocValido && filtered.length === maxLen && !buscandoDocumento) {
-                                                    buscarDocumento()
-                                                }
                                             }}
                                             maxLength={data.tipoDocumento === "ruc" ? 11 : data.tipoDocumento === "dni" ? 8 : 15}
-                                            className={`w-full border-1 border-black rounded-lg px-3 py-2 pr-10 text-black ${!data.tipoDocumento ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                                            className={`flex-1 border-1 border-black rounded-lg px-3 py-2 text-black ${!data.tipoDocumento ? "bg-gray-100 cursor-not-allowed" : ""}`}
                                             placeholder={!data.tipoDocumento ? "Seleccione tipo primero" : data.tipoDocumento === "ruc" ? "11 dígitos" : data.tipoDocumento === "dni" ? "8 dígitos" : "15 dígitos"}
                                         />
                                         <button
                                             type="button"
+                                            aria-label="Buscar"
                                             onClick={buscarDocumento}
                                             disabled={buscandoDocumento || !data.numeroDoc || (data.tipoDocumento !== "dni" && data.tipoDocumento !== "ruc")}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-700 disabled:opacity-50"
+                                            className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm shrink-0 transition-colors"
                                         >
                                             {buscandoDocumento ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                            Buscar
                                         </button>
-</div>
+                                    </div>
                                 </div>
                                 {buscandoDocumento && (
                                     <div className="mt-2 flex items-center gap-2 text-blue-600">
@@ -1388,53 +1441,64 @@ export default function CheckoutPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-black mb-1">
-                                        Departamento / Provincia / Distrito
+                                        Ubicación
                                     </label>
-                                    <div className="flex gap-2">
-                                        <select
-                                            value={data.departamento}
-                                            onChange={e => {
-                                                handleInputChange("departamento", e.target.value)
-                                                handleInputChange("provincia", "")
-                                                handleInputChange("distrito", "")
-                                            }}
-                                            className="flex-1 border-1 border-black rounded-lg px-3 py-2 text-black"
-                                        >
-                                            <option value="">Seleccione</option>
-                                            {Object.keys(UBIGEO).map(dep => (
-                                                <option key={dep} value={dep}>{dep}</option>
-                                            ))}
-                                        </select>
-                                        <select
-                                            value={data.provincia}
-                                            onChange={e => {
-                                                handleInputChange("provincia", e.target.value)
-                                                handleInputChange("distrito", "")
-                                            }}
-                                            disabled={!data.departamento}
-                                            className="flex-1 border-1 border-black rounded-lg px-3 py-2 text-black disabled:bg-slate-100"
-                                        >
-                                            <option value="">Seleccione</option>
-                                            {data.departamento && UBIGEO[data.departamento] && Object.keys(UBIGEO[data.departamento] || {}).map(prov => (
-                                                <option key={prov} value={prov}>{prov}</option>
-                                            ))}
-                                        </select>
-                                        <select
-                                            value={data.distrito}
-                                            onChange={e => handleInputChange("distrito", e.target.value)}
-                                            disabled={!data.provincia}
-                                            className="flex-1 border-1 border-black rounded-lg px-3 py-2 text-black disabled:bg-slate-100"
-                                        >
-                                            <option value="">Seleccione</option>
-                                            {data.departamento && data.provincia && UBIGEO[data.departamento]?.[data.provincia] && (UBIGEO[data.departamento]?.[data.provincia] || []).map(dist => (
-                                                <option key={dist} value={dist}>{dist}</option>
-                                            ))}
-                                        </select>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-600 mb-1">Departamento</label>
+                                            <select
+                                                value={data.departamento}
+                                                onChange={e => {
+                                                    handleInputChange("departamento", e.target.value)
+                                                    handleInputChange("provincia", "")
+                                                    handleInputChange("distrito", "")
+                                                }}
+                                                className="w-full border-1 border-black rounded-lg px-3 py-2 text-black"
+                                            >
+                                                <option value="">Seleccione</option>
+                                                {Object.keys(UBIGEO).map(dep => (
+                                                    <option key={dep} value={dep}>{dep}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-600 mb-1">Provincia</label>
+                                            <select
+                                                value={data.provincia}
+                                                onChange={e => {
+                                                    handleInputChange("provincia", e.target.value)
+                                                    handleInputChange("distrito", "")
+                                                }}
+                                                disabled={!data.departamento}
+                                                className="w-full border-1 border-black rounded-lg px-3 py-2 text-black disabled:bg-slate-100"
+                                            >
+                                                <option value="">Seleccione</option>
+                                                {data.departamento && UBIGEO[data.departamento] && Object.keys(UBIGEO[data.departamento] || {}).map(prov => (
+                                                    <option key={prov} value={prov}>{prov}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-600 mb-1">Distrito</label>
+                                            <select
+                                                value={data.distrito}
+                                                onChange={e => handleInputChange("distrito", e.target.value)}
+                                                disabled={!data.provincia}
+                                                className="w-full border-1 border-black rounded-lg px-3 py-2 text-black disabled:bg-slate-100"
+                                            >
+                                                <option value="">Seleccione</option>
+                                                {data.departamento && data.provincia && UBIGEO[data.departamento]?.[data.provincia] && (UBIGEO[data.departamento]?.[data.provincia] || []).map(dist => (
+                                                    <option key={dist} value={dist}>{dist}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-4 mt-6">
-                                    <Button onClick={() => setStep(1)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
-                                    <Button onClick={() => setStep(3)} disabled={!validarPaso(2)} className="flex-1 bg-green-600 text-white">Continuar</Button>
+                                <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 -mx-4 md:static md:bg-transparent md:backdrop-blur-none md:border-t-0 md:px-0 md:py-0 md:mx-0">
+                                    <div className="flex flex-col-reverse sm:flex-row gap-3 max-w-lg mx-auto">
+                                        <Button onClick={() => setStep(1)} className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow">Atrás</Button>
+                                        <Button onClick={() => setStep(3)} disabled={!validarPaso(2)} className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed">Continuar</Button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1442,125 +1506,141 @@ export default function CheckoutPage() {
 
                     {step === 3 && (
                         <div>
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-black">Método de Entrega</h2>
-                                {(data.metodoEnvio === "agencia" || data.metodoEnvio === "delivery") && (
-                                    <div className="flex gap-2">
-                                        {direccionTemplates.length > 0 && (
-                                            <select
-                                                onChange={(e) => {
-                                                    const t = direccionTemplates.find(x => x.id === e.target.value)
-                                                    if (t) {
-                                                        // Guardar tipoEnvio para chequear después de setData
-                                                        const tipoEnvioCargado = t.tipoEnvio || "mismapersona"
-                                                        setData({
-                                                            ...data,
-                                                            metodoEnvio: t.metodoEnvio,
-                                                            tiendaId: t.tiendaId || "",
-                                                            agencia: t.agencia || "",
-                                                            agenciaOtro: t.agenciaOtro || "",
-                                                            delivery: t.delivery || "",
-                                                            deliveryOtro: t.deliveryOtro || "",
-                                                            departamento: t.departamento || "",
-                                                            provincia: t.provincia || "",
-                                                            distrito: t.distrito || "",
-                                                            direccion: t.direccion || "",
-                                                            tipoEnvio: tipoEnvioCargado,
-                                                            dniRecibe: t.dniRecibe || "",
-                                                            nombreRecibe: t.nombreRecibe || "",
-                                                            celularRecibe: t.celularRecibe || ""
-                                                        })
-                                                        // Forzar actualización de estado para mostrar campos de otra persona
-                                                        setTimeout(() => {
-                                                            setData(prev => ({
-                                                                ...prev,
-                                                                tipoEnvio: tipoEnvioCargado
-                                                            }))
-                                                        }, 50)
-                                                        showToast("Dirección cargada", "success")
-                                                    }
-                                                    e.target.value = ""
-                                                }}
-                                                className="text-sm border border-slate-300 rounded px-2 py-1 text-black"
-                                            >
-                                                <option value="">📂 Cargar dirección</option>
-                                                {direccionTemplates.map(t => (
-                                                    <option key={t.id} value={t.id}>{t.nombre}</option>
-                                                ))}
-                                            </select>
-                                        )}
-                                        <Button
-                                            onClick={async () => {
-                                                if (!data.metodoEnvio) {
-                                                    showToast("Seleccione un método de envío", "error")
-                                                    return
-                                                }
-                                                if (data.metodoEnvio === "agencia" && !data.agencia) {
-                                                    showToast("Seleccione una agencia", "error")
-                                                    return
-                                                }
-                                                if (data.metodoEnvio === "delivery" && !data.delivery) {
-                                                    showToast("Seleccione un delivery", "error")
-                                                    return
-                                                }
-                                                try {
-                                                    const res = await fetch("/api/datos-direccion", {
-                                                        method: "POST",
-                                                        headers: { "Content-Type": "application/json" },
-                                                        body: JSON.stringify({
-                                                            metodoEnvio: data.metodoEnvio,
-                                                            tiendaId: data.tiendaId || null,
-                                                            agencia: data.agencia || null,
-                                                            agenciaOtro: data.agenciaOtro || null,
-                                                            delivery: data.delivery || null,
-                                                            deliveryOtro: data.deliveryOtro || null,
-                                                            departamento: data.departamento || null,
-                                                            provincia: data.provincia || null,
-                                                            distrito: data.distrito || null,
-                                                            direccion: data.direccion || null,
-                                                            tipoEnvio: data.tipoEnvio || null,
-                                                            dniRecibe: data.dniRecibe || null,
-                                                            nombreRecibe: data.nombreRecibe || null,
-                                                            celularRecibe: data.celularRecibe || null
-                                                        }),
-                                                        credentials: "include"
+                            {/* Plantillas de dirección */}
+                            {(data.metodoEnvio === "agencia" || data.metodoEnvio === "delivery") && (
+                                <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                                    {direccionTemplates.length > 0 && (
+                                        <select
+                                            onChange={(e) => {
+                                                const t = direccionTemplates.find(x => x.id === e.target.value)
+                                                if (t) {
+                                                    const tipoEnvioCargado = t.tipoEnvio || "mismapersona"
+                                                    setData({
+                                                        ...data,
+                                                        metodoEnvio: t.metodoEnvio,
+                                                        tiendaId: t.tiendaId || "",
+                                                        agencia: t.agencia || "",
+                                                        agenciaOtro: t.agenciaOtro || "",
+                                                        delivery: t.delivery || "",
+                                                        deliveryOtro: t.deliveryOtro || "",
+                                                        departamento: t.departamento || "",
+                                                        provincia: t.provincia || "",
+                                                        distrito: t.distrito || "",
+                                                        direccion: t.direccion || "",
+                                                        tipoEnvio: tipoEnvioCargado,
+                                                        dniRecibe: t.dniRecibe || "",
+                                                        nombreRecibe: t.nombreRecibe || "",
+                                                        celularRecibe: t.celularRecibe || ""
                                                     })
-                                                    const json = await res.json()
-                                                    if (json.success) {
-                                                        setDireccionTemplates([json.template, ...direccionTemplates])
-                                                        showToast("Dirección guardada", "success")
-                                                    } else {
-                                                        showToast(json.error || "Error al guardar", "error")
-                                                    }
-                                                } catch (e) {
-                                                    showToast("Error de conexión", "error")
+                                                    setTimeout(() => {
+                                                        setData(prev => ({ ...prev, tipoEnvio: tipoEnvioCargado }))
+                                                    }, 50)
+                                                    showToast("Dirección cargada", "success")
                                                 }
+                                                e.target.value = ""
                                             }}
-                                            variant="outline"
-                                            className="text-black border-black hover:bg-slate-100"
+                                            className="flex-1 text-sm border border-slate-300 rounded-lg px-3 py-2 text-black bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
                                         >
-                                            💾 Guardar
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="space-y-4">
+                                            <option value="">Cargar dirección guardada</option>
+                                            {direccionTemplates.map(t => (
+                                                <option key={t.id} value={t.id}>{t.nombre}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    <Button
+                                        onClick={async () => {
+                                            if (!data.metodoEnvio) {
+                                                showToast("Seleccione un método de envío", "error")
+                                                return
+                                            }
+                                            if (data.metodoEnvio === "agencia" && !data.agencia) {
+                                                showToast("Seleccione una agencia", "error")
+                                                return
+                                            }
+                                            if (data.metodoEnvio === "delivery" && !data.delivery) {
+                                                showToast("Seleccione un delivery", "error")
+                                                return
+                                            }
+                                            try {
+                                                const res = await fetch("/api/datos-direccion", {
+                                                    method: "POST",
+                                                    headers: { "Content-Type": "application/json" },
+                                                    body: JSON.stringify({
+                                                        metodoEnvio: data.metodoEnvio,
+                                                        tiendaId: data.tiendaId || null,
+                                                        agencia: data.agencia || null,
+                                                        agenciaOtro: data.agenciaOtro || null,
+                                                        delivery: data.delivery || null,
+                                                        deliveryOtro: data.deliveryOtro || null,
+                                                        departamento: data.departamento || null,
+                                                        provincia: data.provincia || null,
+                                                        distrito: data.distrito || null,
+                                                        direccion: data.direccion || null,
+                                                        tipoEnvio: data.tipoEnvio || null,
+                                                        dniRecibe: data.dniRecibe || null,
+                                                        nombreRecibe: data.nombreRecibe || null,
+                                                        celularRecibe: data.celularRecibe || null
+                                                    }),
+                                                    credentials: "include"
+                                                })
+                                                const json = await res.json()
+                                                if (json.success) {
+                                                    setDireccionTemplates([json.template, ...direccionTemplates])
+                                                    showToast("Dirección guardada", "success")
+                                                } else {
+                                                    showToast(json.error || "Error al guardar", "error")
+                                                }
+                                            } catch (e) {
+                                                showToast("Error de conexión", "error")
+                                            }
+                                        }}
+                                        variant="outline"
+                                        className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg h-10 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
+                                    >
+                                        <Save className="h-4 w-4 mr-1" /> Guardar
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Opciones de envío */}
+                            <div className="space-y-3">
+                                {/* Recoger en Tienda */}
                                 <button
-                                    onClick={() => data.metodoEnvio !== "tienda" && handleInputChange("metodoEnvio", "tienda")}
-                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "tienda" ? "border-green-600 bg-green-50" : "border-slate-200"} ${data.metodoEnvio === "tienda" ? "cursor-not-allowed opacity-75" : ""}`}
-                                    disabled={data.metodoEnvio === "tienda"}
+                                    type="button"
+                                    onClick={() => handleInputChange("metodoEnvio", "tienda")}
+                                    className={`w-full p-4 border-2 rounded-xl text-left transition-all duration-200 ${
+                                        data.metodoEnvio === "tienda"
+                                            ? "border-slate-900 bg-slate-50 shadow-sm"
+                                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                                    }`}
                                 >
-                                    <p className="font-bold text-black">Recoger en Tienda</p>
-                                    <p className="text-sm text-slate-500">S/ 0.00 - Retira en nuestro local</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                            data.metodoEnvio === "tienda" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
+                                        }`}>
+                                            <Store className="h-5 w-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-slate-900">Recoger en Tienda</p>
+                                            <p className="text-sm text-slate-500">Retira en nuestro local</p>
+                                        </div>
+                                        <div className="shrink-0">
+                                            {data.metodoEnvio === "tienda" && (
+                                                <div className="w-5 h-5 bg-slate-900 rounded-full flex items-center justify-center">
+                                                    <Check className="h-3 w-3 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </button>
 
                                 {data.metodoEnvio === "tienda" && (
-                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg border-2 border-slate-200">
-                                        <p className="text-sm font-medium text-black mb-2">Selecciona la tienda:</p>
+                                    <div className="ml-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
+                                        <label className="block text-sm font-medium text-slate-700">Selecciona la tienda:</label>
                                         <select
                                             value={data.tiendaId || ""}
                                             onChange={(e) => handleInputChange("tiendaId", e.target.value)}
-                                            className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
+                                            className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900"
                                         >
                                             <option value="">Seleccionar tienda...</option>
                                             {tiendas.map((tienda) => (
@@ -1572,23 +1652,44 @@ export default function CheckoutPage() {
                                     </div>
                                 )}
 
+                                {/* Agencia */}
                                 <button
-                                    onClick={() => data.metodoEnvio !== "agencia" && handleInputChange("metodoEnvio", "agencia")}
-                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "agencia" ? "border-yellow-500 bg-yellow-50" : "border-slate-200"} ${data.metodoEnvio === "agencia" ? "cursor-not-allowed opacity-75" : ""}`}
-                                    disabled={data.metodoEnvio === "agencia"}
+                                    type="button"
+                                    onClick={() => handleInputChange("metodoEnvio", "agencia")}
+                                    className={`w-full p-4 border-2 rounded-xl text-left transition-all duration-200 ${
+                                        data.metodoEnvio === "agencia"
+                                            ? "border-slate-900 bg-slate-50 shadow-sm"
+                                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                                    }`}
                                 >
-                                    <p className="font-bold text-black">Agencia de Envíos</p>
-                                    <p className="text-sm text-slate-500">S/ {calcularCostoEnvio().toFixed(2)} - Delivery a agencia</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                            data.metodoEnvio === "agencia" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
+                                        }`}>
+                                            <Truck className="h-5 w-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-slate-900">Agencia de Envíos</p>
+                                            <p className="text-sm text-slate-500">Envío a agencia de tu elección</p>
+                                        </div>
+                                        <div className="shrink-0">
+                                            {data.metodoEnvio === "agencia" && (
+                                                <div className="w-5 h-5 bg-slate-900 rounded-full flex items-center justify-center">
+                                                    <Check className="h-3 w-3 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </button>
 
                                 {data.metodoEnvio === "agencia" && (
-                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-4 border-2 border-slate-200">
+                                    <div className="ml-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
                                         <div>
-                                            <p className="text-sm font-medium text-black mb-2">Selecciona agencia:</p>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Selecciona agencia:</label>
                                             <select
                                                 value={data.agencia || ""}
                                                 onChange={(e) => handleInputChange("agencia", e.target.value)}
-                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
+                                                className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900"
                                             >
                                                 <option value="">Seleccionar agencia...</option>
                                                 <option value="shalom">Shalom</option>
@@ -1605,79 +1706,98 @@ export default function CheckoutPage() {
                                                 placeholder="Nombre de la agencia"
                                                 value={data.agenciaOtro || ""}
                                                 onChange={(e) => handleInputChange("agenciaOtro", e.target.value)}
-                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
+                                                className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                             />
                                         )}
                                         <div>
-                                            <label className="block text-sm font-medium text-black mb-2">
-                                                Dirección de envío
-                                            </label>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Dirección de la agencia:</label>
                                             <input
                                                 type="text"
-                                                placeholder="Dirección completa para entrega"
+                                                placeholder="Dirección completa"
                                                 value={data.direccion || ""}
                                                 onChange={(e) => handleInputChange("direccion", e.target.value)}
-                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
+                                                className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                             />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-black mb-2">¿Quién recibe?</p>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">¿Quién recibe?</label>
                                             <select
                                                 value={data.tipoEnvio || "mismapersona"}
                                                 onChange={(e) => handleInputChange("tipoEnvio", e.target.value)}
-                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
+                                                className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900"
                                             >
                                                 <option value="mismapersona">Yo mismo</option>
                                                 <option value="otropersona">Otra persona</option>
                                             </select>
                                         </div>
                                         {data.tipoEnvio === "otropersona" && (
-                                            <div className="space-y-3">
+                                            <div className="space-y-3 pt-2 border-t border-slate-100">
                                                 <input
                                                     type="text"
                                                     placeholder="DNI (8 dígitos)"
                                                     value={data.dniRecibe || ""}
                                                     onChange={(e) => handleInputChange("dniRecibe", e.target.value.replace(/\D/g, "").slice(0, 8))}
-                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                     maxLength={8}
+                                                    className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                                 />
                                                 <input
                                                     type="text"
                                                     placeholder="Nombre completo"
                                                     value={data.nombreRecibe || ""}
                                                     onChange={(e) => handleInputChange("nombreRecibe", e.target.value)}
-                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
+                                                    className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                                 />
                                                 <input
                                                     type="text"
                                                     placeholder="Celular"
                                                     value={data.celularRecibe || ""}
                                                     onChange={(e) => handleInputChange("celularRecibe", e.target.value.replace(/\D/g, "").slice(0, 9))}
-                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                     maxLength={9}
+                                                    className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                                 />
                                             </div>
                                         )}
                                     </div>
                                 )}
 
+                                {/* Delivery */}
                                 <button
-                                    onClick={() => data.metodoEnvio !== "delivery" && handleInputChange("metodoEnvio", "delivery")}
-                                    className={`w-full p-4 border-2 rounded-lg ${data.metodoEnvio === "delivery" ? "border-blue-500 bg-blue-50" : "border-slate-200"} ${data.metodoEnvio === "delivery" ? "cursor-not-allowed opacity-75" : ""}`}
-                                    disabled={data.metodoEnvio === "delivery"}
+                                    type="button"
+                                    onClick={() => handleInputChange("metodoEnvio", "delivery")}
+                                    className={`w-full p-4 border-2 rounded-xl text-left transition-all duration-200 ${
+                                        data.metodoEnvio === "delivery"
+                                            ? "border-slate-900 bg-slate-50 shadow-sm"
+                                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                                    }`}
                                 >
-                                    <p className="font-bold text-black">Delivery</p>
-                                    <p className="text-sm text-slate-500">S/ {calcularCostoEnvio().toFixed(2)} - Envío a domicilio</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                            data.metodoEnvio === "delivery" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
+                                        }`}>
+                                            <Truck className="h-5 w-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-slate-900">Delivery a Domicilio</p>
+                                            <p className="text-sm text-slate-500">Envío directo a tu puerta</p>
+                                        </div>
+                                        <div className="shrink-0">
+                                            {data.metodoEnvio === "delivery" && (
+                                                <div className="w-5 h-5 bg-slate-900 rounded-full flex items-center justify-center">
+                                                    <Check className="h-3 w-3 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </button>
 
                                 {data.metodoEnvio === "delivery" && (
-                                    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-4 border-2 border-slate-200">
+                                    <div className="ml-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
                                         <div>
-                                            <p className="text-sm font-medium text-black mb-2">Tipo de delivery:</p>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Tipo de delivery:</label>
                                             <select
                                                 value={data.delivery || ""}
                                                 onChange={(e) => handleInputChange("delivery", e.target.value)}
-                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
+                                                className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900"
                                             >
                                                 <option value="">Seleccionar...</option>
                                                 <option value="olva">Olva</option>
@@ -1691,65 +1811,84 @@ export default function CheckoutPage() {
                                                 placeholder="Nombre del delivery"
                                                 value={data.deliveryOtro || ""}
                                                 onChange={(e) => handleInputChange("deliveryOtro", e.target.value)}
-                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
+                                                className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                             />
                                         )}
                                         <div>
-                                            <label className="block text-sm font-medium text-black mb-2">
-                                                Dirección de envío
-                                            </label>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Dirección de entrega:</label>
                                             <input
                                                 type="text"
-                                                placeholder="Dirección completa para entrega"
+                                                placeholder="Dirección completa"
                                                 value={data.direccion || ""}
                                                 onChange={(e) => handleInputChange("direccion", e.target.value)}
-                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
+                                                className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                             />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-black mb-2">¿Quién recibe?</p>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">¿Quién recibe?</label>
                                             <select
                                                 value={data.tipoEnvio || "mismapersona"}
                                                 onChange={(e) => handleInputChange("tipoEnvio", e.target.value)}
-                                                className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none"
+                                                className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900"
                                             >
                                                 <option value="mismapersona">Yo mismo</option>
                                                 <option value="otropersona">Otra persona</option>
                                             </select>
                                         </div>
                                         {data.tipoEnvio === "otropersona" && (
-                                            <div className="space-y-3">
+                                            <div className="space-y-3 pt-2 border-t border-slate-100">
                                                 <input
                                                     type="text"
                                                     placeholder="DNI (8 dígitos)"
                                                     value={data.dniRecibe || ""}
                                                     onChange={(e) => handleInputChange("dniRecibe", e.target.value.replace(/\D/g, "").slice(0, 8))}
-                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                     maxLength={8}
+                                                    className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                                 />
                                                 <input
                                                     type="text"
                                                     placeholder="Nombre completo"
                                                     value={data.nombreRecibe || ""}
                                                     onChange={(e) => handleInputChange("nombreRecibe", e.target.value)}
-                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
+                                                    className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                                 />
                                                 <input
                                                     type="text"
                                                     placeholder="Celular (opcional)"
                                                     value={data.celularRecibe || ""}
                                                     onChange={(e) => handleInputChange("celularRecibe", e.target.value.replace(/\D/g, "").slice(0, 9))}
-                                                    className="w-full p-3 border-2 border-slate-300 rounded-lg text-black focus:border-blue-500 focus:outline-none placeholder:text-slate-400"
                                                     maxLength={9}
+                                                    className="w-full p-3 border border-slate-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-slate-900 placeholder:text-slate-400"
                                                 />
                                             </div>
                                         )}
                                     </div>
                                 )}
+                            </div>
 
-                                <div className="flex gap-4 mt-6">
-                                    <Button onClick={() => setStep(2)} className="flex-1 bg-slate-800 text-white">Atrás</Button>
-                                    <Button onClick={() => setStep(4)} disabled={!validarPaso(3)} className="flex-1 bg-green-600 text-white">Continuar</Button>
+                            {/* Resumen de envío seleccionado */}
+                            {data.metodoEnvio && (
+                                <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            {data.metodoEnvio === "tienda" && <Store className="h-4 w-4 text-slate-600" />}
+                                            {data.metodoEnvio === "agencia" && <Truck className="h-4 w-4 text-slate-600" />}
+                                            {data.metodoEnvio === "delivery" && <Truck className="h-4 w-4 text-slate-600" />}
+                                            <span className="text-sm font-medium text-slate-700">
+                                                Costo de envío:
+                                            </span>
+                                        </div>
+                                        <span className="text-sm font-bold text-slate-900">
+                                            {data.metodoEnvio === "tienda" ? "Gratis" : `S/ ${calcularCostoEnvio().toFixed(2)}`}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 -mx-4 md:static md:bg-transparent md:backdrop-blur-none md:border-t-0 md:px-0 md:py-0 md:mx-0 mt-6">
+                                <div className="flex flex-col-reverse sm:flex-row gap-3 max-w-lg mx-auto">
+                                    <Button onClick={() => setStep(2)} className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow">Atrás</Button>
+                                    <Button onClick={() => setStep(4)} disabled={!validarPaso(3)} className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed">Continuar</Button>
                                 </div>
                             </div>
                         </div>
@@ -1757,8 +1896,6 @@ export default function CheckoutPage() {
 
                     {step === 4 && (
                         <div>
-                            <h2 className="text-xl font-bold text-black mb-4">Resumen y Pago</h2>
-
                             {metrajeConfirmado && continuarPedido ? (
                                 <div className="mb-4">
                                     <div className="border border-slate-300 bg-slate-50 p-4 rounded-lg mt-6 text-sm">
@@ -1870,20 +2007,22 @@ export default function CheckoutPage() {
                                         </div>
                                     )}
 
-                                    <div className="flex justify-center gap-4 mt-6 pt-4">
-                                        <Button
-                                            onClick={() => router.push("/dashboard/pedidos")}
-                                            className="w-2/5 bg-slate-700 hover:bg-slate-900 text-white font-bold py-3"
-                                        >
-                                            Volver a pedidos
-                                        </Button>
-                                        <Button
-                                            onClick={() => setShowPaymentModal(true)}
-                                            disabled={loading}
-                                            className="w-3/5 bg-green-600 hover:bg-green-700 text-white font-bold py-3"
-                                        >
-                                            {loading ? "Procesando..." : "Finalizar Compra"}
-                                        </Button>
+                                    <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 -mx-4 md:static md:bg-transparent md:backdrop-blur-none md:border-t-0 md:px-0 md:py-0 md:mx-0">
+                                        <div className="flex flex-col-reverse sm:flex-row gap-3 max-w-lg mx-auto">
+                                            <Button
+                                                onClick={() => router.push("/dashboard/pedidos")}
+                                                className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
+                                            >
+                                                Volver a pedidos
+                                            </Button>
+                                            <Button
+                                                onClick={() => setShowPaymentModal(true)}
+                                                disabled={loading}
+                                                className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {loading ? "Procesando..." : "Finalizar Compra"}
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             ) : tienePiezasPendientes ? (
@@ -1956,24 +2095,26 @@ export default function CheckoutPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-4 mt-6">
-                                        <Button
-                                            onClick={() => setStep(3)}
-                                            variant="outline"
-                                            className="flex-1 border-slate-500 text-black font-bold"
-                                        >
-                                            Atrás
-                                        </Button>
-                                        <Button
-                                            onClick={() => router.push("/dashboard")}
-                                            variant="outline"
-                                            className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
-                                        >
-                                            Cancelar Compra
-                                        </Button>
-                                        <Button onClick={crearPedidoConMetrajeTemporal} disabled={loading} className="flex-1 bg-yellow-600 text-black font-bold">
-                                            {loading ? "Procesando..." : "Agendar Pedido"}
-                                        </Button>
+                                    <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 -mx-4 md:static md:bg-transparent md:backdrop-blur-none md:border-t-0 md:px-0 md:py-0 md:mx-0">
+                                        <div className="flex flex-col-reverse gap-3 max-w-lg mx-auto sm:flex-row">
+                                            <Button
+                                                onClick={() => setStep(3)}
+                                                variant="outline"
+                                                className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
+                                            >
+                                                Atrás
+                                            </Button>
+                                            <Button
+                                                onClick={() => router.push("/dashboard")}
+                                                variant="outline"
+                                                className="w-full sm:w-auto bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
+                                            >
+                                                Cancelar Compra
+                                            </Button>
+                                            <Button onClick={crearPedidoConMetrajeTemporal} disabled={loading} className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed">
+                                                {loading ? "Procesando..." : "Agendar Pedido"}
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
@@ -2023,28 +2164,30 @@ export default function CheckoutPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-4 mt-4">
-                                        <Button
-                                            onClick={() => setStep(3)}
-                                            variant="outline"
-                                            className="flex-1 border-slate-500 text-black font-bold"
-                                        >
-                                            Volver atrás
-                                        </Button>
-                                        <Button
-                                            onClick={() => router.push("/dashboard")}
-                                            variant="outline"
-                                            className="flex-1 border-red-500 text-red-600 hover:bg-red-50 font-bold"
-                                        >
-                                            Cancelar
-                                        </Button>
-                                        <Button
-                                            onClick={() => setShowPaymentModal(true)}
-                                            disabled={loading}
-                                            className="flex-1 bg-green-600 text-white font-bold"
-                                        >
-                                            Finalizar Compra
-                                        </Button>
+                                    <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 -mx-4 md:static md:bg-transparent md:backdrop-blur-none md:border-t-0 md:px-0 md:py-0 md:mx-0">
+                                        <div className="flex flex-col-reverse gap-3 max-w-lg mx-auto sm:flex-row">
+                                            <Button
+                                                onClick={() => setStep(3)}
+                                                variant="outline"
+                                                className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
+                                            >
+                                                Volver atrás
+                                            </Button>
+                                            <Button
+                                                onClick={() => router.push("/dashboard")}
+                                                variant="outline"
+                                                className="w-full sm:w-auto bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
+                                            >
+                                                Cancelar
+                                            </Button>
+                                            <Button
+                                                onClick={() => setShowPaymentModal(true)}
+                                                disabled={loading}
+                                                className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Finalizar Compra
+                                            </Button>
+                                        </div>
                                     </div>
                                 </>
                             )}
@@ -2059,8 +2202,8 @@ export default function CheckoutPage() {
                     <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
                         <p className="text-lg font-bold text-black mb-4">¿Eliminar {items.find(i => i.id === deletingId)?.producto.nombre}?</p>
                         <div className="flex gap-3">
-                            <Button onClick={cancelarEliminar} variant="outline" className="flex-1">Cancelar</Button>
-                            <Button onClick={confirmarEliminar} className="flex-1 bg-red-600">Sí, eliminar</Button>
+                            <Button onClick={cancelarEliminar} variant="outline" className="flex-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow">Cancelar</Button>
+                            <Button onClick={confirmarEliminar} className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow">Sí, eliminar</Button>
                         </div>
 
                     </div>
@@ -2069,12 +2212,12 @@ export default function CheckoutPage() {
 
             {showPaymentModal && (
 
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
 
-                    <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl">
-                        <h2 className="text-xl font-bold text-black mb-4">Métodos de Pago</h2>
+                    <div className="bg-white rounded-t-xl sm:rounded-xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto p-4 md:p-6 shadow-2xl">
+                        <h2 className="text-lg md:text-xl font-bold text-black mb-4">Métodos de Pago</h2>
 
-                        <div className="bg-slate-50 p-4 rounded-lg mt-4 mb-4">
+                        <div className="bg-slate-50 p-3 md:p-4 rounded-lg mt-2 md:mt-4 mb-4">
                             <p className="font-bold text-xl text-black">Total: S/ {continuarPedido?.total ? Number(continuarPedido.total).toFixed(2) : calcularTotal().toFixed(2)}</p>
                         </div>
 
@@ -2201,23 +2344,20 @@ export default function CheckoutPage() {
                                 )}
                             </div>
 
-                            <div className="flex gap-3">
-                                <div className="w-full gap-3">
-                                    <Button
-                                        onClick={() => setShowPaymentModal(false)}
-                                        className="w-2/5 bg-red-600 hover:bg-red-700 font-bold py-2.5 px-4 rounded-lg text-white"
-                                    >
-                                        Cancelar
-                                    </Button>
-                                    <Button
-                                        onClick={confirmarPago}
-                                        disabled={loading || (!data.numeroOperacion && !comprobanteUrl)}
-                                        className="w-3/5 bg-green-600 hover:bg-green-700 font-bold py-2.5 px-4 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {loading ? "Procesando..." : "Confirmar Pedido"}
-                                    </Button>
-                                </div>
-
+                            <div className="flex flex-col gap-3">
+                                <Button
+                                    onClick={() => setShowPaymentModal(false)}
+                                    className="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={confirmarPago}
+                                    disabled={loading || (!data.numeroOperacion && !comprobanteUrl)}
+                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? "Procesando..." : "Confirmar Pedido"}
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -2316,13 +2456,13 @@ export default function CheckoutPage() {
                                 <Button
                                     variant="outline"
                                     onClick={cancelarEliminar}
-                                    className="border-slate-300 text-black"
+                                    className="border-slate-300 text-slate-700 bg-white hover:bg-slate-50 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
                                 >
                                     Cancelar
                                 </Button>
                                 <Button
                                     onClick={confirmarEliminar}
-                                    className="bg-red-600 hover:bg-red-700"
+                                    className="bg-red-600 hover:bg-red-700 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
                                 >
                                     Sí, eliminar
                                 </Button>
@@ -2347,13 +2487,13 @@ export default function CheckoutPage() {
                                 <Button
                                     variant="outline"
                                     onClick={cancelarEliminar}
-                                    className="border-slate-300 text-black"
+                                    className="border-slate-300 text-slate-700 bg-white hover:bg-slate-50 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
                                 >
                                     Cancelar
                                 </Button>
                                 <Button
                                     onClick={confirmarEliminar}
-                                    className="bg-red-600 hover:bg-red-700"
+                                    className="bg-red-600 hover:bg-red-700 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
                                 >
                                     Sí, eliminar
                                 </Button>
@@ -2455,7 +2595,7 @@ export default function CheckoutPage() {
                                 <Button
                                     variant="outline"
                                     onClick={() => setIndicacionToDelete(null)}
-                                    className="border-slate-300 text-slate-700"
+                                    className="border-slate-300 text-slate-700 bg-white hover:bg-slate-50 rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
                                 >
                                     Cancelar
                                 </Button>
@@ -2477,7 +2617,7 @@ export default function CheckoutPage() {
                                         })
                                         setIndicacionToDelete(null)
                                     }}
-                                    className="bg-red-600 hover:bg-red-700"
+                                    className="bg-red-600 hover:bg-red-700 text-white rounded-lg h-11 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow"
                                 >
                                     Sí, eliminar
                                 </Button>

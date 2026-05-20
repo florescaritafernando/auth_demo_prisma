@@ -11,7 +11,7 @@ import { Pagination } from "@/components/ui/pagination"
 import { CarritoBadge } from "@/components/carrito-badge"
 import { CarritoParticulas } from "@/components/carrito-particulas"
 import { CrearPedidoModal } from "@/components/crear-pedido-modal"
-import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus } from "lucide-react"
+import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus, ClipboardList, FileText } from "lucide-react"
 import { BotonAgregarCarrito } from "@/components/agregar-carrito-button"
 import { cn } from "@/lib/utils"
 
@@ -392,6 +392,8 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(12)
 
+    const esStaff = userRole === "empleado" || userRole === "admin"
+
     useEffect(() => {
         const handleScroll = () => {
             if (headerRef.current) {
@@ -407,6 +409,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
     }, [])
 
     useEffect(() => {
+        if (esStaff) return
         const fetchCarritoCount = async () => {
             try {
                 const res = await fetch("/api/carrito", { credentials: "include" })
@@ -426,9 +429,10 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
 
         window.addEventListener("carrito-actualizado", handleCarritoUpdate)
         return () => window.removeEventListener("carrito-actualizado", handleCarritoUpdate)
-    }, [])
+    }, [esStaff])
 
     useEffect(() => {
+        if (esStaff) return
         async function fetchFavoritos() {
             try {
                 const res = await fetch("/api/favoritos", { credentials: "include" })
@@ -443,7 +447,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
             }
         }
         fetchFavoritos()
-    }, [])
+    }, [esStaff])
 
     const toggleFavorito = async (id: string) => {
         const esFavorito = favoritos.has(id)
@@ -512,50 +516,81 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
 
     const productosFiltrados = productos.filter(prod => {
         if (filtros.categoria && prod.categoria !== filtros.categoria) return false
-
         if (filtros.precioMin !== null && Number(prod.precio) < filtros.precioMin) return false
         if (filtros.precioMax !== null && Number(prod.precio) > filtros.precioMax) return false
-
         if (filtros.soloFavoritos && !favoritos.has(prod.id)) return false
-
         if (filtros.busqueda && !prod.nombre.toLowerCase().includes(filtros.busqueda.toLowerCase())) return false
-
         if (filtros.color) {
             const colorProducto = getColorFromNombre(prod.nombre)
             if (colorProducto !== filtros.color) return false
         }
-
         return true
     })
 
     const tieneFiltrosActivos = filtros.categoria || filtros.precioMin !== null || filtros.precioMax !== null || filtros.soloFavoritos || filtros.busqueda || filtros.color
 
-    return (
-        <div className="p-6 md:p-10 font-sans">
-            {/* Tarjetas para empleados */}
-            {userRole === "empleado" && (
-                <div className="max-w-7xl mx-auto mb-8">
-                    <h2 className="text-lg font-semibold text-slate-700 mb-4">Acciones Rápidas</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    if (esStaff) {
+        return (
+            <div className="p-4 md:p-6 lg:p-10 font-sans">
+                <div className="max-w-7xl mx-auto mb-6 md:mb-8">
+                    <div className="mb-6">
+                        <h1 className="text-xl md:text-2xl font-bold text-slate-900">Bienvenido(a), {userName}</h1>
+                    </div>
+                    <h2 className="text-base md:text-lg font-semibold text-slate-700 mb-3 md:mb-4">Acciones Rápidas</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                         <button
                             onClick={() => setShowCrearPedido(true)}
-                            className="flex items-center gap-4 p-4 bg-white border-2 border-blue-500 rounded-xl hover:bg-blue-50 transition-colors text-left group"
+                            className="flex items-center gap-4 p-4 bg-white border-2 border-slate-900 rounded-xl hover:bg-slate-50 transition-colors text-left group"
                         >
-                            <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                                <FilePlus className="h-6 w-6 text-blue-600" />
+                            <div className="p-3 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+                                <FilePlus className="h-6 w-6 text-slate-700" />
                             </div>
                             <div>
                                 <p className="font-semibold text-slate-900">Crear Pedido</p>
                                 <p className="text-sm text-slate-500">Nuevo pedido para cliente</p>
                             </div>
                         </button>
+                        <Link
+                            href="/dashboard/pedidos-admin"
+                            className="flex items-center gap-4 p-4 bg-white border-2 border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-colors text-left group"
+                        >
+                            <div className="p-3 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+                                <ClipboardList className="h-6 w-6 text-slate-700" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-slate-900">Atender Pedidos</p>
+                                <p className="text-sm text-slate-500">Gestionar pedidos pendientes</p>
+                            </div>
+                        </Link>
+                        <Link
+                            href="/dashboard/nota-pedido"
+                            className="flex items-center gap-4 p-4 bg-white border-2 border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-colors text-left group"
+                        >
+                            <div className="p-3 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+                                <FileText className="h-6 w-6 text-slate-700" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-slate-900">Ver Nota del Pedido</p>
+                                <p className="text-sm text-slate-500">Detalle completo de pedidos</p>
+                            </div>
+                        </Link>
                     </div>
                 </div>
-            )}
 
-            <div ref={headerRef} className="mb-6 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
+                <CrearPedidoModal
+                    isOpen={showCrearPedido}
+                    onClose={() => setShowCrearPedido(false)}
+                    userName={userName}
+                />
+            </div>
+        )
+    }
+
+    return (
+        <div className="p-4 md:p-6 lg:p-10 font-sans">
+            <div ref={headerRef} className="mb-4 md:mb-6 max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end justify-between gap-3 md:gap-4">
                 <div className="w-full md:w-auto">
-                    <p className="text-slate-500 text-base md:text-xl">
+                    <p className="text-slate-500 text-sm md:text-base lg:text-xl">
                         Bienvenido(a), <span className="font-semibold text-slate-700">{userName}</span>.
                     </p>
                 </div>
@@ -572,14 +607,14 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                     </div>
                     <button
                         onClick={() => setFiltros({ ...filtros, soloFavoritos: !filtros.soloFavoritos })}
-                        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${filtros.soloFavoritos ? 'border-red-500 text-red-600 bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                        className={`flex items-center justify-center gap-1.5 px-2 md:px-3 py-2 border rounded-lg font-medium text-sm transition-colors shrink-0 ${filtros.soloFavoritos ? 'border-red-500 text-red-600 bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                         <Heart className={`h-4 w-4 ${filtros.soloFavoritos ? 'fill-current text-red-500' : ''}`} />
                         <span className="hidden sm:inline">Favoritos</span>
                     </button>
                     <button
                         onClick={() => setShowFiltros(true)}
-                        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg font-medium text-sm transition-colors ${tieneFiltrosActivos ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                        className={`flex items-center justify-center gap-1.5 px-2 md:px-3 py-2 border rounded-lg font-medium text-sm transition-colors shrink-0 ${tieneFiltrosActivos ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                         <Filter className="h-4 w-4" />
                         <span className="hidden sm:inline">Filtrar {tieneFiltrosActivos && `(${productosFiltrados.length})`}</span>
@@ -692,13 +727,13 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
             <CarritoParticulas showFloatingCart={isScrolled} />
 
             {isScrolled && (
-                <div className="fixed bottom-24 right-4 z-50 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="fixed bottom-20 md:bottom-24 right-4 z-50 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <Link href="/dashboard/carrito">
-                        <button data-carrito-badge-floating className="flex items-center justify-center h-12 w-12 bg-slate-900 text-white rounded-full shadow-2xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95">
+                        <button data-carrito-badge-floating className="flex items-center justify-center h-11 w-11 md:h-12 md:w-12 bg-slate-900 text-white rounded-full shadow-2xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95">
                             <div className="relative">
                                 <ShoppingCart className={`h-5 w-5 ${carritoCount > 0 ? "animate-bounce" : ""}`} />
                                 {carritoCount > 0 && (
-                                    <span className="absolute -top-4 -right-4 min-w-[1.25rem] h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1">
+                                    <span className="absolute -top-3 -right-3 min-w-[1.1rem] h-4 md:h-5 flex items-center justify-center bg-red-500 text-white text-[10px] md:text-xs font-bold rounded-full px-1">
                                         {carritoCount}
                                     </span>
                                 )}
@@ -707,9 +742,9 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                     </Link>
                     <button
                         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                        className="flex items-center justify-center h-12 w-12 bg-slate-800 text-white rounded-full shadow-xl hover:bg-slate-700 transition-all hover:scale-105 active:scale-95"
+                        className="flex items-center justify-center h-11 w-11 md:h-12 md:w-12 bg-slate-800 text-white rounded-full shadow-xl hover:bg-slate-700 transition-all hover:scale-105 active:scale-95"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                         </svg>
                     </button>

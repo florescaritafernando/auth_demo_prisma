@@ -70,14 +70,14 @@ export default async function ReclamosPage() {
     }
 
     return (
-        <div className="p-6 md:p-10 font-sans">
+        <div className="p-4 md:p-6 lg:p-10 font-sans">
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 mb-4 md:mb-8">
                     <div>
-                        <h1 className="text-3xl font-extrabold text-slate-900">
+                        <h1 className="text-xl md:text-3xl font-extrabold text-slate-900">
                             {isCliente ? "Mis Reclamos" : "Gestión de Reclamos"}
                         </h1>
-                        <p className="text-slate-500 mt-1">
+                        <p className="text-sm md:text-base text-slate-500 mt-1">
                             {isCliente ? "Historial de tus quejas y reclamos" : "Administra los reclamos de clientes"}
                         </p>
                     </div>

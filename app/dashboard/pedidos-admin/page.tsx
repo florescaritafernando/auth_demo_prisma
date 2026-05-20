@@ -75,16 +75,16 @@ export default async function PedidosAdminPage() {
     }
 
     return (
-        <div className="p-6 md:p-10 font-sans">
+        <div className="p-4 md:p-6 lg:p-10 font-sans">
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 mb-4 md:mb-8">
                     <div>
-                        <h1 className="text-3xl font-extrabold text-slate-900">Gestión de Pedidos</h1>
-                        <p className="text-slate-500 mt-1">Administra todos los pedidos de clientes</p>
+                        <h1 className="text-xl md:text-3xl font-extrabold text-slate-900">Gestión de Pedidos</h1>
+                        <p className="text-sm md:text-base text-slate-500 mt-1">Administra todos los pedidos de clientes</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 mb-4 md:mb-8">
                     <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                         <div className="flex items-center gap-2">
                             <Clock className="h-5 w-5 text-yellow-600" />

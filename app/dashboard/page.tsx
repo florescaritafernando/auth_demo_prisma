@@ -32,7 +32,8 @@ export default async function DashboardPage() {
     if (!session) redirect("/login")
 
     const role = (session.user as any)?.role || "cliente"
-    const productos = await getProductos()
+    const esStaff = role === "empleado" || role === "admin"
+    const productos = esStaff ? [] : await getProductos()
 
     return (
         <DashboardClient

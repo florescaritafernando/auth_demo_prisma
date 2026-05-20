@@ -145,3 +145,38 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Mobile safe area + scroll fixes */
+html {
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Prevent overscroll bounce on mobile */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Ensure scrollable containers work on mobile */
+.scrollable-content {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Safe area padding utilities */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}

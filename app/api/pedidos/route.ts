@@ -31,7 +31,9 @@ export async function GET(request: NextRequest) {
                         include: { user: { select: { id: true, name: true } } }
                     },
                     tienda: true,
-                    reclamos: true
+                    reclamos: true,
+                    pedidoEmpleadoInfo: true,
+                    clientePedido: true
                 },
                 orderBy: { createdAt: "desc" }
             })
@@ -54,7 +56,9 @@ export async function GET(request: NextRequest) {
                         }
                     },
                     tienda: true,
-                    reclamos: true
+                    reclamos: true,
+                    pedidoEmpleadoInfo: true,
+                    clientePedido: true
                 },
                 orderBy: { createdAt: "desc" }
             })
@@ -69,7 +73,9 @@ export async function GET(request: NextRequest) {
                         }
                     },
                     tienda: true,
-                    reclamos: { select: { id: true, tipo: true, estado: true, createdAt: true } }
+                    reclamos: { select: { id: true, tipo: true, estado: true, createdAt: true } },
+                    pedidoEmpleadoInfo: true,
+                    clientePedido: true
                 },
                 orderBy: { createdAt: "desc" }
             })

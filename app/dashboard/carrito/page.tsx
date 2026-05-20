@@ -182,7 +182,7 @@ const json = await res.json()
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 p-6 flex items-center justify-center">
+            <div className="min-h-[60vh] flex items-center justify-center">
                 <p>Cargando...</p>
             </div>
         )
@@ -190,25 +190,25 @@ const json = await res.json()
 
     if (items.length === 0) {
         return (
-            <div className="min-h-screen bg-slate-50 p-6">
+            <div className="p-4 md:p-6">
                 <div className="max-w-4xl mx-auto">
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center justify-between mb-4 md:mb-8">
                         <div>
-                            <h1 className="text-3xl font-bold text-slate-900">Mi Carrito</h1>
-                            <p className="text-slate-600">(0 productos)</p>
+                            <h1 className="text-xl md:text-3xl font-bold text-slate-900">Mi Carrito</h1>
+                            <p className="text-sm md:text-base text-slate-600">(0 productos)</p>
                         </div>
                         <Link href="/dashboard">
-                            <Button variant="outline" className="flex items-center gap-2">
+                            <Button variant="outline" className="flex items-center gap-2 text-sm">
                                 <ArrowLeft className="h-4 w-4" />
-                                Seguir Comprando
+                                <span className="hidden sm:inline">Seguir Comprando</span>
                             </Button>
                         </Link>
                     </div>
 
-                    <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-                        <ShoppingCart className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                        <h2 className="text-xl font-bold text-slate-800 mb-2">Tu carrito está vacío</h2>
-                        <p className="text-slate-600 mb-6">Agrega productos para continuar</p>
+                    <div className="bg-white rounded-xl border border-slate-200 p-8 md:p-12 text-center">
+                        <ShoppingCart className="h-12 w-12 md:h-16 md:w-16 text-slate-300 mx-auto mb-4" />
+                        <h2 className="text-lg md:text-xl font-bold text-slate-800 mb-2">Tu carrito está vacío</h2>
+                        <p className="text-sm text-slate-600 mb-6">Agrega productos para continuar</p>
                         <Link href="/dashboard">
                             <Button>Ver Productos</Button>
                         </Link>
@@ -232,50 +232,50 @@ const json = await res.json()
                     </div>
                 </div>
             )}
-            <div className="min-h-screen bg-slate-50 p-6">
+            <div className="p-4 md:p-6">
                 <div className="max-w-4xl mx-auto">
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center justify-between mb-4 md:mb-8">
                         <div>
-                            <h1 className="text-3xl font-bold text-slate-900">Mi Carrito</h1>
-                            <p className="text-slate-600">({items.length} productos)</p>
+                            <h1 className="text-xl md:text-3xl font-bold text-slate-900">Mi Carrito</h1>
+                            <p className="text-sm md:text-base text-slate-600">({items.length} productos)</p>
                         </div>
                         <Link href="/dashboard">
-                            <Button variant="outline" className="flex items-center gap-2">
+                            <Button variant="outline" className="flex items-center gap-2 text-sm">
                                 <ArrowLeft className="h-4 w-4" />
-                                Seguir Comprando
+                                <span className="hidden sm:inline">Seguir Comprando</span>
                             </Button>
                         </Link>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3 md:space-y-4">
                         {items.map((item) => {
                             const precioUnitario = item.producto.precio
                             const precioTotal = precioUnitario * item.cantidadMetros
 
                             return (
-                                <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                                    <div className="flex gap-4">
+                                <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-3 md:p-4">
+                                    <div className="flex gap-3 md:gap-4">
                                         {item.producto.imagen ? (
                                             <img
                                                 src={item.producto.imagen}
                                                 alt={item.producto.nombre}
-                                                className="w-24 h-24 object-cover rounded-lg shrink-0"
+                                                className="w-16 h-16 md:w-24 md:h-24 object-cover rounded-lg shrink-0"
                                             />
                                         ) : (
-                                            <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                                                <ShoppingCart className="h-8 w-8 text-slate-400" />
+                                            <div className="w-16 h-16 md:w-24 md:h-24 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
+                                                <ShoppingCart className="h-6 w-6 md:h-8 md:w-8 text-slate-400" />
                                             </div>
                                         )}
 
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-slate-900 text-lg">{item.producto.nombre}</h3>
-                                            <p className="text-sm text-slate-600 font-medium">{item.producto.categoria}</p>
-                                            <p className="text-sm text-blue-700 font-medium">{item.tipoLabel}</p>
-                                            <p className="text-sm text-slate-600 font-medium">Precio del artículo por metro: S/ {precioUnitario.toFixed(2)}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-bold text-slate-900 text-sm md:text-lg truncate">{item.producto.nombre}</h3>
+                                            <p className="text-xs md:text-sm text-slate-600 font-medium">{item.producto.categoria}</p>
+                                            <p className="text-xs md:text-sm text-blue-700 font-medium">{item.tipoLabel}</p>
+                                            <p className="text-xs md:text-sm text-slate-600 font-medium hidden sm:block">Precio del artículo por metro: S/ {precioUnitario.toFixed(2)}</p>
                                         </div>
 
-                                        <div className="text-right">
-                                            <p className="font-bold text-slate-900 text-lg">S/ {precioTotal.toFixed(2)}</p>
+                                        <div className="text-right shrink-0">
+                                            <p className="font-bold text-slate-900 text-sm md:text-lg">S/ {precioTotal.toFixed(2)}</p>
                                         </div>
                                     </div>
 
@@ -317,15 +317,13 @@ const json = await res.json()
                                                                     setInputValues(prev => ({ ...prev, [item.id]: String(item.cantidad) }))
                                                                     return
                                                                 }
-                                                                // La validación de stock se hace en el servidor
                                                                 actualizarCantidad(item.id, raw, item.tipo)
                                                             }}
-                                                            className="w-20 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900"
+                                                            className="w-16 md:w-20 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 text-sm"
                                                         />
                                                         <button
                                                             onClick={() => {
                                                                 const nuevaCantidad = item.cantidad + 1
-                                                                // La validación de stock se hace en el servidor
                                                                 actualizarCantidad(item.id, nuevaCantidad, item.tipo)
                                                             }}
                                                             className="p-2 bg-slate-100 rounded hover:bg-slate-200"
@@ -362,7 +360,7 @@ const json = await res.json()
                                                             }
                                                             actualizarCantidad(item.id, raw, item.tipo)
                                                         }}
-                                                        className="w-24 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900"
+                                                        className="w-20 md:w-24 text-center border border-slate-300 rounded px-2 py-1 font-bold text-slate-900 text-sm"
                                                     />
                                                 )}
                                                 {item.tipo === "metros" && <span className="text-sm text-slate-500">m</span>}
@@ -377,7 +375,7 @@ const json = await res.json()
 
                                         <div className="flex items-center gap-2 mt-2">
                                             {indicaciones[item.id] ? (
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <button
                                                         onClick={() => setPopupItem(item)}
                                                         className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
@@ -414,7 +412,7 @@ const json = await res.json()
                             </div>
                         </div>
 
-                        <div className="flex gap-4 mt-6">
+                        <div className="flex flex-col sm:flex-row gap-3 mt-6">
                             <Link href="/dashboard" className="flex-1">
                                 <Button variant="outline" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black">
                                     <ArrowLeft className="h-4 w-4 mr-2" />

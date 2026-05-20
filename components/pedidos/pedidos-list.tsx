@@ -78,6 +78,26 @@ interface PedidoItem {
         nombre: string
         direccion: string
     }
+    pedidoEmpleadoInfo?: {
+        empresa: string | null
+        metodoPago: string | null
+        telefono: string | null
+        guiaRemision: boolean
+    } | null
+    clientePedido?: {
+        nombre: string
+        tipoDoc: string
+        numeroDoc: string
+        razonSocial: string | null
+        direccion: string | null
+        telefono: string | null
+        agencia: string | null
+        agenciaOtro: string | null
+        guiaRemision: boolean
+        departamento: string | null
+        provincia: string | null
+        distrito: string | null
+    } | null
 }
 
 interface PedidosListProps {
@@ -375,6 +395,110 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                 </div>
                             </div>
                         </div>
+
+                        {pedido.pedidoEmpleadoInfo && (
+                            <div className="mt-4 pt-4 border-t border-slate-100">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <FileText className="h-4 w-4 text-blue-500" />
+                                    <p className="font-semibold text-slate-700 text-sm">Info Empleado</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    {pedido.pedidoEmpleadoInfo.empresa && (
+                                        <div className="flex items-start gap-2">
+                                            <Package className="h-4 w-4 text-slate-400 mt-0.5" />
+                                            <div>
+                                                <p className="text-slate-500">Empresa:</p>
+                                                <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.empresa}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {pedido.pedidoEmpleadoInfo.metodoPago && (
+                                        <div className="flex items-start gap-2">
+                                            <CreditCard className="h-4 w-4 text-slate-400 mt-0.5" />
+                                            <div>
+                                                <p className="text-slate-500">Método de Pago:</p>
+                                                <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.metodoPago}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {pedido.pedidoEmpleadoInfo.telefono && (
+                                        <div className="flex items-start gap-2">
+                                            <Phone className="h-4 w-4 text-slate-400 mt-0.5" />
+                                            <div>
+                                                <p className="text-slate-500">Teléfono cliente:</p>
+                                                <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.telefono}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex items-start gap-2">
+                                        <File className="h-4 w-4 text-slate-400 mt-0.5" />
+                                        <div>
+                                            <p className="text-slate-500">Guía de remisión:</p>
+                                            <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.guiaRemision ? "Sí" : "No"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {pedido.clientePedido && (
+                            <div className="mt-4 pt-4 border-t border-slate-100">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Phone className="h-4 w-4 text-green-500" />
+                                    <p className="font-semibold text-slate-700 text-sm">Datos del Cliente</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div className="flex items-start gap-2">
+                                        <div className="h-4 w-4 text-slate-400 mt-0.5 flex items-center justify-center text-xs font-bold">C</div>
+                                        <div>
+                                            <p className="text-slate-500">Cliente:</p>
+                                            <p className="font-medium text-slate-800">{pedido.clientePedido.nombre}</p>
+                                            <p className="text-xs text-slate-400">{pedido.clientePedido.tipoDoc?.toUpperCase()} {pedido.clientePedido.numeroDoc}</p>
+                                            {pedido.clientePedido.razonSocial && (
+                                                <p className="text-xs text-slate-400">Razón Social: {pedido.clientePedido.razonSocial}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {pedido.clientePedido.telefono && (
+                                        <div className="flex items-start gap-2">
+                                            <Phone className="h-4 w-4 text-slate-400 mt-0.5" />
+                                            <div>
+                                                <p className="text-slate-500">Teléfono:</p>
+                                                <p className="font-medium text-slate-800">{pedido.clientePedido.telefono}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {pedido.clientePedido.direccion && (
+                                        <div className="flex items-start gap-2">
+                                            <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
+                                            <div>
+                                                <p className="text-slate-500">Dirección:</p>
+                                                <p className="font-medium text-slate-800">{pedido.clientePedido.direccion}</p>
+                                                {pedido.clientePedido.departamento && (
+                                                    <p className="text-xs text-slate-400">{pedido.clientePedido.departamento} / {pedido.clientePedido.provincia} / {pedido.clientePedido.distrito}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {pedido.clientePedido.agencia && (
+                                        <div className="flex items-start gap-2">
+                                            <Truck className="h-4 w-4 text-slate-400 mt-0.5" />
+                                            <div>
+                                                <p className="text-slate-500">Agencia:</p>
+                                                <p className="font-medium text-slate-800">{AGENCIA_LABELS[pedido.clientePedido.agencia] || pedido.clientePedido.agenciaOtro || pedido.clientePedido.agencia}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex items-start gap-2">
+                                        <FileText className="h-4 w-4 text-slate-400 mt-0.5" />
+                                        <div>
+                                            <p className="text-slate-500">Guía de remisión:</p>
+                                            <p className="font-medium text-slate-800">{pedido.clientePedido.guiaRemision ? "Sí" : "No"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -7,6 +7,8 @@ const resend = new Resend(process.env.RESEND_API_KEY!);
 
 const EMAIL_FROM = "Manchester Collection Perú<equipo@manchestercollectionperu.com>";
 
+const isProd = process.env.NODE_ENV === "production";
+    
 interface EmailResponse {
     success: boolean;
     id?: string;
@@ -49,6 +51,7 @@ export async function enviarEmail(
 
 export const auth = betterAuth({
     baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
@@ -181,14 +184,23 @@ export const auth = betterAuth({
     },
     // 1. Dile a Better Auth que confíe en el origen con www
     trustedOrigins: [
-        "https://www.manchestercollectionperu.com"
+        "https://www.manchestercollectionperu.com",
+        "https://manchestercollectionperu.tech",
+        "https://manchestercollectionperu.com",
+        "https://landing-page-y-control-panel.onrender.com",
+        "http://localhost:3000",
     ],
 
     advanced: {
         // 2. Permite compartir las cookies de sesión entre ambos dominios
-        crossSubDomainCookies: {
-            enabled: true,
+        crossSubDomainCookies: isProd ? {            enabled: true,
             domain: ".manchestercollectionperu.com", // IMPORTANTE: Nota el punto inicial "."
-        }
-    }
+        }: undefined,
+        useSecureCookies: isProd, 
+        cookiePrefix: "manchester-auth",
+    },
+    cookie: {
+        // 🔥 DINÁMICO: En dev no debes forzar el dominio de producción
+        domain: isProd ? ".manchestercollectionperu.com" : undefined,
+    },
 });

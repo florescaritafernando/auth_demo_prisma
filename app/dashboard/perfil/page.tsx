@@ -204,20 +204,19 @@ export default function PerfilPage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto p-6">
+        <div className="p-4 md:p-6">
             {toast && (
-                <div className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium animate-in fade-in slide-in-from-top-2 ${
+                <div className={`fixed top-6 right-6 z-50 px-4 md:px-6 py-3 rounded-lg shadow-lg text-white font-medium animate-in fade-in slide-in-from-top-2 ${
                     toast.type === "success" ? "bg-green-600" : "bg-red-600"
                 }`}>
                     {toast.message}
                 </div>
             )}
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-800">Configuración de Perfil</h1>
+            <div className="flex justify-between items-center mb-4 md:mb-6">
+                <h1 className="text-lg md:text-2xl font-bold text-slate-800">Configuración de Perfil</h1>
                 <button
                     onClick={() => {
                         if (editando) {
-                            // Cancelar: restaurar valores originales
                             setName(usuario?.name || "")
                             setCelular(usuario?.celular || "")
                             setPreviewImage(usuario?.image || null)
@@ -225,7 +224,7 @@ export default function PerfilPage() {
                         }
                         setEditando(!editando)
                     }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
                         editando 
                             ? "bg-slate-200 text-slate-700 hover:bg-slate-300" 
                             : "bg-slate-800 text-white hover:bg-slate-700"
@@ -235,7 +234,7 @@ export default function PerfilPage() {
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6 space-y-4 md:space-y-6">
                 {/* Foto de perfil */}
                 <div className="flex flex-col items-center">
                     <div className="relative">

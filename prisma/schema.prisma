@@ -222,6 +222,9 @@ model Pedido {
   motivoRechazo String? // Motivo cuando se rechaza
   delegados     PedidoDelegado[]
   feedback       Feedback[]
+  pedidoEmpleadoInfo PedidoEmpleadoInfo?
+  clientePedidoId String?
+  clientePedido   ClientePedido? @relation(fields: [clientePedidoId], references: [id])
 
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -353,6 +356,20 @@ model PedidoDelegado {
   @@map("pedido_delegado")
 }
 
+model PedidoEmpleadoInfo {
+  id           String   @id @default(cuid())
+  pedidoId     String   @unique
+  pedido       Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  empresa      String?
+  metodoPago   String?
+  telefono     String?
+  guiaRemision Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("pedido_empleado_info")
+}
+
 model DatosFacturacion {
   id             String   @id @default(cuid())
   userId         String
@@ -425,11 +442,15 @@ model ClientePedido {
   agencia         String?  // "shalom" | "flores" | "marvisur" | "otros"
   agenciaOtro     String?
   guiaRemision    Boolean  @default(false)
-  departamento   String?
+  departamento    String?
   provincia       String?
-  distrito       String?
+  distrito        String?
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  pedidos         Pedido[]
+
+  @@unique([nombre, numeroDoc])
   @@index([numeroDoc])
   @@map("cliente_pedido")
 }

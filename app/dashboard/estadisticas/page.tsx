@@ -98,51 +98,51 @@ export default async function EstadisticasPage() {
     const maxVentasSemana = Math.max(...DATOS_VENTAS.semanal.map(d => d.ventas))
 
     return (
-        <div className="p-6 md:p-10 font-sans">
+        <div className="p-4 md:p-6 lg:p-10 font-sans">
             <div className="max-w-7xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-extrabold text-slate-900">Estadisticas</h1>
-                    <p className="text-slate-500 mt-1">Resumen de ventas y rendimiento</p>
+                <div className="mb-4 md:mb-8">
+                    <h1 className="text-xl md:text-3xl font-extrabold text-slate-900">Estadisticas</h1>
+                    <p className="text-sm md:text-base text-slate-500 mt-1">Resumen de ventas y rendimiento</p>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                    <div className="bg-white rounded-xl border border-slate-200 p-4">
-                        <p className="text-sm text-slate-500">Ventas Total</p>
-                        <p className="text-xl font-bold text-slate-900">S/ {ESTADISTICAS.ventasTotal.toLocaleString()}</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6 md:mb-8">
+                    <div className="bg-white rounded-xl border border-slate-200 p-3 md:p-4">
+                        <p className="text-xs md:text-sm text-slate-500">Ventas Total</p>
+                        <p className="text-base md:text-xl font-bold text-slate-900">S/ {ESTADISTICAS.ventasTotal.toLocaleString()}</p>
                     </div>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4">
-                        <p className="text-sm text-slate-500">Pedidos</p>
-                        <p className="text-xl font-bold text-slate-900">{ESTADISTICAS.pedidosTotal}</p>
+                    <div className="bg-white rounded-xl border border-slate-200 p-3 md:p-4">
+                        <p className="text-xs md:text-sm text-slate-500">Pedidos</p>
+                        <p className="text-base md:text-xl font-bold text-slate-900">{ESTADISTICAS.pedidosTotal}</p>
                     </div>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4">
-                        <p className="text-sm text-slate-500">Promedio</p>
-                        <p className="text-xl font-bold text-slate-900">S/ {ESTADISTICAS.promedioPedido.toFixed(2)}</p>
+                    <div className="bg-white rounded-xl border border-slate-200 p-3 md:p-4">
+                        <p className="text-xs md:text-sm text-slate-500">Promedio</p>
+                        <p className="text-base md:text-xl font-bold text-slate-900">S/ {ESTADISTICAS.promedioPedido.toFixed(2)}</p>
                     </div>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4">
-                        <p className="text-sm text-slate-500">Nuevos Clientes</p>
-                        <p className="text-xl font-bold text-green-600">+{ESTADISTICAS.clientesNuevos}</p>
+                    <div className="bg-white rounded-xl border border-slate-200 p-3 md:p-4">
+                        <p className="text-xs md:text-sm text-slate-500">Nuevos Clientes</p>
+                        <p className="text-base md:text-xl font-bold text-green-600">+{ESTADISTICAS.clientesNuevos}</p>
                     </div>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4">
-                        <p className="text-sm text-slate-500">Productos Vendidos</p>
-                        <p className="text-xl font-bold text-slate-900">{ESTADISTICAS.productosVendidos}</p>
+                    <div className="bg-white rounded-xl border border-slate-200 p-3 md:p-4">
+                        <p className="text-xs md:text-sm text-slate-500">Productos Vendidos</p>
+                        <p className="text-base md:text-xl font-bold text-slate-900">{ESTADISTICAS.productosVendidos}</p>
                     </div>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4">
-                        <p className="text-sm text-slate-500">Conversion</p>
-                        <p className="text-xl font-bold text-blue-600">{ESTADISTICAS.tasaConversion}%</p>
+                    <div className="bg-white rounded-xl border border-slate-200 p-3 md:p-4">
+                        <p className="text-xs md:text-sm text-slate-500">Conversion</p>
+                        <p className="text-base md:text-xl font-bold text-blue-600">{ESTADISTICAS.tasaConversion}%</p>
                     </div>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-8 mb-8">
-                    <div className="bg-white rounded-xl border border-slate-200 p-6">
-                        <h2 className="text-lg font-bold text-slate-900 mb-4">Ventas Semanales</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-6 md:mb-8">
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+                        <h2 className="text-base md:text-lg font-bold text-slate-900 mb-4">Ventas Semanales</h2>
                         <GraficoBarras 
                             data={DATOS_VENTAS.semanal.map(d => ({ label: d.dia, value: d.ventas }))}
                             maxValue={maxVentasSemana}
                         />
                     </div>
 
-                    <div className="bg-white rounded-xl border border-slate-200 p-6">
-                        <h2 className="text-lg font-bold text-slate-900 mb-4">Ventas Mensuales</h2>
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+                        <h2 className="text-base md:text-lg font-bold text-slate-900 mb-4">Ventas Mensuales</h2>
                         <GraficoBarras 
                             data={DATOS_VENTAS.mensual.map(d => ({ label: d.semana, value: d.ventas }))}
                             maxValue={Math.max(...DATOS_VENTAS.mensual.map(d => d.ventas))}
@@ -150,9 +150,9 @@ export default async function EstadisticasPage() {
                     </div>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-8">
-                    <div className="bg-white rounded-xl border border-slate-200 p-6">
-                        <h2 className="text-lg font-bold text-slate-900 mb-4">Top Productos Vendidos</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+                        <h2 className="text-base md:text-lg font-bold text-slate-900 mb-4">Top Productos Vendidos</h2>
                         <div className="space-y-3">
                             {DATOS_VENTAS.productos.map((prod, idx) => (
                                 <div key={idx} className="flex items-center gap-4">
@@ -176,8 +176,8 @@ export default async function EstadisticasPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl border border-slate-200 p-6">
-                        <h2 className="text-lg font-bold text-slate-900 mb-4">Resumen por Dia</h2>
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+                        <h2 className="text-base md:text-lg font-bold text-slate-900 mb-4">Resumen por Dia</h2>
                         <div className="space-y-4">
                             {DATOS_VENTAS.semanal.slice(0, 5).map((dia, idx) => (
                                 <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">

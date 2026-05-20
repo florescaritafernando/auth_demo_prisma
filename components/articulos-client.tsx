@@ -50,7 +50,7 @@ export function ArticulosClient({ initialProductos }: Props) {
     const paginatedData = filtered.slice(startIdx, startIdx + pageSize)
 
     return (
-        <div className="p-6 md:p-10 font-sans">
+        <div className="p-4 md:p-6 lg:p-10 font-sans">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
