@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Search, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search } from "lucide-react"
+import { Pagination } from "@/components/ui/pagination"
 import { BotonNuevoProducto, BotonEliminarProducto } from "@/components/nuevo-producto-button"
 import { BotonVerStock } from "@/components/stock-detail-button"
 import { BotonEditarProducto } from "@/components/editar-producto-button"
@@ -19,6 +20,10 @@ interface Producto {
     precio: number
     activo: boolean
     stocks: Stock[]
+    tipocolores: string | null
+    tipodiseno: string | null
+    descripcion: string | null
+    imagen: string | null
 }
 
 interface Props {
@@ -34,8 +39,8 @@ export function ArticulosClient({ initialProductos }: Props) {
     const [currentPage, setCurrentPage] = useState(1)
 
     const filtered = initialProductos.filter(p => {
-        const matchSearch = p.nombre.toLowerCase().includes(search.toLowerCase()) || 
-                       p.categoria.toLowerCase().includes(search.toLowerCase())
+        const matchSearch = p.nombre.toLowerCase().includes(search.toLowerCase()) ||
+            p.categoria.toLowerCase().includes(search.toLowerCase())
         const matchCategoria = !filtroCategoria || p.categoria === filtroCategoria
         return matchSearch && matchCategoria
     })
@@ -45,7 +50,7 @@ export function ArticulosClient({ initialProductos }: Props) {
     const paginatedData = filtered.slice(startIdx, startIdx + pageSize)
 
     return (
-        <div className="p-6 md:p-10 font-sans">
+        <div className="p-4 md:p-6 lg:p-10 font-sans">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
@@ -59,9 +64,9 @@ export function ArticulosClient({ initialProductos }: Props) {
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                            <input 
-                                type="text" 
-                                placeholder="Buscar por nombre..." 
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre..."
                                 className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm text-slate-800 placeholder:text-slate-400"
                                 value={search}
                                 onChange={(e) => {
@@ -128,7 +133,7 @@ export function ArticulosClient({ initialProductos }: Props) {
                                             </td>
                                             <td className="px-3 py-3 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <BotonEditarProducto producto={prod} />
+                                                    <BotonEditarProducto producto={prod as any} />
                                                     <BotonEliminarProducto id={prod.id} />
                                                 </div>
                                             </td>
@@ -140,50 +145,15 @@ export function ArticulosClient({ initialProductos }: Props) {
                     </div>
                 </div>
 
-                <div className="mt-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <span>Mostrar</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value))
-                                setCurrentPage(1)
-                            }}
-                            className="border rounded px-2 py-1"
-                        >
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
-                        <span>por pagina</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-500">
-                            Pagina {currentPage} de {totalPages || 1}
-                        </span>
-                        <div className="flex gap-1">
-                            <button
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="p-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-                            <button
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage >= totalPages}
-                                className="p-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-2 text-sm text-slate-500 text-center">
-                    Mostrando {startIdx + 1}-{Math.min(startIdx + pageSize, filtered.length)} de {filtered.length} articulos
-                </div>
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    itemsPerPage={pageSize}
+                    totalItems={filtered.length}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={setPageSize}
+                    itemLabel="articulos"
+                />
             </div>
         </div>
     )

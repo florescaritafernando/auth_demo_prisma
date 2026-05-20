@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
 
     const almacenes = await prisma.almacen.findMany({
         where,
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
+        include: { responsable: { select: { id: true, name: true, email: true } } }
     })
 
     return NextResponse.json({ success: true, almacenes })
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { nombre, direccion, telefono, responsable, ciudad } = body
+    const { nombre, direccion, telefono, responsableId, ciudad } = body
 
     try {
         const almacen = await prisma.almacen.create({
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
                 nombre,
                 direccion,
                 telefono: telefono || null,
-                responsable: responsable || null,
+                responsableId: responsableId || null,
                 ciudad: ciudad || null,
                 activo: true,
             }

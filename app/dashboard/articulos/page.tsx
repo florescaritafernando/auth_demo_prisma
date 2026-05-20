@@ -34,5 +34,5 @@ export default async function ArticulosPage() {
 
     const productos = await getProductos();
 
-    return <ArticulosClient initialProductos={productos} />;
+    return <ArticulosClient initialProductos={productos as any} />;
 }

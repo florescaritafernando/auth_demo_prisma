@@ -9,8 +9,7 @@ export async function GET(
     const { id } = await params
 
     const almacen = await prisma.almacen.findUnique({
-        where: { id },
-        include: { productos: true }
+        where: { id }
     })
 
     if (!almacen) {

@@ -137,7 +137,7 @@ function SidebarProvider({
           } as React.CSSProperties
         }
         className={cn(
-          "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
+          "group/sidebar-wrapper flex h-[100dvh] w-full has-data-[variant=inset]:bg-sidebar",
           className
         )}
         {...props}
@@ -263,7 +263,7 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon-sm"
-      className={cn(className)}
+      className={cn("bg-slate-900 text-white hover:bg-slate-800 hover:text-white", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()

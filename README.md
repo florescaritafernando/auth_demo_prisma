@@ -34,3 +34,37 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+pasos que segui para crear este proyecto
+
+npm install 
+npm install better-auth
+npx prisma generate
+npx prisma db push
+npx prisma migrate dev
+npm run dev
+
+
+notas
+
+en mac 
+
+rm -rf .next node_modules package-lock.json
+npm install lightningcss
+npm install
+npm run dev
+
+
+### cambiar para maquina locals
+
+### app/dashboard/pedidos/page.tsx
+
+//const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/pedidos
+
+//const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://landing-page-y-control-panel.onrender.com"}/api/
+
+### lib/auth-client.ts
+
+//baseURL: process.env.NEXT_PUBLIC_API_URL
+//baseURL: "http://localhost:3000"

@@ -1,3 +1,8 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
@@ -8,34 +13,48 @@ datasource db {
 }
 
 model User {
-  id             String         @id
-  name           String
-  email          String         @unique
-  emailVerified  Boolean        @default(false)
-  image          String?
-  role           String         @default("cliente")
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  tipoDocumento  String?
-  numeroDoc      String?
-  direccion      String?
-  celular        String?
-  accounts       Account[]
-  almacen        Almacen[]
-  carrito        Carrito[]
-  notificaciones Notificacion[]
-  pedidos        Pedido[]
-  reclamos       Reclamo[]
-  sessions       Session[]
-  tienda         tienda[]
+  id            String   @id
+  name          String
+  email         String
+  emailVerified Boolean  @default(false)
+  image         String?
+  role          String   @default("cliente")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  // Preferencias
+  preferencias  Json?    @default("{}") // {"sonidoNotificaciones": true}
+
+  // Datos de facturación persistentes
+  tipoDocumento String? // "dni" | "ruc" | "ce"
+  numeroDoc     String?
+  direccion     String?
+  celular       String? // Teléfono de uso general
+
+  sessions         Session[]
+  accounts         Account[]
+  carrito          Carrito[]
+  pedidos          Pedido[]
+  reclamos         Reclamo[]
+  notificaciones   Notificacion[]
+  metrajeEtiquetas MetrajeEtiqueta[]
+  feedback         Feedback[]
+  atiendeReclamos  Reclamo[] @relation("ReclamoAtendido")
+  tiendas                Tienda[]
+  almacenes              Almacen[]
+  pedidosDelegados       PedidoDelegado[]
+  favoritos              Favorito[]
+  datosFacturacion       DatosFacturacion[]
+  datosDireccionEnvios   DatosDireccionEnvios[]
+
+  @@unique([email])
   @@map("user")
 }
 
 model Session {
   id        String   @id
   expiresAt DateTime
-  token     String   @unique
+  token     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ipAddress String?
@@ -43,6 +62,7 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([token])
   @@index([userId])
   @@map("session")
 }
@@ -52,6 +72,7 @@ model Account {
   accountId             String
   providerId            String
   userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -61,7 +82,6 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("account")
@@ -81,19 +101,23 @@ model Verification {
 
 model Producto {
   id            String          @id @default(cuid())
-  nombre        String          @unique
+  nombre        String
   categoria     String          @default("MANCHESTER SUITING")
   descripcion   String?
   precio        Float
   imagen        String?
   proveedorId   String?
   activo        Boolean         @default(true)
+  tipocolores   String?
+  tipodiseno    String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   carrito       Carrito[]
   pedidoDetalle PedidoDetalle[]
   stocks        ProductoStock[]
+  favoritos     Favorito[]
 
+  @@unique([nombre, categoria])
   @@map("producto")
 }
 
@@ -106,8 +130,8 @@ model Almacen {
   ciudad        String?
   activo        Boolean         @default(true)
   createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @default(now()) @updatedAt
-  user          User?           @relation(fields: [responsableId], references: [id])
+  updatedAt     DateTime        @default(now())
+  responsable   User?           @relation(fields: [responsableId], references: [id])
   stocks        ProductoStock[]
 
   @@index([responsableId])
@@ -119,23 +143,37 @@ model ProductoStock {
   productoId String
   almacenId  String
   stock      Int      @default(0)
-  almacen    Almacen  @relation(fields: [almacenId], references: [id], onDelete: Cascade)
   producto   Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  almacen    Almacen  @relation(fields: [almacenId], references: [id], onDelete: Cascade)
 
   @@unique([productoId, almacenId])
   @@map("producto_stock")
 }
 
-model Carrito {
+model Favorito {
   id         String   @id @default(cuid())
   userId     String
   productoId String
-  cantidad   Float    @default(1)
-  tipo       String   @default("metros")
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  producto   Producto @relation(fields: [productoId], references: [id])
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productoId])
+  @@index([userId])
+  @@map("favorito")
+}
+
+model Carrito {
+  id                String   @id @default(cuid())
+  userId            String
+  productoId        String
+  cantidad          Float    @default(1)
+  tipo              String   @default("metros") // "metros" or "pieza"
+  indicacionesCorte String? // Indicaciones de corte (máx 200 caracteres)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  producto          Producto @relation(fields: [productoId], references: [id])
 
   @@unique([userId, productoId, tipo])
   @@index([userId])
@@ -143,106 +181,151 @@ model Carrito {
 }
 
 model Pedido {
-  id              String          @id @default(cuid())
-  userId          String
-  numeroOrden     String          @unique
-  estado          String          @default("metraje_en_proceso")
-  total           Float
-  tipoDocumento   String?
-  numeroDoc       String?
-  nombreFactura   String?
-  direccion       String?
-  metodoEnvio     String?
-  tiendaId        String?
-  tipoEnvio       String?
-  agencia         String?
-  agenciaOtro     String?
-  delivery        String?
-  deliveryOtro    String?
-  departamento    String?
-  provincia       String?
-  distrito        String?
-  costoEnvio      Float           @default(0)
-  dniRecibe       String?
-  nombreRecibe    String?
-  celularRecibe   String?
+  id          String @id @default(cuid())
+  userId      String
+  numeroOrden String @unique // "ORD-2026-0001"
+  estado      String @default("metraje_en_proceso")
+  // Estados: metraje_en_proceso | metraje_confirmado | pendiente | confirmado | completado
+  total       Float
+
+  // Datos de facturación
+  tipoDocumento String? // "dni" | "ruc" | "ce"
+  numeroDoc     String?
+  nombreFactura String?
+  direccion     String?
+
+  // Método de envío
+  metodoEnvio  String? // "tienda" | "agencia" | "delivery"
+  tiendaId     String?
+  tienda       Tienda? @relation(fields: [tiendaId], references: [id])
+  tipoEnvio    String? // "mismapersona" | "otropersona" (para agencia/delivery)
+  agencia      String? // "shalom" | "flores" | "marvisur" | "otros"
+  agenciaOtro  String?
+  delivery     String? // "olva" | "safexpress" | "otros"
+  deliveryOtro String?
+  departamento String?
+  provincia    String?
+  distrito     String?
+  costoEnvio   Float   @default(0)
+
+  // Datos de quien recibe (para otra persona)
+  dniRecibe     String?
+  nombreRecibe  String?
+  celularRecibe String?
+
+  // Pago
   numeroOperacion String?
   notas           String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  notificaciones  Notificacion[]
-  tienda          tienda?         @relation(fields: [tiendaId], references: [id])
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pedidoDetalle   PedidoDetalle[]
-  reclamos        Reclamo[]
+  comprobantePago String? // URL del comprobante de pago (Cloudinary)
+
+  // Delegación y seguimiento
+  motivoRechazo String? // Motivo cuando se rechaza
+  delegados     PedidoDelegado[]
+  feedback       Feedback[]
+  pedidoEmpleadoInfo PedidoEmpleadoInfo?
+  clientePedidoId String?
+  clientePedido   ClientePedido? @relation(fields: [clientePedidoId], references: [id])
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedidoDetalle  PedidoDetalle[]
+  reclamos       Reclamo[]
+  notificaciones Notificacion[]
 
   @@index([userId])
   @@map("pedido")
 }
 
 model PedidoDetalle {
-  id               String             @id @default(cuid())
-  pedidoId         String
-  productoId       String
-  cantidad         Float
-  tipo             String             @default("metros")
-  metraje          Float?
-  precio           Float
-  metraje_etiqueta metraje_etiqueta[]
-  pedido           Pedido             @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  producto         Producto           @relation(fields: [productoId], references: [id])
+  id                String            @id @default(cuid())
+  pedidoId          String
+  productoId        String
+  cantidad          Float // Cantidad original (piezas o metros)
+  tipo              String            @default("metros") // "metros" | "pieza"
+  metraje           Float? // Metraje exacto en metros (cuando admin_edita)
+  precio            Float
+  indicacionesCorte String? // Indicaciones de corte para este item (máx 200 caracteres)
+  pedido            Pedido            @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto          Producto          @relation(fields: [productoId], references: [id])
+  etiquetas         MetrajeEtiqueta[]
 
   @@index([pedidoId])
   @@map("pedido_detalle")
 }
 
+model MetrajeEtiqueta {
+  id        String        @id @default(cuid())
+  detalleId String
+  valor     Float
+  userId    String? // Usuario que crea la etiqueta de metraje
+  createdAt DateTime      @default(now())
+  detalle   PedidoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id])
+
+  @@index([detalleId])
+  @@index([userId])
+  @@map("metraje_etiqueta")
+}
+
 model Reclamo {
-  id          String   @id @default(cuid())
-  userId      String
-  pedidoId    String?
-  tipo        String
-  descripcion String
-  estado      String   @default("pendiente")
-  respuesta   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  pedido      Pedido?  @relation(fields: [pedidoId], references: [id])
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String
+  pedidoId      String?
+  tipo          String   // "queja" | "reclamo"
+  descripcion   String
+  detalle_pedido String?  // detalle adicional sobre el problema
+  estado        String   @default("pendiente")
+  respuesta     String?
+  atendidoPorId String?
+  atendidoPor   User?   @relation("ReclamoAtendido", fields: [atendidoPorId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedido        Pedido?  @relation(fields: [pedidoId], references: [id])
 
   @@index([userId])
   @@index([pedidoId])
+  @@index([tipo])
+  @@index([atendidoPorId])
   @@map("reclamo")
+}
+
+model Feedback {
+  id          String   @id @default(cuid())
+  pedidoId    String
+  userId      String
+  calificacion Int      // 0-5 estrellas (requerido)
+  comentario  String?   // opcional
+  etiquetas   String?   // opcional (separadas por coma)
+  createdAt   DateTime @default(now())
+  pedido      Pedido   @relation(fields: [pedidoId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([pedidoId])
+  @@index([userId])
+  @@map("feedback")
 }
 
 model Notificacion {
   id        String   @id @default(cuid())
   userId    String
-  tipo      String
+  tipo      String // "metraje_confirmado" | "pedido_estado" | "sistema" | "pedido"
   titulo    String
   mensaje   String
   pedidoId  String?
   leida     Boolean  @default(false)
   createdAt DateTime @default(now())
-  pedido    Pedido?  @relation(fields: [pedidoId], references: [id])
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedido    Pedido?  @relation(fields: [pedidoId], references: [id])
 
   @@index([userId])
   @@index([userId, leida])
   @@map("notificacion")
 }
 
-model metraje_etiqueta {
-  id             String        @id
-  detalleId      String
-  valor          Float
-  createdAt      DateTime      @default(now())
-  pedido_detalle PedidoDetalle @relation(fields: [detalleId], references: [id], onDelete: Cascade)
-
-  @@index([detalleId])
-}
-
-model tienda {
-  id          String   @id
+model Tienda {
+  id          String   @id @default(cuid())
   nombre      String
   direccion   String
   referencia  String?
@@ -250,8 +333,124 @@ model tienda {
   activo      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
-  pedido      Pedido[]
-  user        User     @relation(fields: [encargadoId], references: [id])
+
+  encargado User     @relation(fields: [encargadoId], references: [id])
+  pedidos   Pedido[]
 
   @@index([encargadoId])
+  @@map("tienda")
+}
+
+model PedidoDelegado {
+  id        String   @id @default(cuid())
+  pedidoId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([pedidoId, userId]) // Un empleado solo puede ser asignado una vez por pedido
+  @@index([pedidoId])
+  @@index([userId])
+  @@map("pedido_delegado")
+}
+
+model PedidoEmpleadoInfo {
+  id           String   @id @default(cuid())
+  pedidoId     String   @unique
+  pedido       Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  empresa      String?
+  metodoPago   String?
+  telefono     String?
+  guiaRemision Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("pedido_empleado_info")
+}
+
+model DatosFacturacion {
+  id             String   @id @default(cuid())
+  userId         String
+  nombre         String   // "Plantilla facturación", "Plantilla facturación 2", etc.
+
+  // Datos de facturación
+  tipoDocumento  String   // "dni" | "ruc" | "ce"
+  numeroDoc      String
+  nombreFactura  String
+  razonSocial    String?  // Solo para RUC
+  direccion      String?  // Dirección (para RUC o ubigeo)
+  departamento  String?
+  provincia      String?
+  distrito       String?
+  celular        String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("datos_facturacion")
+}
+
+model DatosDireccionEnvios {
+  id             String   @id @default(cuid())
+  userId         String
+  nombre         String   // "Plantilla dirección de envío", "Plantilla dirección de envío 2", etc.
+
+  // Método de envío
+  metodoEnvio    String   // "agencia" | "delivery" (no "tienda")
+  tiendaId       String?
+  agencia        String?  // "shalom" | "flores" | "marvisur" | "olva" | "safexpress" | "otros"
+  agenciaOtro    String?
+  delivery       String?  // "olva" | "safexpress" | "otros"
+  deliveryOtro   String?
+
+  // Ubicación
+  departamento   String?
+  provincia      String?
+  distrito       String?
+
+  // Dirección de envío (nuevo campo para agencia/delivery)
+  direccion      String?  // Dirección específica de entrega
+
+  // Datos de quien recibe
+  tipoEnvio      String?  // "mismapersona" | "otropersona"
+  dniRecibe      String?
+  nombreRecibe   String?
+  celularRecibe  String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("datos_direccion_envios")
+}
+
+model ClientePedido {
+  id              String   @id @default(cuid())
+  nombre          String
+  tipoDoc         String   // "dni" | "ruc" | "ce"
+  numeroDoc       String
+  razonSocial     String?  // para RUC
+  direccion       String?
+  telefono        String?
+  agencia         String?  // "shalom" | "flores" | "marvisur" | "otros"
+  agenciaOtro     String?
+  guiaRemision    Boolean  @default(false)
+  departamento    String?
+  provincia       String?
+  distrito        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  pedidos         Pedido[]
+
+  @@unique([nombre, numeroDoc])
+  @@index([numeroDoc])
+  @@map("cliente_pedido")
 }

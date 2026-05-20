@@ -1,107 +1,257 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldSeparator,
-} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { GalleryVerticalEndIcon } from "lucide-react"
+import { AlertCircle, UserPlus, ArrowLeft, CheckCircle } from "lucide-react"
 import { registerEmail } from "@/server/auth-actions"
+import Link from "next/link"
 
-export function SignupForm({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
-  return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <form action={registerEmail}>
-        <FieldGroup>
-          <div className="flex flex-col items-center gap-2 text-center">
-            <a
-              href="#"
-              className="flex flex-col items-center gap-2 font-medium"
-            >
-              <div className="flex size-8 items-center justify-center rounded-md">
-                <GalleryVerticalEndIcon className="size-6" />
-              </div>
-              <span className="sr-only">MANCHESTER Inc.</span>
-            </a>
-            <h1 className="text-xl font-bold">Welcome to MANCHESTER Inc.</h1>
-            <FieldDescription>
-              Already have an account? <a href="/login">Sign in</a>
-            </FieldDescription>
+export function SignupForm() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+  const [emailValue, setEmailValue] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
+
+    const formData = new FormData(e.currentTarget)
+    const password = formData.get("password") as string
+    const confirmPassword = formData.get("confirmPassword") as string
+
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden")
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      await registerEmail(formData as any)
+      setEmailValue(formData.get("email") as string)
+      setSuccess(true)
+      setIsLoading(false)
+    } catch (err: any) {
+      setError(err.message || "Error al registrar")
+      setIsLoading(false)
+    }
+  }
+
+  if (success) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
+        <div className="flex flex-col items-center text-center">
+          <div className="w-16 h-16 bg-green-100 flex items-center justify-center rounded-2xl mb-6">
+            <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <Field>
-            <FieldLabel htmlFor="name">Full Name</FieldLabel>
-            <Input name="name"
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-3">
+            ¡Cuenta Creada!
+          </h1>
+          <p className="text-sm text-slate-600 leading-relaxed mb-2">
+            Se ha enviado un enlace de verificación a
+          </p>
+          <p className="text-base font-medium text-slate-900 mb-6">
+            {emailValue}
+          </p>
+          <p className="text-sm text-slate-500 leading-relaxed mb-6">
+            Revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta.
+          </p>
+          <div className="pt-6 border-t border-slate-100 w-full">
+            <Link
+              href="/login"
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+            >
+              Ir al inicio de sesión
+            </Link>
+            <div className="mt-6">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => window.location.href = "/"}
+                className="w-full mt-4 py-2.5 border border-slate-400 shadow-sm text-slate-700 bg-white hover:bg-slate-100 hover:border-slate-700 hover:shadow-md hover:text-slate-900 font-medium rounded-lg transition-all duration-200"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Volver a la página principal
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
+      <div className="flex flex-col items-center text-center mb-8">
+        <Link href="/" className="flex flex-col items-center gap-2 font-medium mb-6">
+          <div className="w-12 h-12 bg-slate-900 flex items-center justify-center rounded-xl shadow-lg shadow-slate-900/20">
+            <UserPlus className="w-6 h-6 text-white" />
+          </div>
+          <span className="sr-only">Manchester Collection Peru</span>
+        </Link>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-2">
+          Crear Cuenta
+        </h1>
+        <p className="text-sm text-slate-600">
+          ¿Ya tienes una cuenta?{" "}
+          <Link href="/login" className="text-slate-900 font-medium hover:underline">
+            Iniciar sesión
+          </Link>
+        </p>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <span className="text-sm font-medium">{error}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-5">
+          <div>
+            <label htmlFor="name" className="text-xs text-slate-500 uppercase tracking-wide mb-2 block">
+              Nombre completo
+            </label>
+            <Input
+              name="name"
               id="name"
               type="text"
-              placeholder="Ingrese nombre de usuario"
+              placeholder="Juan Pérez"
               required
+              className="w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-0 transition-colors duration-200"
             />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input name="email"
+          </div>
+
+          <div>
+            <label htmlFor="email" className="text-xs text-slate-500 uppercase tracking-wide mb-2 block">
+              Correo electrónico
+            </label>
+            <Input
+              name="email"
               id="email"
               type="email"
-              placeholder="m@example.com"
+              placeholder="tu@correo.com"
               required
+              className="w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-0 transition-colors duration-200"
             />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input name="password"
-              id="password"
-              type="password"
-              placeholder="ingrese su clave"
-              required
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="confirmPassword">Repeat Password</FieldLabel>
-            <Input name="confirmPassword"
-              id="confirmPassword"
-              type="password"
-              placeholder="ingrese su clave de nuevo"
-              required
-            />
-          </Field>
-          <Field>
-            <Button type="submit">Create Account</Button>
-          </Field>
-          <FieldSeparator>Or</FieldSeparator>
-          <Field className="grid gap-4 sm:grid-cols-2">
-            <Button variant="outline" type="button">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path
-                  d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
-                  fill="currentColor"
-                />
-              </svg>
-              Continue with Apple
-            </Button>
-            <Button variant="outline" type="button">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path
-                  d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                  fill="currentColor"
-                />
-              </svg>
-              Continue with Google
-            </Button>
-          </Field>
-        </FieldGroup>
+          </div>
+
+          <div>
+            <label htmlFor="password" className="text-xs text-slate-500 uppercase tracking-wide mb-2 block">
+              Contraseña
+            </label>
+            <div className="relative">
+              <Input
+                name="password"
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Mínimo 6 caracteres"
+                required
+                minLength={6}
+                className="w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-0 transition-colors duration-200 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                {showPassword ? (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="text-xs text-slate-500 uppercase tracking-wide mb-2 block">
+              Confirmar contraseña
+            </label>
+            <div className="relative">
+              <Input
+                name="confirmPassword"
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Repite tu contraseña"
+                required
+                minLength={6}
+                className="w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-0 transition-colors duration-200 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                {showConfirmPassword ? (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creando cuenta...
+              </span>
+            ) : "Crear Cuenta"}
+          </Button>
+        </div>
       </form>
-      <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
-      </FieldDescription>
+
+      <div className="mt-6 pt-6 border-t border-slate-100 text-center">
+        <p className="text-xs text-slate-500">
+          Al registrarte, aceptas nuestros{" "}
+          <a href="#" className="text-slate-600 hover:underline">Términos de Servicio</a>{" "}
+          y{" "}
+          <a href="#" className="text-slate-600 hover:underline">Política de Privacidad</a>.
+        </p>
+      </div>
+
+      <div className="mt-6">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => window.location.href = "/"}
+          className="w-full mt-4 py-2.5 border border-slate-400 shadow-sm text-slate-700 bg-white hover:bg-slate-100 hover:border-slate-700 hover:shadow-md hover:text-slate-900 font-medium rounded-lg transition-all duration-200"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Volver a la página principal
+        </Button>
+
+      </div>
     </div>
   )
 }

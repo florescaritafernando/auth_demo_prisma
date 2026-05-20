@@ -17,6 +17,8 @@ interface Producto {
     precio: number
     imagen: string | null
     activo: boolean
+    tipocolores: string | null
+    tipodiseno: string | null
     stocks: { almacenId: string; stock: number }[]
 }
 
@@ -25,6 +27,43 @@ const CATEGORIAS = [
     "LONDON FANCY SUITING",
     "MANCHESTER STRECH",
     "MANCHESTER FASHION",
+]
+
+const COLOR_HEX: Record<string, string> = {
+    "negro": "#1a1a1a",
+    "azul noche": "#090e1c",
+    "azul barcelona": "#2c104b",
+    "azul electrico": "#2b1ea4",
+    "azul acero": "#2b3486",
+    "celeste": "#478eae",
+    "vino": "#4f1919ff",
+    "rosado": "#ec4899",
+    "lila": "#d29bfd",
+    "rojo": "#dc2626",
+    "verde olivo": "#80bb99ff",
+    "verde": "#2e5a3f",
+    "beige": "#d4c9a9",
+    "hueso": "#c9c4b1",
+    "blanco": "#f5f5f5",
+    "marron": "#452a1b",
+    "amarillo": "#fcd34d",
+    "plomo oscuro": "#363535ff",
+    "plomo plata": "#b4b3b3ff",
+}
+
+const TIPOCOLORES = Object.keys(COLOR_HEX)
+
+const TIPODISENO = [
+    "Mil Rayas",
+    "Jacket",
+    "Super 120",
+    "Entero Satinado",
+    "Entero Semi Satinado",
+    "Entero Mate",
+    "Escarchado",
+    "Panal",
+    "Brocado",
+    "Cuadros",
 ]
 
 export function BotonEditarProducto({ producto }: { producto: Producto }) {
@@ -39,10 +78,13 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
         descripcion: "",
         precio: "",
         activo: true,
+        tipocolores: [] as string[],
+        tipodiseno: "",
     })
     const [stocks, setStocks] = useState<Record<string, number>>({})
     const [imagenFile, setImagenFile] = useState<File | null>(null)
     const [imagenPreview, setImagenPreview] = useState<string>("")
+    const [uploading, setUploading] = useState(false)
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
@@ -52,15 +94,20 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
 
     useEffect(() => {
         if (producto && open) {
+            const coloresArray = producto.tipocolores
+                ? producto.tipocolores.split(",").filter(c => c.trim())
+                : []
             setForm({
                 nombre: producto.nombre,
                 categoria: producto.categoria,
                 descripcion: producto.descripcion || "",
                 precio: String(producto.precio),
                 activo: producto.activo,
+                tipocolores: coloresArray,
+                tipodiseno: producto.tipodiseno || "",
             })
             setImagenPreview(producto.imagen || "")
-            
+
             const stockMap: Record<string, number> = {}
             producto.stocks.forEach(s => {
                 stockMap[s.almacenId] = s.stock
@@ -104,12 +151,14 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                     ...form,
                     precio: parseFloat(form.precio),
                     imagen: imagenUrl,
+                    tipocolores: form.tipocolores.join(","),
+                    tipodiseno: form.tipodiseno,
                     stocks
                 }),
                 credentials: "include",
             })
             const data = await res.json()
-            
+
             if (data.success) {
                 setOpen(false)
                 router.refresh()
@@ -138,11 +187,14 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
 
     const handleUpload = async () => {
         if (!imagenFile) return imagenPreview
-        
+
+        setUploading(true)
         try {
             const formData = new FormData()
             formData.append("file", imagenFile)
-            
+            formData.append("tipo", "producto")
+            formData.append("nombreProducto", producto.nombre)
+
             const res = await fetch("/api/upload", {
                 method: "POST",
                 body: formData,
@@ -152,6 +204,8 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
             if (data.url) return data.url
         } catch (e) {
             console.error("Error uploading:", e)
+        } finally {
+            setUploading(false)
         }
         return imagenPreview
     }
@@ -185,7 +239,7 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                     <h2 className="text-lg font-bold text-slate-900">Editar Articulo</h2>
                     <button onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 rounded text-slate-600">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6 6 18M6 6l12 12"/>
+                            <path d="M18 6 6 18M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -243,6 +297,53 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                     </div>
 
                     <div>
+                        <label className="block text-sm font-medium mb-1 text-slate-700">Tipo de Color</label>
+                        <div className="grid grid-cols-4 gap-2 p-3 border border-slate-300 rounded-lg bg-white max-h-40 overflow-y-auto">
+                            {TIPOCOLORES.map((color) => (
+                                <label
+                                    key={color}
+                                    className={`flex items-center gap-2 text-xs cursor-pointer p-2 rounded-lg border transition-all ${form.tipocolores.includes(color)
+                                        ? "border-slate-400 bg-slate-100"
+                                        : "border-transparent hover:bg-slate-50"
+                                        }`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={form.tipocolores.includes(color)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setForm({ ...form, tipocolores: [...form.tipocolores, color] })
+                                            } else {
+                                                setForm({ ...form, tipocolores: form.tipocolores.filter(c => c !== color) })
+                                            }
+                                        }}
+                                        className="hidden"
+                                    />
+                                    <span
+                                        className={`w-4 h-4 rounded-full border border-slate-300 flex-shrink-0 ${form.tipocolores.includes(color) ? "ring-2 ring-slate-400 ring-offset-1" : ""}`}
+                                        style={{ backgroundColor: COLOR_HEX[color] }}
+                                    />
+                                    <span className="truncate capitalize">{color}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-slate-700">Tipo de Diseño</label>
+                        <select
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                            value={form.tipodiseno}
+                            onChange={(e) => setForm({ ...form, tipodiseno: e.target.value })}
+                        >
+                            <option value="">Seleccionar...</option>
+                            {TIPODISENO.map((diseno) => (
+                                <option key={diseno} value={diseno}>{diseno}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
                         <label className="block text-sm font-medium mb-1 text-slate-700">Imagen del Producto</label>
                         <input
                             type="file"
@@ -250,12 +351,12 @@ export function BotonEditarProducto({ producto }: { producto: Producto }) {
                             onChange={handleFileChange}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 file:font-medium file:cursor-pointer"
                         />
-{imagenPreview && (
-                                <div className="mt-2">
-                                    <img src={imagenPreview} alt="Preview" className="w-48 h-48 object-contain rounded-lg border bg-white p-2" />
-                                    <p className="text-xs text-slate-500 mt-1">Imagen actual - click para cambiar</p>
-                                </div>
-                            )}
+                        {imagenPreview && (
+                            <div className="mt-2">
+                                <img src={imagenPreview} alt="Preview" className="w-48 h-48 object-contain rounded-lg border bg-white p-2" />
+                                <p className="text-xs text-slate-500 mt-1">Imagen actual - click para cambiar</p>
+                            </div>
+                        )}
                     </div>
 
                     <div>

@@ -1,45 +1,99 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
+import cloudinary from "@/lib/cloudinary"
 
 export async function POST(request: NextRequest) {
     const session = await auth.api.getSession({
         headers: request.headers
     })
-    
+
     if (!session?.user) {
         return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
+    const formData = await request.formData()
+    const tipo = formData.get("tipo") as string // "producto" | "perfil" | "comprobante"
+    const file = formData.get("file") as File
+    const nombreProducto = formData.get("nombreProducto") as string | null
+
+    console.log("Upload - tipo:", tipo, "nombreProducto:", nombreProducto, "file:", file?.name)
+
+    if (!file) {
+        return NextResponse.json({ error: "No hay archivo" }, { status: 400 })
+    }
+
     const role = (session.user as any)?.role
-    if (role !== "admin") {
-        return NextResponse.json({ error: "Solo admins" }, { status: 403 })
+
+    // Solo admins pueden subir imágenes de productos
+    if (tipo === "producto" && role !== "admin") {
+        return NextResponse.json({ error: "Solo admins pueden subir imágenes de productos" }, { status: 403 })
     }
 
     try {
-        const formData = await request.formData()
-        const file = formData.get("file") as File
-
-        if (!file) {
-            return NextResponse.json({ error: "No hay archivo" }, { status: 400 })
-        }
-
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        const uploadDir = join(process.cwd(), "public", "images", "productos")
-        await mkdir(uploadDir, { recursive: true })
+        let folder: string
+        let resourceType: 'image' | 'raw' = 'image'
 
-        const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
-        const filepath = join(uploadDir, filename)
-        await writeFile(filepath, buffer)
+        // Determinar el tipo de recurso basado en la extensión del archivo
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || ''
+        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExt)
 
-        const url = `/images/productos/${filename}`
+        if (tipo === "comprobante") {
+            folder = "comprobantes-pago-pedidos"
+            resourceType = isImage ? 'image' : 'raw'
+        } else {
+            folder = tipo === "perfil" ? "perfiles" : "productos"
+        }
+
+        // Usar nombre del producto o nombre original del archivo como public_id
+        let publicId: string
+        if (nombreProducto) {
+            publicId = nombreProducto.replace(/[^a-zA-Z0-9_-]/g, '-')
+        } else {
+            publicId = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, '-')
+        }
+
+        // Determinar el mime type correcto
+        let mimeType = file.type
+        if (!mimeType) {
+            if (fileExt === 'pdf') mimeType = 'application/pdf'
+            else if (fileExt === 'jpg' || fileExt === 'jpeg') mimeType = 'image/jpeg'
+            else if (fileExt === 'png') mimeType = 'image/png'
+            else if (fileExt === 'gif') mimeType = 'image/gif'
+            else if (fileExt === 'webp') mimeType = 'image/webp'
+        }
+
+        const uploadOptions: any = {
+            folder: folder,
+            public_id: publicId,
+            resource_type: resourceType,
+            overwrite: true,
+        }
+
+        // Solo agregar transformación para imágenes
+        if (resourceType === 'image') {
+            uploadOptions.transformation = [
+                { quality: 'auto:good', fetch_format: 'auto' }
+            ]
+        }
+
+        console.log("Subiendo a Cloudinary:", { tipo, folder, resourceType, mimeType, fileName: file.name, nombreProducto, publicId })
+
+        const result = await cloudinary.uploader.upload(
+            `data:${mimeType};base64,${buffer.toString('base64')}`,
+            uploadOptions
+        )
+
+        console.log("Upload exitoso:", result.secure_url)
+
+        const url = result.secure_url
 
         return NextResponse.json({ success: true, url })
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error uploading:", error)
-        return NextResponse.json({ error: "Error al subir archivo" }, { status: 500 })
+        const errorMessage = error.message || "Error al subir archivo"
+        return NextResponse.json({ error: errorMessage }, { status: 500 })
     }
 }

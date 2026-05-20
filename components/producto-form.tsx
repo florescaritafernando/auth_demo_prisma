@@ -17,6 +17,37 @@ const CATEGORIAS = [
     "Coleccion",
 ]
 
+const TIPOCOLORES = [
+    "negro",
+    "azul noche",
+    "azul marino",
+    "azul electrico",
+    "azul acero",
+    "azul barcelona",
+    "vino",
+    "rosado",
+    "rojo",
+    "verde olivo",
+    "verde",
+    "beige",
+    "hueso",
+    "blanco",
+    "marron",
+    "amarillo",
+]
+
+const TIPODISENO = [
+    "mil rayas",
+    "super 120",
+    "entero satinado",
+    "entero mate",
+    "escarchado",
+    "panal",
+    "brocado",
+    "jacket",
+    "cuadros",
+]
+
 export function ProductoForm({ onClose, onSuccess }: ProductoFormProps) {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
@@ -28,6 +59,8 @@ export function ProductoForm({ onClose, onSuccess }: ProductoFormProps) {
         precio: "",
         stock: "",
         imagen: "",
+        tipocolores: [] as string[],
+        tipodiseno: "",
     })
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -36,10 +69,14 @@ export function ProductoForm({ onClose, onSuccess }: ProductoFormProps) {
         setError("")
 
         try {
+            const payload = {
+                ...form,
+                tipocolores: form.tipocolores.join(","),
+            }
             const res = await fetch("/api/productos", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+                body: JSON.stringify(payload),
                 credentials: "include",
             })
             const data = await res.json()
@@ -104,6 +141,43 @@ export function ProductoForm({ onClose, onSuccess }: ProductoFormProps) {
                         >
                             {CATEGORIAS.map((cat) => (
                                 <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Tipo de Color</label>
+                        <div className="grid grid-cols-4 gap-2 p-3 border rounded-lg max-h-32 overflow-y-auto">
+                            {TIPOCOLORES.map((color) => (
+                                <label key={color} className="flex items-center gap-1 text-xs cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.tipocolores.includes(color)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setForm({ ...form, tipocolores: [...form.tipocolores, color] })
+                                            } else {
+                                                setForm({ ...form, tipocolores: form.tipocolores.filter(c => c !== color) })
+                                            }
+                                        }}
+                                        className="rounded"
+                                    />
+                                    <span className="truncate">{color}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Tipo de Diseño</label>
+                        <select
+                            className="w-full px-3 py-2 border rounded-lg"
+                            value={form.tipodiseno}
+                            onChange={(e) => setForm({ ...form, tipodiseno: e.target.value })}
+                        >
+                            <option value="">Seleccionar...</option>
+                            {TIPODISENO.map((diseno) => (
+                                <option key={diseno} value={diseno}>{diseno}</option>
                             ))}
                         </select>
                     </div>

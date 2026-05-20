@@ -27,6 +27,7 @@ export function BotonNuevoProducto() {
         categoria: "MANCHESTER SUITING",
         descripcion: "",
         precio: "",
+        imagen: ""
     })
     const [stocks, setStocks] = useState<Record<string, number>>({})
     const [imagenFile, setImagenFile] = useState<File | null>(null)
@@ -60,6 +61,7 @@ export function BotonNuevoProducto() {
         e.preventDefault()
         setLoading(true)
         setError("")
+        console.log("handleSubmit - form.nombre:", form.nombre)
 
         try {
             let imagenUrl = ""
@@ -122,9 +124,13 @@ export function BotonNuevoProducto() {
         if (!imagenFile) return null
 
         setUploading(true)
+        console.log("handleUpload - nombre:", form.nombre)
         try {
             const formData = new FormData()
             formData.append("file", imagenFile)
+            formData.append("tipo", "producto")
+            formData.append("nombreProducto", form.nombre)
+            console.log("FormData enviado:", form.nombre)
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -132,14 +138,16 @@ export function BotonNuevoProducto() {
                 credentials: "include",
             })
             const data = await res.json()
-            
+            console.log("Respuesta upload:", data)
+
             if (data.url) {
                 return data.url
             }
         } catch (e) {
             console.error("Error uploading:", e)
+        } finally {
+            setUploading(false)
         }
-        setUploading(false)
         return null
     }
 
@@ -160,7 +168,7 @@ export function BotonNuevoProducto() {
                 className="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-800"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 5v14M5 12h14"/>
+                    <path d="M12 5v14M5 12h14" />
                 </svg>
                 Nuevo Articulo
             </button>
@@ -174,7 +182,7 @@ export function BotonNuevoProducto() {
                     <h2 className="text-lg font-bold text-slate-900">Nuevo Articulo</h2>
                     <button onClick={() => setOpen(false)} className="p-1 hover:bg-slate-100 rounded text-slate-600">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 6 6 18M6 6l12 12"/>
+                            <path d="M18 6 6 18M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -251,7 +259,7 @@ export function BotonNuevoProducto() {
 
                     <div className="border-t border-slate-200 pt-4">
                         <label className="block text-sm font-bold mb-3 text-slate-700">Stock por Almacen</label>
-                        
+
                         {almacenes.length === 0 ? (
                             <p className="text-sm text-slate-500 p-3 bg-slate-50 rounded-lg">
                                 No hay almacenes configuados. Debes crear almacenes primero.
@@ -276,7 +284,7 @@ export function BotonNuevoProducto() {
                                 ))}
                             </div>
                         )}
-                        
+
                         <div className="mt-2 text-right text-sm font-bold text-slate-700 bg-yellow-50 p-2 rounded-lg">
                             Total Stock: {totalStock} unidades
                         </div>
@@ -310,7 +318,7 @@ export function BotonEliminarProducto({ id }: { id: string }) {
 
     const handleDelete = async () => {
         if (!confirm("Estas seguro de eliminar este producto?")) return
-        
+
         setLoading(true)
         try {
             const res = await fetch(`/api/productos/${id}`, {
@@ -328,13 +336,13 @@ export function BotonEliminarProducto({ id }: { id: string }) {
     }
 
     return (
-        <button 
+        <button
             onClick={handleDelete}
             disabled={loading}
             className="p-2 hover:bg-red-50 rounded-lg disabled:opacity-50"
         >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
-                <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
             </svg>
         </button>
     )

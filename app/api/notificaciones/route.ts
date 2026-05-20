@@ -3,24 +3,36 @@ import { headers } from "next/headers"
 import prisma from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const headersList = await headers()
         const session = await auth.api.getSession({ headers: headersList })
-        
+
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
         }
 
+        const { searchParams } = new URL(request.url)
+        const isUltima = searchParams.get("ultima") === "true"
+
+        const whereClause: any = { userId: session.user.id }
+        if (isUltima) {
+            whereClause.tipo = "metraje_confirmado"
+            whereClause.leida = false
+        }
+
         const notificaciones = await prisma.notificacion.findMany({
-            where: { userId: session.user.id },
+            where: whereClause,
             include: {
-                pedido: { select: { numeroOrden: true, estado: true } }
+                pedido: { select: { numeroOrden: true, estado: true, total: true } }
             },
-            orderBy: { createdAt: "desc" }
+            orderBy: { createdAt: "desc" },
+            take: isUltima ? 1 : undefined
         })
 
-        const sinLeer = notificaciones.filter(n => !n.leida).length
+        const sinLeer = await prisma.notificacion.count({
+            where: { userId: session.user.id, leida: false }
+        })
 
         return NextResponse.json({ success: true, notificaciones, sinLeer })
     } catch (error: any) {
@@ -33,7 +45,7 @@ export async function PATCH(request: NextRequest) {
     try {
         const headersList = new Headers(request.headers)
         const session = await auth.api.getSession({ headers: headersList })
-        
+
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
         }

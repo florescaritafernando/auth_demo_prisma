@@ -9,7 +9,7 @@ export async function obtenerCarrito() {
     const session = await auth.api.getSession({
         headers: await headers()
     })
-    
+
     if (!session?.user) {
         return { success: false, error: "No autorizado" }
     }
@@ -27,17 +27,19 @@ export async function agregarAlCarrito(productoId: string, cantidad: number = 1)
     const session = await auth.api.getSession({
         headers: await headers()
     })
-    
+
     if (!session?.user) {
         return { success: false, error: "No autorizado" }
     }
 
     try {
+        const tipoPedido = "metros"
         const existente = await prisma.carrito.findUnique({
             where: {
-                userId_productoId: {
+                userId_productoId_tipo: {
                     userId: session.user.id,
-                    productoId
+                    productoId,
+                    tipo: tipoPedido
                 }
             }
         })
@@ -52,7 +54,8 @@ export async function agregarAlCarrito(productoId: string, cantidad: number = 1)
                 data: {
                     userId: session.user.id,
                     productoId,
-                    cantidad
+                    cantidad,
+                    tipo: tipoPedido
                 }
             })
         }
@@ -69,7 +72,7 @@ export async function actualizarCantidadCarrito(carritoId: string, cantidad: num
     const session = await auth.api.getSession({
         headers: await headers()
     })
-    
+
     if (!session?.user) {
         return { success: false, error: "No autorizado" }
     }
@@ -97,7 +100,7 @@ export async function eliminarDelCarrito(carritoId: string) {
     const session = await auth.api.getSession({
         headers: await headers()
     })
-    
+
     if (!session?.user) {
         return { success: false, error: "No autorizado" }
     }
@@ -118,7 +121,7 @@ export async function crearPedido(direccion: string, notas?: string) {
     const session = await auth.api.getSession({
         headers: await headers()
     })
-    
+
     if (!session?.user) {
         return { success: false, error: "No autorizado" }
     }
@@ -136,12 +139,15 @@ export async function crearPedido(direccion: string, notas?: string) {
         const total = items.reduce((sum, item) => {
             return sum + (Number(item.producto.precio) * item.cantidad)
         }, 0)
+        const numeroOrden = `ORD-${Date.now()}`;
+
 
         const pedido = await prisma.pedido.create({
             data: {
+                numeroOrden,
                 userId: session.user.id,
                 direccion,
-                notas,
+                notas: notas || "",
                 total,
                 pedidoDetalle: {
                     create: items.map(item => ({
@@ -169,7 +175,7 @@ export async function obtenerPedidos() {
     const session = await auth.api.getSession({
         headers: await headers()
     })
-    
+
     if (!session?.user) {
         return { success: false, error: "No autorizado" }
     }

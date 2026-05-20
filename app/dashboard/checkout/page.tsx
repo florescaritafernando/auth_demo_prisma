@@ -15,12 +15,12 @@ export default async function CheckoutPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6">
+        <div className="p-4 md:p-6 pb-24 md:pb-10">
             <div className="max-w-4xl mx-auto">
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-4 md:mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900">Proceso de compra</h1>
-                        <p className="text-slate-500">Completa los datos para tu pedido</p>
+                        <h1 className="text-xl md:text-3xl font-bold text-slate-900">Proceso de compra</h1>
+                        <p className="text-sm md:text-base text-slate-500">Completa los datos para tu pedido</p>
                     </div>
                 </div>
 

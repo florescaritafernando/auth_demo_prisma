@@ -8,7 +8,7 @@ interface Almacen {
     nombre: string
     direccion: string
     telefono: string | null
-    responsable: string | null
+    responsable: { name: string | null } | string | null
     ciudad: string
     activo: boolean
 }
@@ -40,7 +40,7 @@ export function BotonEditarAlmacen({ almacen }: { almacen: Almacen }) {
                 nombre: almacen.nombre,
                 direccion: almacen.direccion,
                 telefono: almacen.telefono || "",
-                responsable: almacen.responsable || "",
+                responsable: typeof almacen.responsable === "object" ? almacen.responsable?.name || "" : (almacen.responsable || ""),
                 ciudad: almacen.ciudad || "",
                 activo: almacen.activo,
             })
