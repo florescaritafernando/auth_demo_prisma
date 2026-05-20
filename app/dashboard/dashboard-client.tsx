@@ -11,7 +11,7 @@ import { Pagination } from "@/components/ui/pagination"
 import { CarritoBadge } from "@/components/carrito-badge"
 import { CarritoParticulas } from "@/components/carrito-particulas"
 import { CrearPedidoModal } from "@/components/crear-pedido-modal"
-import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus, ClipboardList, FileText } from "lucide-react"
+import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus, ClipboardList, FileText, Users } from "lucide-react"
 import { BotonAgregarCarrito } from "@/components/agregar-carrito-button"
 import { cn } from "@/lib/utils"
 
@@ -574,6 +574,20 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                                 <p className="text-sm text-slate-500">Detalle completo de pedidos</p>
                             </div>
                         </Link>
+                        {userRole === "admin" && (
+                            <Link
+                                href="/dashboard/clientes-pedido"
+                                className="flex items-center gap-4 p-4 bg-white border-2 border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-colors text-left group"
+                            >
+                                <div className="p-3 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+                                    <Users className="h-6 w-6 text-slate-700" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-slate-900">Gestion Clientes</p>
+                                    <p className="text-sm text-slate-500">Administrar clientes de pedidos</p>
+                                </div>
+                            </Link>
+                        )}
                     </div>
                 </div>
 

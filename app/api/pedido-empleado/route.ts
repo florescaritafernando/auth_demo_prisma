@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
             }
         })
     } catch (error: any) {
-        console.error("Error creando pedido empleado:", error)
+        console.error("Error creando pedido de colaborador:", error)
         return NextResponse.json({ success: false, error: "Error interno: " + error.message }, { status: 500 })
     }
 }

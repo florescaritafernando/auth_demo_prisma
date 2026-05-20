@@ -14,7 +14,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { Home, ShoppingBag, ShoppingCart, User, Package, BarChart3, AlertTriangle, Tag, Warehouse, BellRing, X, Settings } from "lucide-react"
+import { Home, ShoppingBag, ShoppingCart, User, Package, BarChart3, AlertTriangle, Tag, Warehouse, BellRing, X, Settings, Users } from "lucide-react"
 import { SignOutButton } from "@/components/signout-button"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -35,6 +35,7 @@ const adminItems = [
     { title: "Gestion Tiendas", url: "/dashboard/tiendas", icon: Warehouse },
     { title: "Gestion Almacenes", url: "/dashboard/almacenes", icon: Warehouse },
     { title: "Gestion Pedidos", url: "/dashboard/pedidos-admin", icon: ShoppingBag },
+    { title: "Gestion Clientes", url: "/dashboard/clientes-pedido", icon: Users },
     { title: "Gestion Reclamos", url: "/dashboard/reclamos", icon: AlertTriangle },
     { title: "Estadisticas", url: "/dashboard/estadisticas", icon: BarChart3 },
     { title: "Notificaciones", url: "/dashboard/notificaciones", icon: BellRing, isNotificaciones: true },

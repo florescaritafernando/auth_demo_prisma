@@ -228,7 +228,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                             )}
                                         </div>
                                         <p className="text-sm text-slate-500 truncate">
-                                            {pedido.user?.name || pedido.user?.email || "Cliente"} • {pedido.nombreFactura}
+                                            {pedido.user?.name || pedido.user?.email || "Cliente"} • {pedido.nombreFactura?.toUpperCase()}
                                         </p>
                                     </div>
                                 </div>
@@ -336,7 +336,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-slate-600">Nombre:</span>
-                                                    <span className="font-bold text-slate-900">{pedido.nombreFactura}</span>
+                                                    <span className="font-bold text-slate-900">{pedido.nombreFactura?.toUpperCase()}</span>
                                                 </div>
                                                 {pedido.numeroOperacion && pedido.numeroOperacion !== "012345678" && (
                                                 <div className="flex justify-between">
@@ -388,7 +388,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 {pedido.direccion && (
                                                     <div className="flex justify-between">
                                                         <span className="text-slate-600">Dirección:</span>
-                                                        <span className="font-bold text-slate-900">{pedido.direccion}</span>
+                                                        <span className="font-bold text-slate-900">{pedido.direccion?.toUpperCase()}</span>
                                                     </div>
                                                 )}
                                                 {pedido.nombreRecibe && (

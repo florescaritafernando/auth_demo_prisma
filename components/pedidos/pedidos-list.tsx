@@ -114,7 +114,13 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
     const [indicacionModal, setIndicacionModal] = useState<{ nombre: string; texto: string } | null>(null)
     const config = ESTADO_CONFIG[pedido.estado] || ESTADO_CONFIG.metraje_en_proceso
     const IconComponent = config.icon
-    const agenciaLabel = pedido.agencia ? (AGENCIA_LABELS[pedido.agencia] || pedido.agenciaOtro) : null
+    const agenciaLabel = (() => {
+        const ag = pedido.agencia || pedido.clientePedido?.agencia
+        const agOtro = pedido.agenciaOtro || pedido.clientePedido?.agenciaOtro
+        if (!ag) return null
+        if (ag === "otros") return agOtro || "Otros"
+        return AGENCIA_LABELS[ag] || agOtro
+    })()
     const deliveryLabel = pedido.delivery ? (DELIVERY_LABELS[pedido.delivery] || pedido.deliveryOtro) : null
 
     const ocultarPrecio = pedido.estado === "metraje_en_proceso" || pedido.estado === "rechazado"
@@ -348,7 +354,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                 <div>
                                     <p className="text-slate-500">Facturación:</p>
                                     <p className="font-medium text-slate-800">
-                                        {pedido.nombreFactura} ({pedido.tipoDocumento?.toUpperCase()} {pedido.numeroDoc})
+                                        {pedido.nombreFactura?.toUpperCase()} ({pedido.tipoDocumento?.toUpperCase()} {pedido.numeroDoc})
                                     </p>
                                 </div>
                             </div>
@@ -370,7 +376,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                         <p className="text-slate-500">Recibe: {pedido.nombreRecibe} (DNI: {pedido.dniRecibe})</p>
                                     )}
                                     {pedido.direccion && pedido.metodoEnvio !== "tienda" && (
-                                        <p className="text-slate-500">{pedido.direccion}</p>
+                                        <p className="text-slate-500">{pedido.direccion?.toUpperCase()}</p>
                                     )}
                                 </div>
                             </div>
@@ -452,7 +458,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                         <div className="h-4 w-4 text-slate-400 mt-0.5 flex items-center justify-center text-xs font-bold">C</div>
                                         <div>
                                             <p className="text-slate-500">Cliente:</p>
-                                            <p className="font-medium text-slate-800">{pedido.clientePedido.nombre}</p>
+                                            <p className="font-medium text-slate-800">{pedido.clientePedido.nombre?.toUpperCase()}</p>
                                             <p className="text-xs text-slate-400">{pedido.clientePedido.tipoDoc?.toUpperCase()} {pedido.clientePedido.numeroDoc}</p>
                                             {pedido.clientePedido.razonSocial && (
                                                 <p className="text-xs text-slate-400">Razón Social: {pedido.clientePedido.razonSocial}</p>
@@ -473,7 +479,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                             <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
                                             <div>
                                                 <p className="text-slate-500">Dirección:</p>
-                                                <p className="font-medium text-slate-800">{pedido.clientePedido.direccion}</p>
+                                                <p className="font-medium text-slate-800">{pedido.clientePedido.direccion?.toUpperCase()}</p>
                                                 {pedido.clientePedido.departamento && (
                                                     <p className="text-xs text-slate-400">{pedido.clientePedido.departamento} / {pedido.clientePedido.provincia} / {pedido.clientePedido.distrito}</p>
                                                 )}
@@ -485,7 +491,11 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                             <Truck className="h-4 w-4 text-slate-400 mt-0.5" />
                                             <div>
                                                 <p className="text-slate-500">Agencia:</p>
-                                                <p className="font-medium text-slate-800">{AGENCIA_LABELS[pedido.clientePedido.agencia] || pedido.clientePedido.agenciaOtro || pedido.clientePedido.agencia}</p>
+                                                <p className="font-medium text-slate-800">
+                                                    {pedido.clientePedido.agencia === "otros"
+                                                        ? (pedido.clientePedido.agenciaOtro || "Otros")
+                                                        : (AGENCIA_LABELS[pedido.clientePedido.agencia] || pedido.clientePedido.agencia)}
+                                                </p>
                                             </div>
                                         </div>
                                     )}

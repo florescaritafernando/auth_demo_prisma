@@ -202,7 +202,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     <User className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
                                                     <div>
                                                         <p className="text-slate-500 text-xs">Cliente</p>
-                                                        <p className="font-medium text-slate-800">{pedido.clientePedido.nombre}</p>
+                                                        <p className="font-medium text-slate-800">{pedido.clientePedido.nombre?.toUpperCase()}</p>
                                                         <p className="text-xs text-slate-400">{pedido.clientePedido.tipoDoc?.toUpperCase()} {pedido.clientePedido.numeroDoc}</p>
                                                         {pedido.clientePedido.razonSocial && (
                                                             <p className="text-xs text-slate-400">{pedido.clientePedido.razonSocial}</p>
@@ -223,7 +223,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         <MapPin className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
                                                         <div>
                                                             <p className="text-slate-500 text-xs">Dirección</p>
-                                                            <p className="font-medium text-slate-800">{pedido.clientePedido.direccion}</p>
+                                                            <p className="font-medium text-slate-800">{pedido.clientePedido.direccion?.toUpperCase()}</p>
                                                             {pedido.clientePedido.departamento && (
                                                                 <p className="text-xs text-slate-400">{pedido.clientePedido.departamento} / {pedido.clientePedido.provincia} / {pedido.clientePedido.distrito}</p>
                                                             )}

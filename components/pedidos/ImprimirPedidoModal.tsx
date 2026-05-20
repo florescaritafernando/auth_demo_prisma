@@ -69,30 +69,47 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
         const metodoEnvioLabel = pedido.metodoEnvio === "tienda"
             ? "Recoger en tienda"
             : pedido.metodoEnvio === "agencia"
-                ? `Agencia: ${pedido.agencia === "otros" ? pedido.agenciaOtro : pedido.agencia}`
+                ? `Agencia: ${pedido.agencia === "otros" ? (pedido.agenciaOtro || "Otros") : (pedido.agencia || "No especificada")}`
                 : pedido.metodoEnvio === "delivery"
-                    ? `Delivery: ${pedido.delivery === "otros" ? pedido.deliveryOtro : pedido.delivery}`
+                    ? `Delivery: ${pedido.delivery === "otros" ? (pedido.deliveryOtro || "Otros") : (pedido.delivery || "No especificado")}`
                     : "No especificado"
 
-        const productos = pedido.pedidoDetalle.map(d => {
-            const metrajeTotal = d.etiquetas?.reduce((sum, e) => sum + e.valor, 0) || Number(d.metraje || 0)
-            const cantidadMostrar = d.tipo === "pieza"
-                ? `${d.cantidad} pzs (${metrajeTotal.toFixed(2)}m)`
-                : `${d.cantidad} metros`
+        const productos = pedido.pedidoDetalle
+            .map(d => {
+                const metrajeTotal = d.etiquetas?.reduce((sum, e) => sum + e.valor, 0) || Number(d.metraje || 0)
+                const piezasRegistradas = d.etiquetas?.length || 0
+                const sinEtiquetasAun = piezasRegistradas === 0 && pedido.estado === "metraje_en_proceso"
 
-            return {
-                nombre: d.producto.nombre,
-                cantidad: cantidadMostrar,
-                precio: d.precio,
-                total: d.tipo === "pieza" ? metrajeTotal * Number(d.precio) : Number(d.cantidad) * Number(d.precio),
-                indicaciones: d.indicacionesCorte
-            }
-        })
+                if (d.tipo === "pieza") {
+                    return {
+                        nombre: d.producto.nombre,
+                        cantidad: sinEtiquetasAun
+                            ? `${d.cantidad} pzs (por confirmar)`
+                            : `${piezasRegistradas} pzs (${metrajeTotal.toFixed(2)}m)`,
+                        piezasRegistradas,
+                        sinEtiquetasAun,
+                        precio: d.precio,
+                        total: sinEtiquetasAun ? 0 : metrajeTotal * Number(d.precio),
+                        indicaciones: d.indicacionesCorte
+                    }
+                }
+
+                return {
+                    nombre: d.producto.nombre,
+                    cantidad: `${d.cantidad} metros`,
+                    piezasRegistradas: null,
+                    sinEtiquetasAun: false,
+                    precio: d.precio,
+                    total: Number(d.cantidad) * Number(d.precio),
+                    indicaciones: d.indicacionesCorte
+                }
+            })
+            .filter(p => p.piezasRegistradas === null || p.piezasRegistradas > 0 || p.sinEtiquetasAun)
 
         return { fecha, metodoEnvioLabel, productos, empleadoNames }
     }
 
-    const { fecha, metodoEnvioLabel, productos, empleadoNames: empleados } = generarContenido()
+    const { fecha, metodoEnvioLabel, productos, empleadoNames: colaboradores } = generarContenido()
 
     const handleImprimir = () => {
         const printWindow = window.open("", "_blank", "width=800,height=600")
@@ -189,14 +206,14 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     
                     <div class="section">
                         <div class="label">CLIENTE:</div>
-                        <div class="value">${pedido.user?.name || pedido.user?.email || "Cliente"}</div>
-                        <div class="value">${pedido.nombreFactura || ""}</div>
+                        <div class="value">${(pedido.nombreFactura || "").toUpperCase()}</div>
                         <div class="value">${pedido.tipoDocumento?.toUpperCase()}: ${pedido.numeroDoc || ""}</div>
+                        ${pedido.direccion ? `<div class="value">DIR: ${pedido.direccion.toUpperCase()}</div>` : ""}
                     </div>
                     
                     <div class="section">
-                        <div class="label">ASIGNADO(S) A:</div>
-                        <div class="value">${empleados}</div>
+                        <div class="label">COLABORADOR(ES):</div>
+                        <div class="value">${colaboradores}</div>
                     </div>
                     
                     <div class="section">
@@ -256,18 +273,17 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         </div>
                         <div class="info-box">
                             <div class="info-label">CLIENTE</div>
-                            <div class="info-value">${pedido.user?.name || pedido.user?.email || "Cliente"}</div>
-                            <div class="info-value" style="font-size: 11px;">${pedido.nombreFactura || ""}</div>
+                            <div class="info-value">${(pedido.nombreFactura || "").toUpperCase()}</div>
                             <div class="info-value" style="font-size: 11px;">${pedido.tipoDocumento?.toUpperCase()}: ${pedido.numeroDoc || ""}</div>
                         </div>
                         <div class="info-box">
-                            <div class="info-label">EMPLEADOS ASIGNADOS</div>
-                            <div class="info-value">${empleados}</div>
+                            <div class="info-label">COLABORADORES ASIGNADOS</div>
+                            <div class="info-value">${colaboradores}</div>
                         </div>
                         <div class="info-box" style="grid-column: span 2;">
                             <div class="info-label">DATOS DE ENVÍO</div>
                             <div class="info-value">${metodoEnvioLabel}</div>
-                            ${pedido.direccion ? `<div class="info-value">Dir: ${pedido.direccion}</div>` : ""}
+                            ${pedido.direccion ? `<div class="info-value">Dir: ${pedido.direccion.toUpperCase()}</div>` : ""}
                             ${pedido.departamento ? `<div class="info-value">${pedido.departamento} - ${pedido.provincia} - ${pedido.distrito}</div>` : ""}
                         </div>
                     </div>
@@ -277,7 +293,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                             <tr>
                                 <th>#</th>
                                 <th>Producto</th>
-                                <th>Cantidad Solicitada</th>
+                                <th>Cantidad</th>
                                 <th>Precio</th>
                                 <th>Total</th>
                             </tr>
@@ -367,8 +383,8 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         <p className="font-medium text-black mb-2">Vista previa de datos:</p>
                         <div className="space-y-1 text-slate-600">
                             <p><span className="font-medium">N° Orden:</span> {pedido.numeroOrden}</p>
-                            <p><span className="font-medium">Cliente:</span> {pedido.user?.name || pedido.user?.email}</p>
-                            <p><span className="font-medium">Empleados:</span> {empleados}</p>
+                            <p><span className="font-medium">Cliente:</span> {pedido.nombreFactura || "N/A"}</p>
+                            <p><span className="font-medium">Colaboradores:</span> {colaboradores}</p>
                             <p><span className="font-medium">Productos:</span> {productos.length} artículos</p>
                         </div>
                     </div>
