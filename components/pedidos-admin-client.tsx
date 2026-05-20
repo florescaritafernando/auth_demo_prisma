@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Search, X, Calendar } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Search, X, Calendar, SlidersHorizontal } from "lucide-react"
 import { PedidoAccordion } from "@/app/dashboard/pedidos-admin/accordion"
 
 interface User {
@@ -14,6 +13,7 @@ interface User {
 interface Pedido {
     id: string
     numeroOrden: string
+    nombreFactura?: string | null
     estado: string
     createdAt: Date
     user: { id: string; name: string | null; email: string | null } | null
@@ -43,6 +43,7 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
     const [fechaInicio, setFechaInicio] = useState("")
     const [fechaFin, setFechaFin] = useState("")
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+    const [showFiltros, setShowFiltros] = useState(false)
 
     useEffect(() => {
         const hash = window.location.hash.slice(1)
@@ -64,23 +65,19 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
 
     const filteredPedidos = useMemo(() => {
         return pedidos.filter(pedido => {
-            // Buscador por número de pedido o cliente
             if (busqueda) {
                 const searchLower = busqueda.toLowerCase()
                 const numeroOrdenMatch = pedido.numeroOrden.toLowerCase().includes(searchLower)
-                const clienteNameMatch = pedido.user?.name?.toLowerCase().includes(searchLower)
-                const clienteEmailMatch = pedido.user?.email?.toLowerCase().includes(searchLower)
-                if (!numeroOrdenMatch && !clienteNameMatch && !clienteEmailMatch) {
+                const nombreFacturaMatch = (pedido.nombreFactura || "").toLowerCase().includes(searchLower)
+                if (!numeroOrdenMatch && !nombreFacturaMatch) {
                     return false
                 }
             }
 
-            // Filtro por estado
             if (estadoFiltro && pedido.estado !== estadoFiltro) {
                 return false
             }
 
-            // Filtro por colaborador
             if (colaboradorFiltro) {
                 const tieneColaborador = pedido.delegados?.some(d => d.userId === colaboradorFiltro)
                 if (!tieneColaborador) {
@@ -88,9 +85,7 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
                 }
             }
 
-            // Filtro por rango de fechas
             if (fechaInicio || fechaFin) {
-                // Convertir createdAt a fecha local YYYY-MM-DD
                 const createdAtDate = new Date(pedido.createdAt)
                 const year = createdAtDate.getFullYear()
                 const month = String(createdAtDate.getMonth() + 1).padStart(2, '0')
@@ -118,99 +113,102 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
         setFechaFin("")
     }
 
-    const tieneFiltrosActivos = busqueda || estadoFiltro || colaboradorFiltro || fechaInicio || fechaFin
+    const tieneFiltros = estadoFiltro || colaboradorFiltro || fechaInicio || fechaFin
 
     return (
         <div>
-            {/* Filtros */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
-                    {/* Buscador */}
-                    <div className="relative h-10">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <input
-                            type="text"
-                            value={busqueda}
-                            onChange={(e) => setBusqueda(e.target.value)}
-                            placeholder="Buscar pedido o cliente..."
-                            className="w-full h-full pl-10 pr-4 border border-slate-300 rounded-lg text-sm text-black"
-                        />
-                    </div>
+            <div className="flex gap-2 mb-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                        type="text"
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                        placeholder="N° orden o cliente..."
+                        className="w-full h-10 pl-10 pr-4 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-900 transition-all"
+                    />
+                </div>
+                <button
+                    onClick={() => setShowFiltros(!showFiltros)}
+                    className={`h-10 px-3 border rounded-xl flex items-center gap-1.5 text-sm font-medium transition-all shrink-0 ${
+                        tieneFiltros
+                            ? 'border-slate-900 bg-slate-900 text-white'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                >
+                    <SlidersHorizontal className="h-4 w-4" />
+                    <span className="hidden sm:inline">Filtros</span>
+                    {tieneFiltros && <span className="w-2 h-2 bg-white rounded-full" />}
+                </button>
+            </div>
 
-                    {/* Filtro Estado */}
-                    <select
-                        value={estadoFiltro}
-                        onChange={(e) => setEstadoFiltro(e.target.value)}
-                        className="h-10 px-3 border border-slate-300 rounded-lg text-sm text-black"
-                    >
-                        <option value="">Todos los estados</option>
-                        {ESTADOS.map(estado => (
-                            <option key={estado.value} value={estado.value}>{estado.label}</option>
-                        ))}
-                    </select>
+            {showFiltros && (
+                <div className="bg-white rounded-xl border border-slate-200 p-3 mb-4 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <select
+                            value={estadoFiltro}
+                            onChange={(e) => setEstadoFiltro(e.target.value)}
+                            className="h-9 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
+                        >
+                            <option value="">Estado</option>
+                            {ESTADOS.map(estado => (
+                                <option key={estado.value} value={estado.value}>{estado.label}</option>
+                            ))}
+                        </select>
 
-                    {/* Filtro Colaborador */}
-                    <select
-                        value={colaboradorFiltro}
-                        onChange={(e) => setColaboradorFiltro(e.target.value)}
-                        className="h-10 px-3 border border-slate-300 rounded-lg text-sm text-black"
-                    >
-                        <option value="">Todos los colaboradores</option>
-                        {empleados.map(emp => (
-                            <option key={emp.id} value={emp.id}>
-                                {emp.name || emp.email}
-                            </option>
-                        ))}
-                    </select>
+                        <select
+                            value={colaboradorFiltro}
+                            onChange={(e) => setColaboradorFiltro(e.target.value)}
+                            className="h-9 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
+                        >
+                            <option value="">Colaborador</option>
+                            {empleados.map(emp => (
+                                <option key={emp.id} value={emp.id}>
+                                    {emp.name || emp.email}
+                                </option>
+                            ))}
+                        </select>
 
-                    {/* Fecha Inicio */}
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs text-slate-500">Fecha inicio</label>
-                        <div className="relative h-10 flex items-center" onClick={() => (document.getElementById('fecha-inicio') as HTMLInputElement)?.showPicker()}>
-                            <Calendar className="absolute left-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                             <input
-                                id="fecha-inicio"
                                 type="date"
                                 value={fechaInicio}
                                 onChange={(e) => setFechaInicio(e.target.value)}
-                                className="w-full h-full pl-10 pr-2 border border-slate-300 rounded-lg text-sm text-black cursor-pointer"
+                                placeholder="Desde"
+                                className="w-full h-9 pl-9 pr-3 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
                             />
                         </div>
-                    </div>
 
-                    {/* Fecha Fin */}
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs text-slate-500">Fecha fin</label>
-                        <div className="relative h-10 flex items-center" onClick={() => (document.getElementById('fecha-fin') as HTMLInputElement)?.showPicker()}>
-                            <Calendar className="absolute left-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                             <input
-                                id="fecha-fin"
                                 type="date"
                                 value={fechaFin}
                                 onChange={(e) => setFechaFin(e.target.value)}
-                                className="w-full h-full pl-10 pr-2 border border-slate-300 rounded-lg text-sm text-black cursor-pointer"
+                                placeholder="Hasta"
+                                className="w-full h-9 pl-9 pr-3 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
                             />
                         </div>
                     </div>
-                </div>
 
-                {tieneFiltrosActivos && (
-                    <div className="mt-4 flex items-center gap-2">
-                        <span className="text-sm text-slate-500">
-                            {filteredPedidos.length} resultado(s) de {pedidos.length} pedidos
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                        <span className="text-xs text-slate-400">
+                            {filteredPedidos.length} de {pedidos.length} pedidos
                         </span>
-                        <button
-                            onClick={limpiarFiltros}
-                            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                        >
-                            <X className="h-3 w-3" />
-                            Limpiar filtros
-                        </button>
+                        {tieneFiltros && (
+                            <button
+                                onClick={limpiarFiltros}
+                                className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"
+                            >
+                                <X className="h-3 w-3" />
+                                Limpiar
+                            </button>
+                        )}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
-            {/* Lista de Pedidos */}
             {filteredPedidos.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
                     <p className="text-slate-500">No se encontraron pedidos con los filtros aplicados.</p>

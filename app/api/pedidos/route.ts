@@ -38,15 +38,9 @@ export async function GET(request: NextRequest) {
                 orderBy: { createdAt: "desc" }
             })
         } else if (userRole === "empleado" && misPedidos) {
-            // Obtener los pedidos donde el empleado está asignado
-            const delegaciones = await prisma.pedidoDelegado.findMany({
-                where: { userId: session.user.id },
-                select: { pedidoId: true }
-            })
-            const pedidoIds = delegaciones.map(d => d.pedidoId)
-
+            // Obtener los pedidos CREADOS por este empleado (por userId)
             pedidos = await prisma.pedido.findMany({
-                where: { id: { in: pedidoIds } },
+                where: { userId: session.user.id },
                 include: {
                     user: { select: { id: true, name: true, email: true } },
                     pedidoDetalle: {
@@ -54,6 +48,9 @@ export async function GET(request: NextRequest) {
                             producto: { select: { id: true, nombre: true, categoria: true } },
                             etiquetas: { select: { valor: true } }
                         }
+                    },
+                    delegados: {
+                        include: { user: { select: { id: true, name: true } } }
                     },
                     tienda: true,
                     reclamos: true,
@@ -218,19 +215,22 @@ export async function POST(request: NextRequest) {
 
         console.log("=== PEDIDO CREADO EXITOSAMENTE ===")
 
-        const staff = await prisma.user.findMany({
-            where: { role: { in: ["admin", "empleado"] } }
-        })
+        // Notificar a staff - solo si el pedido fue creado por un cliente (no empleado/admin)
+        if (role === "cliente") {
+            const staff = await prisma.user.findMany({
+                where: { role: { in: ["admin", "empleado"] } }
+            })
 
-        await prisma.notificacion.createMany({
-            data: staff.map(user => ({
-                userId: user.id,
-                titulo: "Nueva orden",
-                mensaje: `Nueva orden ${numeroOrden} por ${session.user.name || session.user.email}`,
-                tipo: "pedido",
-                pedidoId: pedido.id
-            }))
-        })
+            await prisma.notificacion.createMany({
+                data: staff.map(user => ({
+                    userId: user.id,
+                    titulo: "Nueva orden",
+                    mensaje: `Nueva orden ${numeroOrden} por ${session.user.name || session.user.email}`,
+                    tipo: "pedido",
+                    pedidoId: pedido.id
+                }))
+            })
+        }
 
         return NextResponse.json({
             success: true,

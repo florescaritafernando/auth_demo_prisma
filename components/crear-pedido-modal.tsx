@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import { 
     X, Search, Plus, Trash2, FileText, Printer, Send, Save, 
     ArrowLeft, ArrowRight, Check, Package, Ruler, Loader2,
-    Building2, CreditCard, User, MapPin, Phone, Truck, FileCheck, ClipboardList, Pencil
+    Building2, CreditCard, User, MapPin, Phone, Truck, FileCheck, ClipboardList, Pencil, Filter, AlertTriangle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -49,6 +49,7 @@ interface Props {
     isOpen: boolean
     onClose: () => void
     userName: string
+    pedidoEditar?: any
 }
 
 const EMPRESAS = ["Flores Caritas", "Textiles Manchester", "ManchesterTex", "Textiles Mego"]
@@ -57,12 +58,13 @@ const AGENCIAS = [
     { value: "shalom", label: "Shalom" },
     { value: "flores", label: "Flores" },
     { value: "marvisur", label: "Marvisur" },
-    { value: "olva", label: "Olva" },
-    { value: "safexpress", label: "Safexpress" },
+    { value: "grael", label: "Grael" },
+    { value: "rana_express", label: "Rana express" },
+    { value: "carhuamayo", label: "Carhuamayo" },
     { value: "otros", label: "Otros" }
 ]
 
-export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
+export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar }: Props) {
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
@@ -70,6 +72,10 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
     const [errorDoc, setErrorDoc] = useState("")
     const [errorTel, setErrorTel] = useState("")
     const [showConfirmClose, setShowConfirmClose] = useState(false)
+    const [borradorGuardado, setBorradorGuardado] = useState(false)
+    const [categoriaFiltro, setCategoriaFiltro] = useState("")
+    const [mostrarDropdownCategoria, setMostrarDropdownCategoria] = useState(false)
+    const categoriaToggleRef = useRef<HTMLButtonElement>(null)
 
     const [empresa, setEmpresa] = useState("")
     const [metodoPago, setMetodoPago] = useState("")
@@ -104,6 +110,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
     const [editCantidad, setEditCantidad] = useState("")
     const [busquedaProducto, setBusquedaProducto] = useState("")
     const [productosEncontrados, setProductosEncontrados] = useState<Producto[]>([])
+    const [categoriasDisponibles, setCategoriasDisponibles] = useState<string[]>([])
     const [mostrarDropdownProducto, setMostrarDropdownProducto] = useState(false)
     const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null)
     const [itemCantidad, setItemCantidad] = useState("1")
@@ -114,7 +121,116 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
 
     useEffect(() => {
         setIsMounted(true)
+        const cargarCategorias = async () => {
+            try {
+                const res = await fetch("/api/productos-categorias")
+                const json = await res.json()
+                if (json.success) {
+                    setCategoriasDisponibles(json.categorias || [])
+                }
+            } catch (e) {
+                console.error("Error cargando categorias:", e)
+            }
+        }
+        cargarCategorias()
     }, [])
+
+    useEffect(() => {
+        if (isOpen) {
+            const restoreKey = localStorage.getItem("pedido-borrador-restore")
+            if (restoreKey) {
+                try {
+                    const data = localStorage.getItem(restoreKey)
+                    if (data) {
+                        const borrador = JSON.parse(data)
+                        setEmpresa(borrador.empresa || "")
+                        setMetodoPago(borrador.metodoPago || "")
+                        setCliente(borrador.cliente || { nombre: "", tipoDoc: "dni", numeroDoc: "", direccion: "", telefono: "" })
+                        setAgencia(borrador.agencia || "")
+                        setAgenciaOtro(borrador.agenciaOtro || "")
+                        setGuiaRemision(borrador.guiaRemision || false)
+                        setCostoEnvio(borrador.costoEnvio || "0")
+                        setObservaciones(borrador.observaciones || "")
+                        setItems((borrador.items || []).map((item: any) => ({
+                            ...item,
+                            productoPrecio: Number(item.productoPrecio) || 0,
+                            cantidad: Number(item.cantidad) || 0
+                        })))
+                        setStep(borrador.step || 1)
+                        if (borrador.cliente?.departamento) setMostrarUbicacion(true)
+                        setBorradorGuardado(true)
+                        setToastMessage({ show: true, message: "Borrador restaurado exitosamente", type: "success" })
+                    }
+                } catch (e) {
+                    console.error("Error restaurando borrador:", e)
+                }
+                localStorage.removeItem("pedido-borrador-restore")
+            } else {
+                const data = localStorage.getItem(`pedido-borrador-${userName}`)
+                if (data) {
+                    try {
+                        const borrador = JSON.parse(data)
+                        const fechaBorrador = new Date(borrador.fecha).toLocaleDateString("es-PE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+                        setToastMessage({
+                            show: true,
+                            message: `Borrador del ${fechaBorrador} disponible. Haz clic en "Guardar borrador" para restaurarlo.`,
+                            type: "success"
+                        })
+                    } catch (e) {
+                        console.error("Error leyendo borrador:", e)
+                    }
+                }
+            }
+        }
+    }, [isOpen, userName])
+
+    useEffect(() => {
+        if (isOpen && pedidoEditar) {
+            const p = pedidoEditar
+            setEmpresa(p.pedidoEmpleadoInfo?.empresa || "")
+            setMetodoPago(p.pedidoEmpleadoInfo?.metodoPago || "")
+            setCliente({
+                nombre: p.nombreFactura || "",
+                tipoDoc: p.tipoDocumento || "dni",
+                numeroDoc: p.numeroDoc || "",
+                direccion: p.direccion || "",
+                telefono: p.pedidoEmpleadoInfo?.telefono || "",
+                departamento: p.departamento || "",
+                provincia: p.provincia || "",
+                distrito: p.distrito || ""
+            })
+            setAgencia(p.agencia || "")
+            setAgenciaOtro(p.agenciaOtro || "")
+            setGuiaRemision(p.pedidoEmpleadoInfo?.guiaRemision || false)
+            setCostoEnvio(String(p.costoEnvio || 0))
+            setObservaciones(p.notas || "")
+            if (p.departamento) setMostrarUbicacion(true)
+
+            const itemsEdit = (p.pedidoDetalle || []).map((d: any) => ({
+                id: d.id || Date.now().toString() + Math.random(),
+                productoId: d.productoId,
+                productoNombre: d.producto?.nombre || "Producto",
+                productoCategoria: d.producto?.categoria || "",
+                productoPrecio: Number(d.precio) || 0,
+                cantidad: Number(d.cantidad) || 0,
+                tipo: d.tipo || "metros",
+                indicacionesCorte: d.indicacionesCorte || ""
+            }))
+            setItems(itemsEdit)
+            setStep(2)
+            setBorradorGuardado(false)
+        }
+    }, [isOpen, pedidoEditar])
+
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (mostrarDropdownCategoria && !(e.target as HTMLElement).closest('[data-categoria-dropdown]') && !(e.target as HTMLElement).closest('[data-categoria-toggle]')) {
+                setMostrarDropdownCategoria(false)
+            }
+        }
+        document.addEventListener("click", handleClick)
+        return () => document.removeEventListener("click", handleClick)
+    }, [mostrarDropdownCategoria])
 
     useEffect(() => {
         if (toastMessage.show) {
@@ -260,7 +376,11 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
         }
 
         try {
-            const res = await fetch(`/api/productos?search=${encodeURIComponent(query)}`, { credentials: "include" })
+            const params = new URLSearchParams({ search: query })
+            if (categoriaFiltro) {
+                params.set("categoria", categoriaFiltro)
+            }
+            const res = await fetch(`/api/productos?${params.toString()}`, { credentials: "include" })
             const json = await res.json()
             if (json.success) {
                 setProductosEncontrados(json.productos || [])
@@ -269,7 +389,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
         } catch (e) {
             console.error("Error buscando productos:", e)
         }
-    }, [])
+    }, [categoriaFiltro])
 
     useEffect(() => {
         const timer = setTimeout(() => buscarProductos(busquedaProducto), 300)
@@ -307,7 +427,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
             productoId: productoSeleccionado.id,
             productoNombre: productoSeleccionado.nombre,
             productoCategoria: productoSeleccionado.categoria,
-            productoPrecio: Number(productoSeleccionado.precio),
+            productoPrecio: Number(productoSeleccionado.precio) || 0,
             cantidad: Number(itemCantidad) || 0,
             tipo: itemTipo,
             indicacionesCorte: itemIndicaciones
@@ -346,8 +466,10 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
 
     const calcularSubtotal = () => {
         return items.reduce((sum, item) => {
+            const precio = Number(item.productoPrecio) || 0
+            const cantidad = Number(item.cantidad) || 0
             const metros = item.tipo === "pieza" ? 50 : 1
-            return sum + (item.productoPrecio * item.cantidad * metros)
+            return sum + (precio * cantidad * metros)
         }, 0)
     }
 
@@ -395,7 +517,51 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
 
         setLoading(true)
         try {
-            const res = await fetch("/api/pedido-empleado", {
+            if (pedidoEditar) {
+                const res = await fetch(`/api/pedidos/${pedidoEditar.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        empresa,
+                        metodoPago,
+                        cliente: {
+                            nombre: cliente.nombre,
+                            tipoDoc: cliente.tipoDoc,
+                            numeroDoc: cliente.numeroDoc,
+                            razonSocial: cliente.razonSocial,
+                            direccion: cliente.direccion,
+                            telefono: cliente.telefono,
+                            departamento: cliente.departamento || null,
+                            provincia: cliente.provincia || null,
+                            distrito: cliente.distrito || null,
+                            agenciaOtro
+                        },
+                        agencia,
+                        guiaRemision,
+                        costoEnvio: Number(costoEnvio) || 0,
+                        observaciones,
+                        items: items.map(i => ({
+                            productoId: i.productoId,
+                            cantidad: i.cantidad,
+                            tipo: i.tipo,
+                            precio: i.productoPrecio,
+                            indicacionesCorte: i.indicacionesCorte
+                        }))
+                    }),
+                    credentials: "include"
+                })
+                const json = await res.json()
+                if (json.success) {
+                    setToastMessage({ show: true, message: `Pedido ${pedidoEditar.numeroOrden} actualizado`, type: "success" })
+                    setTimeout(() => {
+                        onClose()
+                        resetForm()
+                    }, 1500)
+                } else {
+                    setToastMessage({ show: true, message: json.error || "Error al actualizar pedido", type: "error" })
+                }
+            } else {
+                const res = await fetch("/api/pedido-empleado", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -430,12 +596,14 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
             const json = await res.json()
             if (json.success) {
                 setToastMessage({ show: true, message: `Pedido ${json.pedido.numeroOrden} creado`, type: "success" })
+                limpiarBorrador()
                 setTimeout(() => {
                     onClose()
                     resetForm()
                 }, 1500)
             } else {
                 setToastMessage({ show: true, message: json.error || "Error al crear pedido", type: "error" })
+            }
             }
         } catch (e) {
             console.error("Error:", e)
@@ -460,6 +628,48 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
         setCostoEnvio("0")
         setObservaciones("")
         setMostrarUbicacion(false)
+        setBorradorGuardado(false)
+        setCategoriaFiltro("")
+        localStorage.removeItem(`pedido-borrador-${userName}`)
+    }
+
+    const guardarBorrador = () => {
+        const borrador = {
+            empresa, metodoPago, cliente, agencia, agenciaOtro, guiaRemision,
+            costoEnvio, observaciones, items, step,
+            fecha: new Date().toISOString()
+        }
+        localStorage.setItem(`pedido-borrador-${userName}`, JSON.stringify(borrador))
+        setBorradorGuardado(true)
+        setToastMessage({ show: true, message: "Borrador guardado", type: "success" })
+    }
+
+    const cargarBorrador = () => {
+        try {
+            const data = localStorage.getItem(`pedido-borrador-${userName}`)
+            if (data) {
+                const borrador = JSON.parse(data)
+                setEmpresa(borrador.empresa || "")
+                setMetodoPago(borrador.metodoPago || "")
+                setCliente(borrador.cliente || { nombre: "", tipoDoc: "dni", numeroDoc: "", direccion: "", telefono: "" })
+                setAgencia(borrador.agencia || "")
+                setAgenciaOtro(borrador.agenciaOtro || "")
+                setGuiaRemision(borrador.guiaRemision || false)
+                setCostoEnvio(borrador.costoEnvio || "0")
+                setObservaciones(borrador.observaciones || "")
+                setItems(borrador.items || [])
+                setStep(borrador.step || 1)
+                if (borrador.cliente?.departamento) setMostrarUbicacion(true)
+                setBorradorGuardado(true)
+            }
+        } catch (e) {
+            console.error("Error cargando borrador:", e)
+        }
+    }
+
+    const limpiarBorrador = () => {
+        localStorage.removeItem(`pedido-borrador-${userName}`)
+        setBorradorGuardado(false)
     }
 
     const isFormDirty = () => {
@@ -494,8 +704,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step === 2 ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"}`}>2</div>
                         </div>
                         <div>
-                            <h2 className="text-sm font-semibold text-slate-900">Crear Pedido</h2>
-                            <p className="text-xs text-slate-400">{step === 1 ? "Datos del cliente" : "Artículos y total"}</p>
+                            <h2 className="text-sm font-semibold text-slate-900">{pedidoEditar ? "Editar Pedido" : "Crear Pedido"}</h2>
+                            <p className="text-xs text-slate-400">{pedidoEditar ? (pedidoEditar.numeroOrden || "") : step === 1 ? "Datos del cliente" : "Artículos y total"}</p>
                         </div>
                     </div>
                     <button onClick={handleClose} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
@@ -558,6 +768,32 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* Restaurar borrador */}
+                                {borradorGuardado && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <Save className="h-4 w-4 text-blue-600 shrink-0" />
+                                            <p className="text-sm text-blue-700 font-medium">Borrador guardado</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => { cargarBorrador(); setToastMessage({ show: true, message: "Borrador restaurado", type: "success" }) }}
+                                                className="text-xs text-blue-600 hover:text-blue-800 underline font-medium"
+                                            >
+                                                Restaurar
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={limpiarBorrador}
+                                                className="text-xs text-slate-400 hover:text-slate-600 underline"
+                                            >
+                                                Descartar
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Divider */}
                                 <div className="border-t border-slate-100" />
@@ -851,12 +1087,47 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                             <div className="space-y-5">
                                 {/* Agregar producto */}
                                 <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4">
-                                    <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                                        <Plus className="h-4 w-4" /> Agregar Artículo
-                                    </p>
+                                    <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
+                                        <p className="text-sm font-semibold text-slate-700 flex items-center gap-2 shrink-0">
+                                            <Plus className="h-4 w-4" /> Agregar Artículo
+                                        </p>
+                                        <div className="relative min-w-0 flex-shrink">
+                                            <button
+                                                type="button"
+                                                data-categoria-toggle
+                                                ref={categoriaToggleRef}
+                                                onClick={() => setMostrarDropdownCategoria(!mostrarDropdownCategoria)}
+                                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-lg text-xs font-medium transition-all bg-white max-w-[200px] ${categoriaFiltro ? "border-blue-300 text-blue-700 bg-blue-50" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}
+                                                title={categoriaFiltro || "Filtrar por categoría"}
+                                            >
+                                                <Filter className="h-3 w-3 shrink-0" />
+                                                <span className="truncate">{categoriaFiltro || "Categoría"}</span>
+                                            </button>
+                                            {mostrarDropdownCategoria && (
+                                                <div data-categoria-dropdown className="absolute top-full right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg w-64 max-h-60 overflow-y-auto z-50">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setCategoriaFiltro(""); setMostrarDropdownCategoria(false) }}
+                                                        className={`w-full px-4 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors text-sm ${!categoriaFiltro ? "bg-blue-50 text-blue-700 font-medium" : "text-slate-700"}`}
+                                                    >
+                                                        Todas
+                                                    </button>
+                                                    {categoriasDisponibles.map(cat => (
+                                                        <button
+                                                            key={cat}
+                                                            type="button"
+                                                            onClick={() => { setCategoriaFiltro(cat); setMostrarDropdownCategoria(false) }}
+                                                            className={`w-full px-4 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors text-sm ${categoriaFiltro === cat ? "bg-blue-50 text-blue-700 font-medium" : "text-slate-700"}`}
+                                                        >
+                                                            {cat}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                     <div className="space-y-3">
-                                        <div className="flex flex-col sm:flex-row gap-2">
-                                            <div className="flex-1 relative">
+                                        <div className="relative">
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                                                 <input
                                                     type="text"
@@ -875,31 +1146,36 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                                                 />
                                                 {mostrarDropdownProducto && (
                                                     <div data-producto-dropdown className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
-                                                        {productosEncontrados.length > 0 ? (
-                                                            productosEncontrados.map(p => (
-                                                                <button
-                                                                    key={p.id}
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        productoSeleccionadoRef.current = true
-                                                                        setProductoSeleccionado(p)
-                                                                        setBusquedaProducto(p.nombre)
-                                                                        setMostrarDropdownProducto(false)
-                                                                    }}
-                                                                    className="w-full px-3 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors"
-                                                                >
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="inline-flex px-1.5 py-0.5 bg-slate-600 text-white rounded text-[10px] font-bold shrink-0">{p.categoria}</span>
-                                                                        <p className="font-medium text-slate-900 text-sm truncate">{p.nombre}</p>
-                                                                    </div>
-                                                                    <p className="text-xs text-slate-400">S/ {Number(p.precio).toFixed(2)}</p>
-                                                                </button>
-                                                            ))
-                                                        ) : busquedaProducto.length >= 2 ? (
-                                                            <div className="px-3 py-3 text-sm text-slate-400 text-center">
-                                                                No se encontraron productos
-                                                            </div>
-                                                        ) : null}
+                                                        {(() => {
+                                                            const filtrados = categoriaFiltro
+                                                                ? productosEncontrados.filter(p => p.categoria === categoriaFiltro)
+                                                                : productosEncontrados
+                                                            return filtrados.length > 0 ? (
+                                                                filtrados.map(p => (
+                                                                    <button
+                                                                        key={p.id}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            productoSeleccionadoRef.current = true
+                                                                            setProductoSeleccionado(p)
+                                                                            setBusquedaProducto(p.nombre)
+                                                                            setMostrarDropdownProducto(false)
+                                                                        }}
+                                                                        className="w-full px-3 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors"
+                                                                    >
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="inline-flex px-1.5 py-0.5 bg-slate-600 text-white rounded text-[10px] font-bold shrink-0">{p.categoria}</span>
+                                                                            <p className="font-medium text-slate-900 text-sm truncate">{p.nombre}</p>
+                                                                        </div>
+                                                                        <p className="text-xs text-slate-400">S/ {Number(p.precio).toFixed(2)}</p>
+                                                                    </button>
+                                                                ))
+                                                            ) : busquedaProducto.length >= 2 ? (
+                                                                <div className="px-3 py-3 text-sm text-slate-400 text-center">
+                                                                    {categoriaFiltro ? `Sin resultados en "${categoriaFiltro}"` : "No se encontraron productos"}
+                                                                </div>
+                                                            ) : null
+                                                        })()}
                                                     </div>
                                                 )}
                                                 {busquedaProducto && (
@@ -932,7 +1208,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                                                     <option value="pieza">Pieza</option>
                                                 </select>
                                             </div>
-                                        </div>
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                             <div>
                                                 <label className={labelBase}>Cantidad</label>
@@ -1240,8 +1515,13 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                         </Button>
                         {step === 2 && (
                             <div className="flex items-center gap-2">
-                                <Button variant="outline" className="hidden sm:flex items-center gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-sm h-9">
-                                    <Printer className="h-4 w-4" />
+                                <Button 
+                                    onClick={guardarBorrador} 
+                                    variant="outline" 
+                                    className={`items-center gap-1.5 text-sm h-9 ${borradorGuardado ? "text-green-600 border-green-200 bg-green-50" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                                >
+                                    <Save className="h-4 w-4" />
+                                    <span className="hidden sm:inline">{borradorGuardado ? "Guardado" : "Guardar borrador"}</span>
                                 </Button>
                                 <Button 
                                     onClick={crearPedido} 
@@ -1250,6 +1530,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                                 >
                                     {loading ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : pedidoEditar ? (
+                                        <><Check className="h-4 w-4 mr-1" /> Actualizar Pedido</>
                                     ) : (
                                         <><Check className="h-4 w-4 mr-1" /> Crear Pedido</>
                                     )}
@@ -1299,11 +1581,25 @@ export function CrearPedidoModal({ isOpen, onClose, userName }: Props) {
                 <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/60" onClick={() => setShowConfirmClose(false)} />
                     <div className="relative bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                        <p className="font-semibold text-slate-900 text-lg mb-1">¿Desea salir?</p>
-                        <p className="text-sm text-slate-500 mb-6">Se perderán los datos ingresados.</p>
-                        <div className="flex gap-2 justify-end">
-                            <Button variant="outline" onClick={() => setShowConfirmClose(false)}>Cancelar</Button>
-                            <Button onClick={() => { setShowConfirmClose(false); onClose() }}>Salir</Button>
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-slate-900 text-lg">¿Estás seguro de salir?</p>
+                                <p className="text-sm text-slate-500">Se perderán los datos no guardados.</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-2 mt-6">
+                            <Button onClick={() => { guardarBorrador(); setShowConfirmClose(false); onClose() }} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm h-9">
+                                <Save className="h-4 w-4 mr-1" /> Guardar borrador y salir
+                            </Button>
+                            <Button variant="outline" onClick={() => { limpiarBorrador(); setShowConfirmClose(false); onClose() }} className="w-full text-slate-600 border-slate-200 hover:bg-slate-50 text-sm h-9">
+                                Salir sin guardar
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowConfirmClose(false)} className="w-full text-slate-600 border-slate-200 hover:bg-slate-50 text-sm h-9">
+                                Continuar editando
+                            </Button>
                         </div>
                     </div>
                 </div>

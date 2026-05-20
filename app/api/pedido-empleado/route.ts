@@ -144,20 +144,10 @@ export async function POST(request: NextRequest) {
             }
         })
 
-        // Notificar a staff
-        const staff = await prisma.user.findMany({
-            where: { role: { in: ["admin", "empleado"] } }
-        })
-        
-        await prisma.notificacion.createMany({
-            data: staff.map(user => ({
-                userId: user.id,
-                titulo: "Nuevo pedido",
-                mensaje: `Nuevo pedido ${numeroOrden} creado por ${session.user.name}`,
-                tipo: "pedido",
-                pedidoId: pedido.id
-            }))
-        })
+        // Notificar a staff - solo si el pedido NO fue creado por empleado/admin
+        // (pedidos de clientes normales sí generan notificación)
+        // Como esta ruta solo la usan empleados/admin, NO creamos notificaciones aquí
+        // Las notificaciones se generan en /api/pedidos para pedidos de clientes
 
         // Auto-asignar empleado como delegado del pedido
         await prisma.pedidoDelegado.create({
