@@ -58,6 +58,111 @@ export async function GET(
     }
 }
 
+export async function PUT(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const headersList = await headers()
+        const session = await auth.api.getSession({ headers: headersList })
+
+        if (!session?.user) {
+            return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
+        }
+
+        if (session.user.role !== "empleado" && session.user.role !== "admin") {
+            return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 })
+        }
+
+        const { id } = await params
+        const body = await request.json()
+
+        const { empresa, metodoPago, cliente, agencia, guiaRemision, costoEnvio, observaciones, items } = body
+
+        if (!items || items.length === 0) {
+            return NextResponse.json({ success: false, error: "Sin artículos" }, { status: 400 })
+        }
+
+        const pedido = await prisma.pedido.findUnique({
+            where: { id },
+            include: { delegados: true }
+        })
+
+        if (!pedido) {
+            return NextResponse.json({ success: false, error: "Pedido no encontrado" }, { status: 404 })
+        }
+
+        if (pedido.userId !== session.user.id && session.user.role !== "admin") {
+            return NextResponse.json({ success: false, error: "No eres el creador de este pedido" }, { status: 403 })
+        }
+
+        const subtotalRaw = items.reduce((sum: number, item: any) => {
+            const precio = Number(item.precio) || 0
+            const cantidad = Number(item.cantidad) || 0
+            const metros = item.tipo === "pieza" ? 50 : 1
+            return sum + (precio * cantidad * metros)
+        }, 0)
+        const subtotal = Math.round(subtotalRaw * 100) / 100
+
+        const totalRaw = subtotal + (Number(costoEnvio) || 0)
+        const total = Math.round(totalRaw * 100) / 100
+
+        await prisma.pedidoDetalle.deleteMany({ where: { pedidoId: id } })
+
+        const updated = await prisma.pedido.update({
+            where: { id },
+            data: {
+                total,
+                tipoDocumento: cliente?.tipoDoc || pedido.tipoDocumento,
+                numeroDoc: cliente?.numeroDoc || pedido.numeroDoc,
+                nombreFactura: cliente?.nombre || pedido.nombreFactura,
+                direccion: cliente?.direccion || pedido.direccion,
+                departamento: cliente?.departamento || null,
+                provincia: cliente?.provincia || null,
+                distrito: cliente?.distrito || null,
+                metodoEnvio: agencia ? "agencia" : pedido.metodoEnvio,
+                agencia: agencia || null,
+                agenciaOtro: agencia === "otros" ? cliente?.agenciaOtro : null,
+                costoEnvio: Number(costoEnvio) || 0,
+                notas: observaciones || null,
+                pedidoDetalle: {
+                    create: items.map((item: any) => ({
+                        productoId: item.productoId,
+                        cantidad: Number(item.cantidad),
+                        tipo: item.tipo || "metros",
+                        precio: Number(item.precio),
+                        indicacionesCorte: item.indicacionesCorte || null
+                    }))
+                },
+                pedidoEmpleadoInfo: {
+                    upsert: {
+                        create: {
+                            empresa: empresa || null,
+                            metodoPago: metodoPago || null,
+                            telefono: cliente?.telefono || null,
+                            guiaRemision: guiaRemision || false
+                        },
+                        update: {
+                            empresa: empresa || null,
+                            metodoPago: metodoPago || null,
+                            telefono: cliente?.telefono || null,
+                            guiaRemision: guiaRemision || false
+                        }
+                    }
+                }
+            },
+            include: {
+                pedidoDetalle: { include: { producto: true } }
+            }
+        })
+
+        return NextResponse.json({ success: true, pedido: updated })
+    } catch (error: any) {
+        console.error("Error actualizando pedido:", error)
+        return NextResponse.json({ success: false, error: "Error interno: " + error.message }, { status: 500 })
+    }
+}
+
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
