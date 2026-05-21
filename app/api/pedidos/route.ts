@@ -147,7 +147,8 @@ export async function POST(request: NextRequest) {
         const numeroOperacionFinal = numeroOperacion || "012345678"
 
         const costoEnvio = calculateCostoEnvio(itemsArray, metodoEnvio)
-        const total = calculateTotal(itemsArray) + costoEnvio
+        const totalRaw = calculateTotal(itemsArray) + costoEnvio
+        const total = Math.round(totalRaw * 100) / 100
         console.log("Total:", total)
 
         const estadoInicial = tienePiezas ? "metraje_en_proceso" : "pendiente"

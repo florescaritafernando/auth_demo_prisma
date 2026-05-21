@@ -465,16 +465,18 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar }: Pr
     }
 
     const calcularSubtotal = () => {
-        return items.reduce((sum, item) => {
+        const raw = items.reduce((sum, item) => {
             const precio = Number(item.productoPrecio) || 0
             const cantidad = Number(item.cantidad) || 0
             const metros = item.tipo === "pieza" ? 50 : 1
             return sum + (precio * cantidad * metros)
         }, 0)
+        return Math.round(raw * 100) / 100
     }
 
     const calcularTotal = () => {
-        return calcularSubtotal() + (Number(costoEnvio) || 0)
+        const raw = calcularSubtotal() + (Number(costoEnvio) || 0)
+        return Math.round(raw * 100) / 100
     }
 
     const validarDocumento = (): string | null => {

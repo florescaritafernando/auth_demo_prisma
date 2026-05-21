@@ -399,12 +399,15 @@ export async function PATCH(
                 nuevoTotal += Number(det.precio) * det.cantidad
             }
 
-            const costoEnvio = calculateCostoEnvio(nuevoTotal, pedido.metodoEnvio || "agencia")
+            const nuevoTotalRedondeado = Math.round(nuevoTotal * 100) / 100
+            const costoEnvio = calculateCostoEnvio(nuevoTotalRedondeado, pedido.metodoEnvio || "agencia")
+            const totalConEnvioRaw = nuevoTotalRedondeado + costoEnvio
+            const totalConEnvio = Math.round(totalConEnvioRaw * 100) / 100
 
             await prisma.pedido.update({
                 where: { id },
                 data: {
-                    total: nuevoTotal,
+                    total: totalConEnvio,
                     costoEnvio: costoEnvio
                 }
             })
@@ -442,7 +445,8 @@ export async function PATCH(
                     }
 
                     const costoEnvio = calculateCostoEnvio(totalProductos, pedido.metodoEnvio)
-                    const totalConEnvio = totalProductos + costoEnvio
+                    const totalConEnvioRaw = totalProductos + costoEnvio
+                    const totalConEnvio = Math.round(totalConEnvioRaw * 100) / 100
 
                     await prisma.pedido.update({
                         where: { id },
@@ -491,10 +495,12 @@ export async function PATCH(
             }
 
             const subtotal = subtotalPiezas + subtotalMetros
+            const subtotalRedondeado = Math.round(subtotal * 100) / 100
 
-            if (subtotal > 0) {
-                const costoEnvio = calculateCostoEnvio(subtotal, pedido.metodoEnvio)
-                const totalConEnvio = subtotal + costoEnvio
+            if (subtotalRedondeado > 0) {
+                const costoEnvio = calculateCostoEnvio(subtotalRedondeado, pedido.metodoEnvio)
+                const totalConEnvioRaw = subtotalRedondeado + costoEnvio
+                const totalConEnvio = Math.round(totalConEnvioRaw * 100) / 100
 
                 await prisma.pedido.update({
                     where: { id },

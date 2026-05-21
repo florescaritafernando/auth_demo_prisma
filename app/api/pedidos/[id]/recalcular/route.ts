@@ -50,25 +50,27 @@ export async function POST(
         }
 
         // Calcular subtotal (suma de artículos)
-        let subtotal = 0
+        let subtotalRaw = 0
 
         // Calcular total basado en los detalles del pedido
         for (const detalle of pedido.pedidoDetalle) {
             if (detalle.tipo === "pieza") {
                 const metrajeTotal = detalle.etiquetas.reduce((sum, e) => sum + e.valor, 0)
-                // Usar el precio guardado en detalle.precio (precio al momento de la compra)
                 const precioUnitario = Number(detalle.precio)
-                subtotal += precioUnitario * metrajeTotal
+                subtotalRaw += precioUnitario * metrajeTotal
             } else {
-                subtotal += Number(detalle.precio) * detalle.cantidad
+                subtotalRaw += Number(detalle.precio) * detalle.cantidad
             }
         }
+
+        const subtotal = Math.round(subtotalRaw * 100) / 100
 
         // Calcular costo de envío basado en el subtotal
         const costoEnvio = calculateCostoEnvio(subtotal, pedido.metodoEnvio)
 
         // Total = subtotal + costo de envío
-        const total = subtotal + costoEnvio
+        const totalRaw = subtotal + costoEnvio
+        const total = Math.round(totalRaw * 100) / 100
 
         await prisma.pedido.update({
             where: { id },

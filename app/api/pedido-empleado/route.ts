@@ -41,14 +41,16 @@ export async function POST(request: NextRequest) {
         }
 
         // Calcular total
-        const subtotal = items.reduce((sum: number, item: any) => {
+        const subtotalRaw = items.reduce((sum: number, item: any) => {
             const precio = Number(item.precio) || 0
             const cantidad = Number(item.cantidad) || 0
             const metros = item.tipo === "pieza" ? 50 : 1
             return sum + (precio * cantidad * metros)
         }, 0)
+        const subtotal = Math.round(subtotalRaw * 100) / 100
 
-        const total = subtotal + (Number(costoEnvio) || 0)
+        const totalRaw = subtotal + (Number(costoEnvio) || 0)
+        const total = Math.round(totalRaw * 100) / 100
 
         // Determinar estado según tipo de artículos
         const tienePiezas = items.some((item: any) => item.tipo === "pieza")
