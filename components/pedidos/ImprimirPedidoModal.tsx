@@ -138,6 +138,8 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     * {
                         box-sizing: border-box;
                         max-width: 8cm;
+                        margin: 0;
+                        padding: 0;
                     }
                     html, body {
                         margin: 0;
@@ -149,33 +151,33 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     }
                     body { 
                         font-family: 'Courier New', monospace; 
-                        font-size: 14px; 
+                        font-size: 16px; 
                         width: 8cm; 
                         margin: 0; 
-                        padding: 2mm;
+                        padding: 0;
                         min-width: 8cm;
                         max-width: 8cm;
                         text-transform: uppercase;
                         height: auto;
                         page-break-after: avoid;
                     }
-                    .header { text-align: center; border-bottom: 1px dashed #000; padding: 1.5mm 0; }
-                    .title { font-size: 18px; font-weight: bold; }
-                    .numero { font-size: 16px; font-weight: bold; }
-                    .section { margin-bottom: 2px; }
-                    .label { font-weight: bold; font-size: 14px; }
-                    .value { margin-bottom: 1px; font-size: 13px; word-wrap: break-word; }
-                    .productos-label { font-weight: bold; font-size: 14px; border-bottom: 1px dashed #000; padding-bottom: 1px; margin-bottom: 2px; }
-                    .producto { margin-bottom: 3px; padding: 1mm; background: #f0f0f0; border-left: 3px solid #333; page-break-inside: avoid; }
-                    .producto-nombre { font-weight: bold; font-size: 14px; word-wrap: break-word; }
-                    .producto-detalle { font-size: 13px; margin-top: 1px; }
-                    .indicaciones { font-size: 13px; margin-top: 1px; white-space: pre-wrap; word-wrap: break-word; }
-                    .cantidad { font-weight: bold; font-size: 15px; color: #000; }
-                    .totales { border-top: 1px dashed #000; padding-top: 2px; margin-top: 3px; }
-                    .total-row { display: flex; justify-content: space-between; font-size: 13px; }
-                    .gran-total { font-weight: bold; font-size: 16px; border-top: 1px dashed #000; padding-top: 1px; }
-                    .notas { border-top: 1px dashed #000; padding-top: 2px; margin-top: 3px; }
-                    .rechazo { background: #ffe0e0; border: 1px dashed #c00; padding: 1mm; margin-bottom: 2px; }
+                    .header { text-align: center; border-bottom: 1px dashed #000; }
+                    .title { font-weight: bold; }
+                    .numero { font-weight: bold; }
+                    .section { }
+                    .label { font-weight: bold; }
+                    .value { word-wrap: break-word; }
+                    .productos-label { font-weight: bold; border-bottom: 1px dashed #000;  }
+                    .producto { padding-left: 1mm; background: #f0f0f0; border-left: 3px solid #333; page-break-inside: avoid; margin-bottom: 1mm;}
+                    .producto-nombre { font-weight: bold; word-wrap: break-word; }
+                    .producto-detalle { }
+                    .indicaciones { white-space: pre-wrap; word-wrap: break-word; }
+                    .cantidad { font-weight: bold; color: #000; }
+                    .totales { border-top: 1px dashed #000; }
+                    .total-row { display: flex; justify-content: space-between; }
+                    .gran-total { font-weight: bold; font-size: 20px; border-top: 1px dashed #000; }
+                    .notas { border-top: 1px dashed #000; }
+                    .rechazo { background: #ffe0e0; border: 1px dashed #c00; }
                 </style>
             `
             : `
@@ -196,7 +198,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     .info-label { font-weight: bold; color: #666; font-size: 9px; }
                     .info-value { font-size: 12px; }
                     .productos-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
-                    .productos-table th { background: #333; color: white; padding: 8px 6px; text-align: left; font-size: 10px; }
+                    .productos-table th { background: #333; color: white; padding: 8px 6px; text-align: left; font-size: 10px;}
                     .productos-table td { border: 1px solid #ddd; padding: 6px; font-size: 11px; word-wrap: break-word; overflow-wrap: break-word; }
                     .productos-table .col-num { width: 4%; }
                     .productos-table .col-nombre { width: 25%; }
@@ -209,22 +211,18 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     .productos-table tr { page-break-inside: avoid; }
                     .totales { border-top: 2px solid #000; padding-top: 12px; page-break-inside: avoid; }
                     .totales-row { display: flex; justify-content: space-between; padding: 4px 0; }
-                    .gran-total { font-size: 16px; font-weight: bold; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
+                    .gran-total { font-size: 20px; font-weight: bold; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
                     .notas-box { border: 1px solid #ddd; padding: 8px; background: #f9f9f9; page-break-inside: avoid; }
                     .rechazo-box { border: 1px solid #c00; padding: 8px; background: #ffe0e0; page-break-inside: avoid; }
                 </style>
             `
 
         if (formato === "ticket") {
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head><title>Pedido ${pedido.numeroOrden}</title>${estilos}</head>
-                <body>
+            const ticketBodyHtml = `
                     <div class="header">
                         <div class="title">PEDIDO</div>
                         <div class="numero">${pedido.numeroOrden}</div>
-                        <div class="value" style="margin-top: 5px;">ESTADO: ${pedido.estado.toUpperCase()}</div>
+                        <div class="value">ESTADO: ${pedido.estado.toUpperCase()}</div>
                     </div>
                     
                     <div class="section">
@@ -277,12 +275,12 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         <div class="productos-label">ARTÍCULOS:</div>
                         ${productos.map(p => `
                             <div class="producto">
-                                <div class="producto-nombre">${p.nombre} <span style="font-size: 14px; font-weight: normal;">${p.categoria || ""}</span></div>
+                                <div class="producto-nombre">${p.nombre} <span style="font-weight: normal;">${p.categoria || ""}</span></div>
                                 <div class="producto-detalle">
                                     <span class="cantidad">${p.cantidad}${p.metraje ? ` ${p.metraje}` : ''} x ${p.precio}</span>
                                 </div>
-                                ${p.mostrarCalculo ? `<div style="font-size: 16px; font-weight: bold; text-align: right;">= S/ ${p.total.toFixed(2)}</div>` : ""}
-                                ${p.indicaciones ? `<div class="indicaciones" style="border-top: 1px solid #ccc; padding-top: 2px; margin-top: 3px;">"${p.indicaciones}"</div>` : ""}
+                                ${p.mostrarCalculo ? `<div style="font-weight: bold; text-align: right;">= S/ ${p.total.toFixed(2)}</div>` : ""}
+                                ${p.indicaciones ? `<div class="indicaciones" style="border-top: 1px solid #ccc;">"${p.indicaciones}"</div>` : ""}
                             </div>
                         `).join("")}
                     </div>
@@ -312,11 +310,35 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     ` : ""}
                     
                     ${pedido.celularRecibe ? `
-                    <div class="section" style="margin-top: 5px;">
+                    <div class="section">
                         <div class="label">CELULAR:</div>
                         <div class="value">${pedido.celularRecibe}</div>
                     </div>
-                    ` : ""}
+                    ` : ""}`
+
+            // Medir altura exacta del contenido
+            const measurer = document.createElement("div")
+            measurer.style.cssText = "position:fixed;left:-9999px;top:0;width:8cm;visibility:hidden;pointer-events:none"
+            measurer.innerHTML = `<!DOCTYPE html><html><head>${estilos}</head><body>${ticketBodyHtml}</body></html>`
+            document.body.appendChild(measurer)
+
+            const scrollH = measurer.scrollHeight
+            const widthPx = measurer.offsetWidth || (8 * 37.8)
+            const pxPerCm = widthPx / 8
+            const alturaCm = Math.max(Math.ceil((scrollH + 8) / pxPerCm), 5)
+
+            document.body.removeChild(measurer)
+
+            const estilosFinal = estilos.replace(
+                "size: 8cm auto;",
+                `size: 8cm ${alturaCm}cm;`
+            )
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>Pedido ${pedido.numeroOrden}</title>${estilosFinal}</head>
+                <body>${ticketBodyHtml}
                 </body>
                 </html>
             `)
@@ -430,7 +452,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     <span>S/ ${pedido.costoEnvio.toFixed(2)}</span>
                 </div>
                 ` : ""}
-                <div class="totales-row gran-total">
+                <div class="totales-row gran-total font-size:20px">
                     <span>TOTAL A PAGAR:</span>
                     <span>S/ ${pedido.total.toFixed(2)}</span>
                 </div>
