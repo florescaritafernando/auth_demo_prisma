@@ -35,13 +35,15 @@ export function MobileNav({ userName, userRole, onOpenCrearPedido, onOpenBorrado
     }
 
     const triggerAction = (action: "crear-pedido" | "borradores" | "modificar-pedido", localCallback?: () => void) => {
-        setShowAcciones(false)
         setAnimating(false)
-        if (localCallback) {
-            localCallback()
-        } else {
-            window.dispatchEvent(new CustomEvent(`mobile-nav:${action}`))
-        }
+        setTimeout(() => {
+            setShowAcciones(false)
+            if (localCallback) {
+                localCallback()
+            } else {
+                window.dispatchEvent(new CustomEvent(`mobile-nav:${action}`))
+            }
+        }, 250)
     }
 
     if (!isMounted) return null
