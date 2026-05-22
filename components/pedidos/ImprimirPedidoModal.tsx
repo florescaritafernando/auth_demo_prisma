@@ -128,6 +128,12 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     @page { 
                         size: 8cm auto; 
                         margin: 0mm !important;
+                        @top-left { content: none; }
+                        @top-center { content: none; }
+                        @top-right { content: none; }
+                        @bottom-left { content: none; }
+                        @bottom-center { content: none; }
+                        @bottom-right { content: none; }
                     }
                     * {
                         box-sizing: border-box;
@@ -139,6 +145,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         width: 8cm;
                         min-width: 8cm;
                         max-width: 8cm;
+                        height: auto;
                     }
                     body { 
                         font-family: 'Courier New', monospace; 
@@ -149,7 +156,8 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         min-width: 8cm;
                         max-width: 8cm;
                         text-transform: uppercase;
-                        min-height: 100vh;
+                        height: auto;
+                        page-break-after: avoid;
                     }
                     .header { text-align: center; border-bottom: 1px dashed #000; padding: 1.5mm 0; }
                     .title { font-size: 18px; font-weight: bold; }
