@@ -48,7 +48,7 @@ interface Props {
 
 interface MetrajeRegistro {
     id: string
-    value: number
+    value: string
     isNew?: boolean
 }
 
@@ -64,7 +64,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
             .filter(d => d.tipo === "pieza")
             .forEach(d => {
                 if (d.etiquetas && d.etiquetas.length > 0) {
-                    initial[d.id] = d.etiquetas.map(e => ({ id: e.id, value: e.valor }))
+                    initial[d.id] = d.etiquetas.map(e => ({ id: e.id, value: String(e.valor) }))
                 }
             })
         return initial
@@ -224,7 +224,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
         // Validar que las etiquetas no excedan la cantidad de piezas
         for (const detalle of piezaDetails) {
             const etiquetasActuales = detalle.etiquetas?.length || 0
-            const nuevosRegistros = (metrajeData[detalle.id] || []).filter(r => r.isNew === true && r.value > 0).length
+            const nuevosRegistros = (metrajeData[detalle.id] || []).filter(r => r.isNew === true && Number(r.value) > 0).length
             const totalEtiquetas = etiquetasActuales + nuevosRegistros
             if (totalEtiquetas > Number(detalle.cantidad)) {
                 alert(`No puedes agregar más metrajes que piezas solicitadas. Has solicitado ${detalle.cantidad} pieza(s).`)
@@ -236,10 +236,10 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
         try {
             const metrajeItemsArray = Object.entries(metrajeData).flatMap(([detalleId, registros]) =>
                 registros
-                    .filter(r => r.isNew === true && r.value > 0)
+                    .filter(r => r.isNew === true && Number(r.value) > 0)
                     .map(r => ({
                         detalleId,
-                        metraje: r.value
+                        metraje: Number(r.value)
                     }))
             )
 
@@ -283,11 +283,11 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const agregarMetraje = (detalleId: string) => {
         setMetrajeData(prev => ({
             ...prev,
-            [detalleId]: [...(prev[detalleId] || []), { id: `new-${Date.now()}`, value: 0, isNew: true }]
+            [detalleId]: [...(prev[detalleId] || []), { id: `new-${Date.now()}`, value: "", isNew: true }]
         }))
     }
 
-    const actualizarMetraje = (detalleId: string, registroId: string, value: number) => {
+    const actualizarMetraje = (detalleId: string, registroId: string, value: string) => {
         setMetrajeData(prev => ({
             ...prev,
             [detalleId]: prev[detalleId].map(r => r.id === registroId ? { ...r, value } : r)
@@ -357,7 +357,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
 
     const getMetrajeTotal = (detalleId: string) => {
         const regs = metrajeData[detalleId] || []
-        return regs.reduce((sum, r) => sum + r.value, 0)
+        return regs.reduce((sum, r) => sum + (Number(r.value) || 0), 0)
     }
 
     const calcularTotal = () => {
@@ -572,7 +572,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                                 inputMode="decimal"
                                                                 autoFocus
                                                                 value={reg.value || ""}
-                                                                onChange={e => actualizarMetraje(detalle.id, reg.id, parseFloat(e.target.value) || 0)}
+                                                                onChange={e => actualizarMetraje(detalle.id, reg.id, e.target.value)}
                                                                 onKeyDown={e => {
                                                                     if (e.key === "Enter") {
                                                                         const newRegs = metrajeData[detalle.id].map(r =>
