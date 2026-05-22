@@ -158,6 +158,13 @@ export async function PATCH(request: NextRequest) {
 
         // Crear notificación al cliente si hay respuesta o se cambia a atendido/resuelto
         if ((respuesta || estado === "atendido" || estado === "resuelto") && reclamo.userId) {
+            // No notificar si el pedido fue creado por un empleado/admin
+            if (reclamo.pedidoId) {
+                const pedidoEmpleadoInfo = await prisma.pedidoEmpleadoInfo.findUnique({ where: { pedidoId: reclamo.pedidoId } })
+                if (pedidoEmpleadoInfo) {
+                    return NextResponse.json({ success: true, reclamo: updatedReclamo })
+                }
+            }
             await prisma.notificacion.create({
                 data: {
                     userId: reclamo.userId,

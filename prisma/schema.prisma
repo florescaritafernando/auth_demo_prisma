@@ -46,6 +46,7 @@ model User {
   favoritos              Favorito[]
   datosFacturacion       DatosFacturacion[]
   datosDireccionEnvios   DatosDireccionEnvios[]
+  borradoresPedido       BorradorPedido[]
 
   @@unique([email])
   @@map("user")
@@ -357,17 +358,41 @@ model PedidoDelegado {
 }
 
 model PedidoEmpleadoInfo {
-  id           String   @id @default(cuid())
-  pedidoId     String   @unique
-  pedido       Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  empresa      String?
-  metodoPago   String?
-  telefono     String?
-  guiaRemision Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String   @id @default(cuid())
+  pedidoId          String   @unique
+  pedido            Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  empresa           String?
+  metodoPago        String?
+  telefono          String?
+  guiaRemision      Boolean  @default(false)
+  envioComprobante  String   @default("No imprimir")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@map("pedido_empleado_info")
+}
+
+model BorradorPedido {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nombre            String?
+  empresa           String?
+  metodoPago        String?
+  cliente           Json?
+  agencia           String?
+  agenciaOtro       String?
+  guiaRemision      Boolean  @default(false)
+  envioComprobante  String   @default("No imprimir")
+  costoEnvio        String   @default("0")
+  observaciones     String?
+  items             Json?
+  step              Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@map("borrador_pedidos")
 }
 
 model DatosFacturacion {

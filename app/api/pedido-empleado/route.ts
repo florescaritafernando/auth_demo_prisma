@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
             cliente,
             agencia,
             guiaRemision,
+            envioComprobante,
             costoEnvio,
             observaciones,
             items
@@ -132,7 +133,8 @@ export async function POST(request: NextRequest) {
                         empresa: empresa || null,
                         metodoPago: metodoPago || null,
                         telefono: cliente.telefono || null,
-                        guiaRemision: guiaRemision || false
+                        guiaRemision: guiaRemision || false,
+                        envioComprobante: envioComprobante || "No imprimir"
                     }
                 }
             },

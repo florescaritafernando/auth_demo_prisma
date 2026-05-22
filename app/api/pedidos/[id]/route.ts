@@ -77,7 +77,7 @@ export async function PUT(
         const { id } = await params
         const body = await request.json()
 
-        const { empresa, metodoPago, cliente, agencia, guiaRemision, costoEnvio, observaciones, items } = body
+        const { empresa, metodoPago, cliente, agencia, guiaRemision, envioComprobante, costoEnvio, observaciones, items } = body
 
         if (!items || items.length === 0) {
             return NextResponse.json({ success: false, error: "Sin artículos" }, { status: 400 })
@@ -140,13 +140,15 @@ export async function PUT(
                             empresa: empresa || null,
                             metodoPago: metodoPago || null,
                             telefono: cliente?.telefono || null,
-                            guiaRemision: guiaRemision || false
+                            guiaRemision: guiaRemision || false,
+                            envioComprobante: envioComprobante || "No imprimir"
                         },
                         update: {
                             empresa: empresa || null,
                             metodoPago: metodoPago || null,
                             telefono: cliente?.telefono || null,
-                            guiaRemision: guiaRemision || false
+                            guiaRemision: guiaRemision || false,
+                            envioComprobante: envioComprobante || "No imprimir"
                         }
                     }
                 }
@@ -300,6 +302,11 @@ export async function PATCH(
             data: updateData
         })
 
+        // No generar notificaciones para pedidos creados por empleados/admin
+        const pedidoEmpleadoInfo = await prisma.pedidoEmpleadoInfo.findUnique({ where: { pedidoId: id } })
+        const esPedidoDeStaff = !!pedidoEmpleadoInfo
+
+        if (!esPedidoDeStaff) {
         // Notificar cuando el cliente completa el pago (estado = pendiente)
         console.log("=== NOTIFICANDO PAGO PENDIENTE ===", { estado, numeroOperacion, comprobantePago, pedidoId: id })
         if (estado === "pendiente" && (numeroOperacion || comprobantePago)) {
@@ -629,6 +636,8 @@ export async function PATCH(
                 })
             }
         }
+
+        } // fin if (!esPedidoDeStaff)
 
         return NextResponse.json({ success: true, pedido })
     } catch (error: any) {

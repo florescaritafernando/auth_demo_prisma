@@ -9,38 +9,70 @@ interface Props {
     userRole: string
 }
 
+interface BorradorItem {
+    id: string
+    userName: string
+    cliente: any
+    items: any[]
+    fecha: string
+}
+
 export function DashboardModals({ userName, userRole }: Props) {
     const [showCrearPedido, setShowCrearPedido] = useState(false)
     const [showBorradores, setShowBorradores] = useState(false)
     const [showModificarPedido, setShowModificarPedido] = useState(false)
     const [pedidoAEditar, setPedidoAEditar] = useState<any>(null)
-    const [borradores, setBorradores] = useState<{ userName: string; data: any; fecha: string }[]>([])
+    const [borradorRestaurarId, setBorradorRestaurarId] = useState<string | null>(null)
+    const [borradores, setBorradores] = useState<BorradorItem[]>([])
     const [pedidosAsignados, setPedidosAsignados] = useState<any[]>([])
     const [cargandoPedidos, setCargandoPedidos] = useState(false)
+    const [cargandoBorradorList, setCargandoBorradorList] = useState(false)
 
     const esStaff = userRole === "empleado" || userRole === "admin"
 
-    if (!esStaff) return null
+    const abrirCrearPedido = () => {
+        setShowBorradores(false)
+        setShowModificarPedido(false)
+        setShowCrearPedido(true)
+    }
 
-    const cargarBorradores = useCallback(() => {
-        const lista: { userName: string; data: any; fecha: string }[] = []
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i)
-            if (key?.startsWith("pedido-borrador-")) {
-                try {
-                    const data = JSON.parse(localStorage.getItem(key) || "")
-                    const uName = key.replace("pedido-borrador-", "")
-                    lista.push({ userName: uName, data, fecha: data.fecha || "" })
-                } catch (e) {
-                    console.error("Error leyendo borrador:", e)
-                }
+    const abrirBorradores = () => {
+        setShowCrearPedido(false)
+        setShowModificarPedido(false)
+        setShowBorradores(true)
+    }
+
+    const abrirModificarPedido = () => {
+        setShowCrearPedido(false)
+        setShowBorradores(false)
+        setShowModificarPedido(true)
+    }
+
+    const cargarBorradores = useCallback(async () => {
+        setCargandoBorradorList(true)
+        try {
+            const res = await fetch("/api/borrador-pedido", { credentials: "include" })
+            const json = await res.json()
+            if (json.success) {
+                const lista: BorradorItem[] = (json.borradores || []).map((b: any) => ({
+                    id: b.id,
+                    userName: b.user?.name || "Desconocido",
+                    cliente: b.cliente,
+                    items: Array.isArray(b.items) ? b.items : [],
+                    fecha: b.updatedAt || b.createdAt
+                }))
+                lista.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                setBorradores(lista)
             }
+        } catch (e) {
+            console.error("Error cargando borradores:", e)
+        } finally {
+            setCargandoBorradorList(false)
         }
-        lista.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-        setBorradores(lista)
     }, [])
 
     const cargarPedidosAsignados = useCallback(async () => {
+        if (!esStaff) return
         setCargandoPedidos(true)
         try {
             const res = await fetch("/api/pedidos-admin", { credentials: "include" })
@@ -53,32 +85,35 @@ export function DashboardModals({ userName, userRole }: Props) {
         } finally {
             setCargandoPedidos(false)
         }
-    }, [])
+    }, [esStaff])
 
-    const restaurarBorrador = (uName: string) => {
-        const key = `pedido-borrador-${uName}`
-        localStorage.setItem("pedido-borrador-restore", key)
+    const restaurarBorrador = (id: string) => {
+        setBorradorRestaurarId(id)
         setShowBorradores(false)
         setShowCrearPedido(true)
     }
 
-    const eliminarBorrador = (uName: string) => {
-        localStorage.removeItem(`pedido-borrador-${uName}`)
-        cargarBorradores()
+    const eliminarBorrador = async (id: string) => {
+        try {
+            await fetch(`/api/borrador-pedido?id=${id}`, { method: "DELETE", credentials: "include" })
+            cargarBorradores()
+        } catch (e) {
+            console.error("Error eliminando borrador:", e)
+        }
     }
 
     useEffect(() => {
         const handleCrearPedido = () => {
             setPedidoAEditar(null)
-            setShowCrearPedido(true)
+            abrirCrearPedido()
         }
         const handleBorradores = () => {
             cargarBorradores()
-            setShowBorradores(true)
+            abrirBorradores()
         }
         const handleModificarPedido = () => {
             cargarPedidosAsignados()
-            setShowModificarPedido(true)
+            abrirModificarPedido()
         }
 
         window.addEventListener("mobile-nav:crear-pedido", handleCrearPedido)
@@ -96,12 +131,13 @@ export function DashboardModals({ userName, userRole }: Props) {
         <>
             <CrearPedidoModal
                 isOpen={showCrearPedido}
-                onClose={() => { setShowCrearPedido(false); setPedidoAEditar(null) }}
+                onClose={() => { setShowCrearPedido(false); setPedidoAEditar(null); setBorradorRestaurarId(null) }}
                 userName={userName}
                 pedidoEditar={pedidoAEditar}
+                borradorRestaurarId={borradorRestaurarId}
             />
 
-            {showModificarPedido && (
+            {esStaff && showModificarPedido && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModificarPedido(false)} />
                     <div className="relative bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[80vh]">
@@ -169,7 +205,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                 </div>
             )}
 
-            {showBorradores && (
+            {esStaff && showBorradores && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowBorradores(false)} />
                     <div className="relative bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[80vh]">
@@ -183,23 +219,30 @@ export function DashboardModals({ userName, userRole }: Props) {
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto">
-                            {borradores.length === 0 ? (
+                            {cargandoBorradorList ? (
+                                <div className="flex items-center justify-center py-12 text-slate-400">
+                                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                    <p className="text-sm">Cargando borradores...</p>
+                                </div>
+                            ) : borradores.length === 0 ? (
                                 <div className="text-center py-12 text-slate-400">
                                     <File className="h-10 w-10 mx-auto mb-3 text-slate-200" />
                                     <p className="text-sm">No hay borradores guardados</p>
                                 </div>
                             ) : (
                                 <div className="p-4 space-y-3">
-                                    {borradores.map((b, idx) => {
+                                    {borradores.map((b) => {
                                         const fecha = new Date(b.fecha).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
-                                        const items = b.data.items || []
-                                        const cliente = b.data.cliente?.nombre || "Sin cliente"
+                                        const items = b.items || []
+                                        const cliente = b.cliente?.nombre || "Sin cliente"
                                         const total = items.reduce((sum: number, i: any) => {
+                                            const precio = Number(i.precio ?? i.productoPrecio ?? 0)
+                                            const cantidad = Number(i.cantidad ?? 0)
                                             const metros = i.tipo === "pieza" ? 50 : 1
-                                            return sum + (i.precio * i.cantidad * metros)
+                                            return sum + (precio * cantidad * metros)
                                         }, 0)
                                         return (
-                                            <div key={idx} className="border border-slate-100 rounded-xl p-4 hover:bg-slate-50 transition-colors">
+                                            <div key={b.id} className="border border-slate-100 rounded-xl p-4 hover:bg-slate-50 transition-colors">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="flex-1 min-w-0">
                                                         <p className="font-semibold text-slate-900 text-sm truncate">{cliente}</p>
@@ -212,13 +255,13 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     </div>
                                                     <div className="flex flex-col gap-1 shrink-0">
                                                         <button
-                                                            onClick={() => restaurarBorrador(b.userName)}
+                                                            onClick={() => restaurarBorrador(b.id)}
                                                             className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
                                                         >
                                                             <RotateCcw className="h-3 w-3" /> Restaurar
                                                         </button>
                                                         <button
-                                                            onClick={() => eliminarBorrador(b.userName)}
+                                                            onClick={() => eliminarBorrador(b.id)}
                                                             className="flex items-center gap-1 px-3 py-1.5 text-red-500 hover:bg-red-50 rounded-lg text-xs font-medium transition-colors"
                                                         >
                                                             <Trash2 className="h-3 w-3" /> Eliminar
