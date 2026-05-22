@@ -568,7 +568,8 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                         <Tag className="h-4 w-4 text-yellow-600 ml-1" />
                                                         {isNew ? (
                                                             <input
-                                                                type="number"
+                                                                type="text"
+                                                                inputMode="decimal"
                                                                 autoFocus
                                                                 value={reg.value || ""}
                                                                 onChange={e => actualizarMetraje(detalle.id, reg.id, parseFloat(e.target.value) || 0)}
