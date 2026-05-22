@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { ChevronDown, ChevronUp, FileText, UserCheck, ExternalLink, UserPlus, Printer, X, File } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Pagination } from "@/components/ui/pagination"
 import { AdminPedidoActions } from "./actions"
 import { ImprimirPedidoModal } from "@/components/pedidos/ImprimirPedidoModal"
 
@@ -29,7 +28,9 @@ interface Pedido {
     numeroDoc: string | null
     nombreFactura: string
     direccion: string | null
-    ciudad: string | null
+    departamento: string | null
+    provincia: string | null
+    distrito: string | null
     metodoEnvio: string | null
     tiendaId: string | null
     tienda: { id: string; nombre: string; direccion: string } | null
@@ -41,6 +42,7 @@ interface Pedido {
     nombreRecibe: string | null
     celularRecibe: string | null
     numeroOperacion: string | null
+    notas: string | null
     comprobantePago: string | null
     motivoRechazo: string | null
     createdAt: Date
@@ -82,8 +84,6 @@ interface Props {
 
 export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleExpand }: Props) {
     const [expandedId, setExpandedId] = useState<string | null>(null)
-    const [itemsPerPage, setItemsPerPage] = useState(10)
-    const [currentPage, setCurrentPage] = useState(1)
     const [pedidoImprimir, setPedidoImprimir] = useState<any>(null)
     const [comprobantePreview, setComprobantePreview] = useState<string | null>(null)
 
@@ -110,12 +110,6 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
         }
     }
 
-    const totalPages = Math.ceil(pedidos.length / itemsPerPage)
-    const paginatedPedidos = useMemo(() => {
-        const start = (currentPage - 1) * itemsPerPage
-        return pedidos.slice(start, start + itemsPerPage)
-    }, [pedidos, currentPage, itemsPerPage])
-
     const toggleExpand = (id: string) => {
         const isCurrentlyExpanded = expandedIds?.has(id) || expandedId === id
         if (isCurrentlyExpanded) {
@@ -126,15 +120,10 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
         }
     }
 
-    const handleItemsPerPageChange = (value: number) => {
-        setItemsPerPage(value)
-        setCurrentPage(1)
-    }
-
     return (
         <div className="space-y-4">
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                {paginatedPedidos.map((pedido) => {
+                {pedidos.map((pedido) => {
                     const tienePiezas = pedido.pedidoDetalle.some(d => d.tipo === "pieza")
                     const tienePiezasFaltantes = tienePiezas && pedido.pedidoDetalle.some(d => {
                         if (d.tipo !== "pieza") return false
@@ -168,17 +157,20 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                         <FileText className="h-5 w-5 text-slate-600" />
                                     </div>
                                     <div className="text-left min-w-0 flex-1">
-                                        <div className="flex items-center gap-3 flex-wrap">
-                                            <p className="font-bold text-slate-900">{pedido.numeroOrden}</p>
+                                        <p className="text-sm font-medium text-slate-700 break-words leading-tight">
+                                            {pedido.nombreFactura?.toUpperCase()}
+                                        </p>
+                                        <div className="flex items-center gap-2 flex-wrap mt-1">
+                                            <p className="font-bold text-slate-900 text-sm">{pedido.numeroOrden}</p>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation()
                                                     setPedidoImprimir(pedido)
                                                 }}
-                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                className="p-1 text-blue-600 hover:bg-blue-50 rounded-lg"
                                                 title="Imprimir pedido"
                                             >
-                                                <Printer className="h-4 w-4" />
+                                                <Printer className="h-3.5 w-3.5" />
                                             </button>
                                             {pedido.estado === "completado" ? (
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
@@ -227,8 +219,8 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 )
                                             )}
                                         </div>
-                                        <p className="text-sm text-slate-500 truncate">
-                                            {pedido.user?.name || pedido.user?.email || "Cliente"} • {pedido.nombreFactura?.toUpperCase()}
+                                        <p className="text-xs text-slate-400 sm:hidden mt-0.5">
+                                            {new Date(pedido.createdAt).toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "2-digit" })} {new Date(pedido.createdAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
                                         </p>
                                     </div>
                                 </div>
@@ -241,7 +233,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                             <p className="font-bold text-slate-900">S/ {Number(pedido.total).toFixed(2)}</p>
                                         )}
                                         <p className="text-xs text-slate-500">
-                                            {pedido.pedidoDetalle.length} items • {new Date(pedido.createdAt).toLocaleDateString("es-PE")}
+                                            {pedido.pedidoDetalle.length} items • {new Date(pedido.createdAt).toLocaleDateString("es-PE")} {new Date(pedido.createdAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
                                         </p>
                                     </div>
                                     {isExpanded ? (
@@ -254,15 +246,38 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
 
                             {isExpanded && (
                                 <div className="p-4 bg-slate-50 border-t border-slate-200">
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {pedido.motivoRechazo && pedido.estado === "rechazado" && (
+                                        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
+                                            <X className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="font-bold text-red-800 text-sm">Pedido Rechazado</p>
+                                                <p className="text-sm text-red-700 mt-1">{pedido.motivoRechazo}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {pedido.notas && (
+                                        <div className="mb-4 bg-slate-100 border border-slate-200 rounded-lg p-3">
+                                            <p className="font-bold text-slate-700 text-sm mb-1">Observaciones</p>
+                                            <p className="text-sm text-slate-600">{pedido.notas}</p>
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <div className="space-y-4">
                                             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                                 Productos
                                             </h3>
                                             <div className="space-y-2 max-h-48 overflow-y-auto">
-                                                {pedido.pedidoDetalle.map((detalle) => {
-                                                    const tieneEtiquetas = detalle.etiquetas && detalle.etiquetas.length > 0;
-                                                    // Cambiamos e.metraje por e.valor según lo que indica tu error de TypeScript
+                                                {pedido.pedidoDetalle
+                                                    .filter(detalle => {
+                                                        if (detalle.tipo === "pieza" && pedido.estado !== "metraje_en_proceso") {
+                                                            const etiquetasCount = detalle.etiquetas?.length || 0
+                                                            if (etiquetasCount === 0) return false
+                                                        }
+                                                        return true
+                                                    })
+                                                    .map((detalle) => {
                                                     const metrajeTotal = Number((detalle.etiquetas?.reduce((sum, e) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2));
 
                                                     const precioTotal = detalle.tipo === "pieza"
@@ -270,73 +285,121 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                         : Number(detalle.precio) * detalle.cantidad;
 
                                                     return (
-                                                        <div key={detalle.id} className="flex justify-between items-center text-sm bg-white rounded-lg p-2">
-                                                            <div>
-                                                                <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
-                                                                <p className="text-xs text-slate-500">
-                                                                    {detalle.tipo === "pieza"
-                                                                        ? `${(pedido.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s)`
-                                                                        : `${detalle.cantidad} metros`
-                                                                    }
-                                                                </p>
+                                                        <div key={detalle.id} className="flex flex-col text-sm bg-white rounded-lg p-2">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <p className="font-bold text-slate-900">{detalle.producto.nombre}</p>
+                                                                <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-medium text-slate-600 shrink-0">{detalle.producto.categoria}</span>
                                                             </div>
-                                                            <div className="text-right">
-                                                                <p className="font-bold text-slate-900">
-                                                                    S/ {precioTotal.toFixed(2)}
-                                                                </p>
-                                                                {detalle.tipo === "pieza" && metrajeTotal > 0 && (
-                                                                    <p className="text-xs text-slate-500">
-                                                                        {metrajeTotal}m × S/ {detalle.precio}/m
-                                                                    </p>
-                                                                )}
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    {detalle.tipo === "pieza" ? (
+                                                                        <>
+                                                                            <span className="text-sm text-slate-500">
+                                                                                            {(detalle.etiquetas?.length || Number(detalle.cantidad))} PZ(S)
+                                                                            </span>
+                                                                            {pedido.estado === "metraje_en_proceso" ? (
+                                                                                <span className="text-sm text-slate-500 font-medium">(METRAJE POR CONFIRMAR)</span>
+                                                                            ) : metrajeTotal > 0 && (
+                                                                                <span className="text-sm text-slate-400">
+                                                                                    ({metrajeTotal.toFixed(2)} MTS)
+                                                                                </span>
+                                                                            )}
+                                                                        </>
+                                                                    ) : (
+                                                                        <span className="text-sm text-slate-500">
+                                                                            {detalle.cantidad} MTS
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-sm text-slate-500">
+                                                                        S/ {Number(detalle.precio).toFixed(2)}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-sm font-bold text-slate-900">S/ {precioTotal.toFixed(2)}</span>
                                                             </div>
                                                         </div>
                                                     )
                                                 })}
                                             </div>
-                                        </div>
 
-                                        {(() => {
-                                            const detallesConIndicaciones = pedido.pedidoDetalle.filter((d: any) => d.indicacionesCorte)
-                                            if (detallesConIndicaciones.length === 0) return null
-                                            return (
-                                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                                    <h3 className="font-bold text-amber-800 flex items-center gap-2 text-sm mb-2">
-                                                        Indicaciones de corte
-                                                    </h3>
-                                                    <div className="space-y-2">
-                                                        {detallesConIndicaciones.map((detalle: any) => {
-                                                            const metrajeTotal = Number((detalle.etiquetas?.reduce((sum: number, e: any) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2))
-                                                            return (
-                                                                <div key={detalle.id} className="bg-white rounded p-2 text-sm">
-                                                                    <p className="font-medium text-slate-800">{detalle.producto.nombre}</p>
-                                                                    <p className="text-xs text-slate-500">
-                                                                        {detalle.tipo === "pieza"
-                                                                            ? `${(pedido.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) • ${metrajeTotal.toFixed(2)}m`
-                                                                            : `${detalle.cantidad} metros`
-                                                                        }
-                                                                    </p>
-                                                                    <p className="text-xs text-amber-700 mt-1 italic">"{detalle.indicacionesCorte}"</p>
-                                                                </div>
-                                                            )
-                                                        })}
+                                            {(() => {
+                                                const detallesConIndicaciones = pedido.pedidoDetalle.filter((d: any) => {
+                                                    if (!d.indicacionesCorte) return false
+                                                    if (d.tipo === "pieza" && pedido.estado !== "metraje_en_proceso") {
+                                                        const etiquetasCount = d.etiquetas?.length || 0
+                                                        if (etiquetasCount === 0) return false
+                                                    }
+                                                    return true
+                                                })
+                                                if (detallesConIndicaciones.length === 0) return null
+                                                return (
+                                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                                        <h3 className="font-bold text-amber-800 flex items-center gap-2 text-sm mb-2">
+                                                            Indicaciones de corte
+                                                        </h3>
+                                                        <div className="space-y-2">
+                                                            {detallesConIndicaciones.map((detalle: any) => {
+                                                                const metrajeTotal = Number((detalle.etiquetas?.reduce((sum: number, e: any) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2))
+                                                                const precioTotal = detalle.tipo === "pieza"
+                                                                    ? Number(detalle.precio) * metrajeTotal
+                                                                    : Number(detalle.precio) * detalle.cantidad
+                                                                return (
+                                                                    <div key={detalle.id} className="flex flex-col text-sm bg-white rounded p-2">
+                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                            <p className="font-bold text-slate-900">{detalle.producto.nombre}</p>
+                                                                            <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-medium text-slate-600 shrink-0">{detalle.producto.categoria}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-center gap-2">
+                                                                                {detalle.tipo === "pieza" ? (
+                                                                                    <>
+                                                                                        <span className="text-sm text-slate-500">
+                                                                            {(detalle.etiquetas?.length || Number(detalle.cantidad))} PZ(S)
+                                                                                        </span>
+                                                                                        {pedido.estado === "metraje_en_proceso" ? (
+                                                                                            <span className="text-sm text-slate-500 font-medium">(METRAJE POR CONFIRMAR)</span>
+                                                                                        ) : metrajeTotal > 0 && (
+                                                                                            <span className="text-sm text-slate-400">
+                                                                                                ({metrajeTotal.toFixed(2)} MTS)
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <span className="text-sm text-slate-500">
+                                                                                        {detalle.cantidad} MTS
+                                                                                    </span>
+                                                                                )}
+                                                                                <span className="text-sm text-slate-500">
+                                                                                    S/ {Number(detalle.precio).toFixed(2)}
+                                                                                </span>
+                                                                            </div>
+                                                                            <span className="text-sm font-bold text-slate-900">S/ {precioTotal.toFixed(2)}</span>
+                                                                        </div>
+                                                                        {detalle.indicacionesCorte && (
+                                                                            <p className="text-xs text-amber-700 mt-1.5 italic break-words whitespace-normal leading-relaxed border-t border-amber-100 pt-1.5">
+                                                                                "{detalle.indicacionesCorte}"
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )
-                                        })()}
+                                                )
+                                            })()}
+                                        </div>
 
                                         <div className="space-y-4">
                                             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                                 Facturación y Pago
                                             </h3>
-                                            <div className="space-y-2 text-sm">
+                                            <div className="space-y-2 text-sm bg-white rounded-lg p-3">
                                                 <div className="flex justify-between">
                                                     <span className="text-slate-600">Documento:</span>
                                                     <span className="font-bold text-slate-900">{pedido.tipoDocumento?.toUpperCase()} {pedido.numeroDoc}</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-slate-600">Nombre:</span>
-                                                    <span className="font-bold text-slate-900">{pedido.nombreFactura?.toUpperCase()}</span>
+                                                    <span className="font-bold text-slate-900 text-right">{pedido.nombreFactura?.toUpperCase()}</span>
                                                 </div>
                                                 {pedido.numeroOperacion && pedido.numeroOperacion !== "012345678" && (
                                                 <div className="flex justify-between">
@@ -346,7 +409,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                     </span>
                                                 </div>
                                                 )}
-{pedido.comprobantePago && (
+                                                {pedido.comprobantePago && (
                                                     <div className="flex justify-between items-center mt-2">
                                                         <span className="text-slate-600">Comprobante:</span>
                                                         <button 
@@ -360,51 +423,59 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 )}
                                             </div>
 
-                                            <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm pt-4">
+                                            <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                                 Envío
                                             </h3>
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-600">Método:</span>
-                                                    <span className="font-bold text-slate-900">
-                                                        {pedido.metodoEnvio === "tienda" ? "Retiro en Tienda" :
-                                                            pedido.metodoEnvio === "agencia" ? `Agencia: ${agenciaLabel || pedido.agenciaOtro || pedido.agencia}` :
-                                                                pedido.metodoEnvio === "delivery" ? `Delivery: ${deliveryLabel || pedido.deliveryOtro || pedido.delivery}` :
-                                                                    "-"}
-                                                    </span>
-                                                </div>
-                                                {pedido.metodoEnvio === "tienda" && pedido.tienda && (
+                                            <div className="space-y-2 text-sm bg-white rounded-lg p-3">
+                                                {pedido.metodoEnvio && (
                                                     <div className="flex justify-between">
-                                                        <span className="text-slate-600">Tienda:</span>
-                                                        <span className="font-medium text-slate-900">{pedido.tienda.nombre}</span>
+                                                        <span className="text-slate-600">Método:</span>
+                                                        <span className="font-bold text-slate-900 text-right">
+                                                            {pedido.metodoEnvio === "tienda" ? "(TIENDA) - RETIRO EN TIENDA" :
+                                                                pedido.metodoEnvio === "agencia" ? `(AGENCIA) - ${((pedido.agencia === "otros" ? (pedido.agenciaOtro || "OTROS") : (agenciaLabel ?? pedido.agencia)) ?? "").toUpperCase()}` :
+                                                                    pedido.metodoEnvio === "delivery" ? `(DELIVERY) - ${((pedido.delivery === "otros" ? (pedido.deliveryOtro || "OTROS") : (deliveryLabel ?? pedido.delivery)) ?? "").toUpperCase()}` :
+                                                                        (pedido.metodoEnvio ?? "").toUpperCase()}
+                                                        </span>
                                                     </div>
                                                 )}
                                                 {pedido.metodoEnvio === "tienda" && pedido.tienda && (
-                                                    <div className="flex justify-between">
-                                                        <span className="text-slate-600">Dirección:</span>
-                                                        <span className="font-medium text-slate-900">{pedido.tienda.direccion}</span>
-                                                    </div>
+                                                    <>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-slate-600">Tienda:</span>
+                                                            <span className="font-medium text-slate-900 text-right">{pedido.tienda.nombre?.toUpperCase()}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-slate-600">Dirección:</span>
+                                                            <span className="font-medium text-slate-900 text-right">{pedido.tienda.direccion?.toUpperCase()}</span>
+                                                        </div>
+                                                    </>
                                                 )}
                                                 {pedido.direccion && (
                                                     <div className="flex justify-between">
                                                         <span className="text-slate-600">Dirección:</span>
-                                                        <span className="font-bold text-slate-900">{pedido.direccion?.toUpperCase()}</span>
+                                                        <span className="font-bold text-slate-900 text-right">{pedido.direccion?.toUpperCase()}</span>
+                                                    </div>
+                                                )}
+                                                {(pedido.departamento || pedido.provincia || pedido.distrito) && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-600">Ubicación:</span>
+                                                        <span className="font-medium text-slate-900 text-right">
+                                                            {[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(", ").toUpperCase()}
+                                                        </span>
                                                     </div>
                                                 )}
                                                 {pedido.nombreRecibe && (
                                                     <div className="flex justify-between">
                                                         <span className="text-slate-600">Recibe:</span>
-                                                        <span className="font-medium">{pedido.nombreRecibe} ({pedido.dniRecibe})</span>
+                                                        <span className="font-medium text-right">{pedido.nombreRecibe?.toUpperCase()} {pedido.dniRecibe ? `(DNI: ${pedido.dniRecibe})` : ""}</span>
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
 
-                                        <div className="space-y-4">
                                             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                                 Resumen y Contacto
                                             </h3>
-                                            <div className="space-y-2 text-sm">
+                                            <div className="space-y-2 text-sm bg-white rounded-lg p-3">
                                                 <div className="flex justify-between">
                                                     <span className="text-slate-600">Subtotal:</span>
                                                     <span className="font-bold text-slate-900">S/ {Number(pedido.total - pedido.costoEnvio).toFixed(2)}</span>
@@ -419,12 +490,13 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 </div>
                                             </div>
 
-                                            <div className="text-sm pt-4">
-                                                <p className="text-slate-600">Email:</p>
-                                                <p className="font-bold text-slate-900">{pedido.user?.email || "N/A"}</p>
+                                            <div className="text-sm bg-white rounded-lg p-3">
+                                                <p className="text-slate-600">Creado por:</p>
+                                                <p className="font-bold text-slate-900">{pedido.user?.name || pedido.user?.email || "N/A"}</p>
+                                                <p className="text-xs text-slate-500">{pedido.user?.email}</p>
                                                 {pedido.celularRecibe && (
                                                     <>
-                                                        <p className="text-slate-600 mt-2">Celular:</p>
+                                                        <p className="text-slate-600 mt-3">Celular:</p>
                                                         <p className="font-bold text-slate-900">{pedido.celularRecibe}</p>
                                                     </>
                                                 )}
@@ -441,16 +513,6 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                     )
                 })}
             </div>
-
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                totalItems={pedidos.length}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={handleItemsPerPageChange}
-                itemLabel="pedidos"
-            />
 
             {pedidoImprimir && (
                 <ImprimirPedidoModal

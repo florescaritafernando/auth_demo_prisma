@@ -30,19 +30,27 @@ interface Props {
     initialProductos: Producto[]
 }
 
-const CATEGORIAS = ["MANCHESTER SUITING", "LONDON FANCY SUITING", "MANCHESTER STRECH", "MANCHESTER FASHION"]
-
 export function ArticulosClient({ initialProductos }: Props) {
     const [search, setSearch] = useState("")
     const [filtroCategoria, setFiltroCategoria] = useState("")
+    const [precioMin, setPrecioMin] = useState("")
+    const [precioMax, setPrecioMax] = useState("")
     const [pageSize, setPageSize] = useState(10)
     const [currentPage, setCurrentPage] = useState(1)
+
+    const categorias = Array.from(new Set(initialProductos.map(p => p.categoria).filter(Boolean)))
+    const precios = initialProductos.map(p => Number(p.precio))
+    const precioMinGlobal = precios.length > 0 ? Math.min(...precios) : 0
+    const precioMaxGlobal = precios.length > 0 ? Math.max(...precios) : 0
 
     const filtered = initialProductos.filter(p => {
         const matchSearch = p.nombre.toLowerCase().includes(search.toLowerCase()) ||
             p.categoria.toLowerCase().includes(search.toLowerCase())
         const matchCategoria = !filtroCategoria || p.categoria === filtroCategoria
-        return matchSearch && matchCategoria
+        const precioNum = Number(p.precio)
+        const matchPrecioMin = !precioMin || precioNum >= Number(precioMin)
+        const matchPrecioMax = !precioMax || precioNum <= Number(precioMax)
+        return matchSearch && matchCategoria && matchPrecioMin && matchPrecioMax
     })
 
     const totalPages = Math.ceil(filtered.length / pageSize)
@@ -84,10 +92,31 @@ export function ArticulosClient({ initialProductos }: Props) {
                             className="text-sm border rounded-lg px-3 py-2 bg-white text-slate-700"
                         >
                             <option value="">Todas las categorias</option>
-                            {CATEGORIAS.map(cat => (
+                            {categorias.map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
                         </select>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                placeholder="Precio min"
+                                value={precioMin}
+                                onChange={(e) => { setPrecioMin(e.target.value); setCurrentPage(1) }}
+                                className="w-24 text-sm border rounded-lg px-3 py-2 bg-white text-slate-700 placeholder:text-slate-400"
+                                min={0}
+                                step="0.01"
+                            />
+                            <span className="text-slate-400 text-sm">-</span>
+                            <input
+                                type="number"
+                                placeholder="Precio max"
+                                value={precioMax}
+                                onChange={(e) => { setPrecioMax(e.target.value); setCurrentPage(1) }}
+                                className="w-24 text-sm border rounded-lg px-3 py-2 bg-white text-slate-700 placeholder:text-slate-400"
+                                min={0}
+                                step="0.01"
+                            />
+                        </div>
                         <BotonesImportExport />
                     </div>
                 </div>
@@ -110,7 +139,9 @@ export function ArticulosClient({ initialProductos }: Props) {
                                 {paginatedData.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                                            No hay articulos
+                                            {search || filtroCategoria || precioMin || precioMax
+                                                ? "No se encontraron resultados."
+                                                : "No hay articulos"}
                                         </td>
                                     </tr>
                                 ) : paginatedData.map(prod => {

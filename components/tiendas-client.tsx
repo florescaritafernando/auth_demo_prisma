@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Store, Pencil, Trash2, ToggleLeft, ToggleRight, Search, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Search } from "lucide-react"
 import { BotonNuevaTienda } from "@/components/nueva-tienda-button"
+import { BotonEditarTienda } from "@/components/editar-tienda-button"
+import { BotonEliminarTienda } from "@/components/eliminar-tienda-button"
 import { Pagination } from "@/components/ui/pagination"
 
 interface Encargado {
@@ -18,7 +19,7 @@ interface Tienda {
     direccion: string
     referencia: string | null
     activo: boolean
-    encargado: Encargado
+    encargado: Encargado | null
 }
 
 interface Props {
@@ -28,17 +29,18 @@ interface Props {
 
 export function TiendasClient({ initialTiendas, isAdmin }: Props) {
     const [busqueda, setBusqueda] = useState("")
+    const [filtroEstado, setFiltroEstado] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
 
     const filtered = initialTiendas.filter(t => {
-        if (!busqueda) return true
-        const search = busqueda.toLowerCase()
-        return (
-            t.nombre.toLowerCase().includes(search) ||
-            t.direccion.toLowerCase().includes(search) ||
-            (t.referencia?.toLowerCase().includes(search) ?? false)
-        )
+        const matchSearch =
+            t.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+            t.direccion.toLowerCase().includes(busqueda.toLowerCase()) ||
+            (t.referencia?.toLowerCase().includes(busqueda.toLowerCase()) ?? false) ||
+            (t.encargado?.name?.toLowerCase().includes(busqueda.toLowerCase()) ?? false)
+        const matchEstado = !filtroEstado || (filtroEstado === "activo" ? t.activo : !t.activo)
+        return matchSearch && matchEstado
     })
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage)
@@ -50,108 +52,84 @@ export function TiendasClient({ initialTiendas, isAdmin }: Props) {
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
-                        <h1 className="text-3xl font-extrabold text-black">{isAdmin ? "Gestion de Tiendas" : "Ver Tiendas"}</h1>
-                        <p className="text-black mt-1">{isAdmin ? "Administra tus tiendas para recojo en tienda" : "Visualizacion de tiendas"}</p>
+                        <h1 className="text-3xl font-extrabold text-slate-900">{isAdmin ? "Gestion de Tiendas" : "Ver Tiendas"}</h1>
+                        <p className="text-slate-500 mt-1">{isAdmin ? "Administra tus tiendas para recojo en tienda" : "Visualizacion de tiendas"}</p>
                     </div>
                     {isAdmin && <BotonNuevaTienda />}
                 </div>
 
-                <form className="mb-6">
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
-                        <input
-                            type="text"
-                            name="q"
-                            value={busqueda}
-                            onChange={(e) => {
-                                setBusqueda(e.target.value)
-                                setCurrentPage(1)
-                            }}
-                            placeholder="Buscar tiendas..."
-                            className="w-full pl-10 pr-4 py-2 border border-black rounded-lg text-black"
-                        />
-                        {busqueda && (
-                            <button
-                                type="button"
-                                onClick={() => setBusqueda("")}
-                                className="absolute right-3 top-1/2 -translate-y-1/2"
-                            >
-                                <X className="h-4 w-4 text-black" />
-                            </button>
-                        )}
-                        <Button type="submit" className="sr-only">Buscar</Button>
+                <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre, direccion o referencia..."
+                                className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm text-slate-800 placeholder:text-slate-400"
+                                value={busqueda}
+                                onChange={(e) => { setBusqueda(e.target.value); setCurrentPage(1) }}
+                            />
+                        </div>
+                        <select
+                            value={filtroEstado}
+                            onChange={(e) => { setFiltroEstado(e.target.value); setCurrentPage(1) }}
+                            className="text-sm border rounded-lg px-3 py-2 bg-white text-slate-700"
+                        >
+                            <option value="">Todos los estados</option>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
                     </div>
-                </form>
+                </div>
 
-                <div className="bg-white rounded-xl border border-black overflow-hidden">
-                    <table className="w-full">
-                        <thead className="bg-slate-50 border-b border-black">
-                            <tr>
-                                <th className="text-left px-6 py-3 text-xs font-bold text-black uppercase">Nombre</th>
-                                <th className="text-left px-6 py-3 text-xs font-bold text-black uppercase">Direccion</th>
-                                <th className="text-left px-6 py-3 text-xs font-bold text-black uppercase">Referencia</th>
-                                <th className="text-left px-6 py-3 text-xs font-bold text-black uppercase">Encargado</th>
-                                <th className="text-left px-6 py-3 text-xs font-bold text-black uppercase">Estado</th>
-                                {isAdmin && <th className="text-right px-6 py-3 text-xs font-bold text-black uppercase">Acciones</th>}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-black">
-                            {paginatedData.length === 0 ? (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[700px]">
+                            <thead className="bg-slate-100 border-b border-slate-200">
                                 <tr>
-                                    <td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-black">
-                                        <Store className="h-12 w-12 mx-auto mb-2 text-black" />
-                                        <p>No hay tiendas registradas</p>
-                                    </td>
+                                    <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Nombre</th>
+                                    <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Direccion</th>
+                                    <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Referencia</th>
+                                    <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Encargado</th>
+                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-700 uppercase">Estado</th>
+                                    {isAdmin && <th className="px-3 py-3 text-right text-xs font-bold text-slate-700 uppercase">Acciones</th>}
                                 </tr>
-                            ) : (
-                                paginatedData.map((tienda) => (
-                                    <tr key={tienda.id} className="hover:bg-slate-50">
-                                        <td className="px-6 py-4">
-                                            <p className="font-medium text-black">{tienda.nombre}</p>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                                {paginatedData.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={isAdmin ? 6 : 5} className="px-4 py-8 text-center text-slate-500">
+                                            {busqueda || filtroEstado ? "No se encontraron resultados." : "No hay tiendas registradas."}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <p className="text-sm text-black">{tienda.direccion}</p>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="text-sm text-black">{tienda.referencia || "-"}</p>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="text-sm text-black">{tienda.encargado.name}</p>
-                                            <p className="text-xs text-black">{tienda.encargado.email}</p>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${tienda.activo ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                                                {tienda.activo ? "Activo" : "Inactivo"}
-                                            </span>
-                                        </td>
-                                        {isAdmin && (
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    <form action={`/api/tiendas/${tienda.id}`} method="POST">
-                                                        <input type="hidden" name="_method" value="PATCH" />
-                                                        <button
-                                                            className={`p-2 rounded ${tienda.activo ? "text-red-600 hover:bg-red-50" : "text-green-600 hover:bg-green-50"}`}
-                                                            title={tienda.activo ? "Desactivar" : "Activar"}
-                                                        >
-                                                            {tienda.activo ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
-                                                        </button>
-                                                    </form>
-                                                    <form action={`/api/tiendas/${tienda.id}`} method="DELETE">
-                                                        <button
-                                                            className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                                            title="Eliminar"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        )}
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    paginatedData.map((tienda) => (
+                                        <tr key={tienda.id} className="hover:bg-slate-50">
+                                            <td className="px-3 py-3 text-sm font-medium text-slate-900">{tienda.nombre}</td>
+                                            <td className="px-3 py-3 text-sm text-slate-600">{tienda.direccion}</td>
+                                            <td className="px-3 py-3 text-sm text-slate-600">{tienda.referencia || "-"}</td>
+                                            <td className="px-3 py-3 text-sm text-slate-600">
+                                                {tienda.encargado?.name || "-"}
+                                            </td>
+                                            <td className="px-3 py-3 text-center">
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${tienda.activo ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"}`}>
+                                                    {tienda.activo ? "Activo" : "Inactivo"}
+                                                </span>
+                                            </td>
+                                            {isAdmin && (
+                                                <td className="px-3 py-3 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <BotonEditarTienda tienda={tienda as any} />
+                                                        <BotonEliminarTienda id={tienda.id} />
+                                                    </div>
+                                                </td>
+                                            )}
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <Pagination

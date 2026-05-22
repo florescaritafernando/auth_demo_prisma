@@ -47,7 +47,7 @@ export function Pagination({
 
   return (
     <div className="mt-4">
-      {showPaginationControls && (
+      {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mb-4">
           <Button
             variant="outline"
@@ -102,10 +102,10 @@ export function Pagination({
             }}
             className="border border-slate-300 rounded px-2 py-1 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900"
           >
-            <option value={12}>12</option>
-            <option value={24}>24</option>
-            <option value={36}>36</option>
-            <option value={48}>48</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
           </select>
         </div>
       </div>

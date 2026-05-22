@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { Search, X, Calendar, SlidersHorizontal } from "lucide-react"
 import { PedidoAccordion } from "@/app/dashboard/pedidos-admin/accordion"
+import { Pagination } from "@/components/ui/pagination"
 
 interface User {
     id: string
@@ -44,6 +45,8 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
     const [fechaFin, setFechaFin] = useState("")
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
     const [showFiltros, setShowFiltros] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
 
     useEffect(() => {
         const hash = window.location.hash.slice(1)
@@ -111,9 +114,14 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
         setColaboradorFiltro("")
         setFechaInicio("")
         setFechaFin("")
+        setCurrentPage(1)
     }
 
     const tieneFiltros = estadoFiltro || colaboradorFiltro || fechaInicio || fechaFin
+
+    const totalPages = Math.ceil(filteredPedidos.length / itemsPerPage)
+    const startIdx = (currentPage - 1) * itemsPerPage
+    const paginatedPedidos = filteredPedidos.slice(startIdx, startIdx + itemsPerPage)
 
     return (
         <div>
@@ -214,13 +222,27 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
                     <p className="text-slate-500">No se encontraron pedidos con los filtros aplicados.</p>
                 </div>
             ) : (
-                <PedidoAccordion
-                    pedidos={filteredPedidos as any}
-                    role={role}
-                    userId={userId}
-                    expandedIds={expandedIds}
-                    onToggleExpand={handleToggleExpand}
-                />
+                <>
+                    <PedidoAccordion
+                        pedidos={paginatedPedidos as any}
+                        role={role}
+                        userId={userId}
+                        expandedIds={expandedIds}
+                        onToggleExpand={handleToggleExpand}
+                    />
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={filteredPedidos.length}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={(value) => {
+                            setItemsPerPage(value)
+                            setCurrentPage(1)
+                        }}
+                        itemLabel="pedidos"
+                    />
+                </>
             )}
         </div>
     )
