@@ -530,6 +530,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex-1">
                                             <p className="font-bold text-slate-900 text-lg">{detalle.producto.nombre}</p>
+                                                <span className="ml-2 px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-medium text-slate-600 shrink-0">{detalle.producto.categoria}</span>
                                             {detalle.etiquetas && detalle.etiquetas.length > 0 && (
                                                 <p className="text-sm font-bold text-slate-600 mt-1">
                                                     {detalle.etiquetas.length} de {Number(detalle.cantidad)} piezas con metraje

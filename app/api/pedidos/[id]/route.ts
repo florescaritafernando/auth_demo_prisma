@@ -96,18 +96,73 @@ export async function PUT(
             return NextResponse.json({ success: false, error: "No eres el creador de este pedido" }, { status: 403 })
         }
 
-        const subtotalRaw = items.reduce((sum: number, item: any) => {
+        // Obtener detalles existentes con sus etiquetas
+        const existingDetalles = await prisma.pedidoDetalle.findMany({
+            where: { pedidoId: id },
+            include: { etiquetas: { select: { id: true } } }
+        })
+        const existingMap = new Map(existingDetalles.map(d => [d.id, d]))
+
+        // Separar items entrantes: los que tienen detalleId válido → UPDATE, los demás → CREATE
+        const toUpdate: any[] = []
+        const toCreate: any[] = []
+        for (const item of items) {
+            if (item.detalleId && existingMap.has(item.detalleId)) {
+                toUpdate.push(item)
+            } else {
+                toCreate.push(item)
+            }
+        }
+
+        const incomingIds = new Set(toUpdate.map((i: any) => i.detalleId))
+
+        // Items a preservar (tienen etiquetas, no están en la lista entrante)
+        const toPreserve = existingDetalles.filter(
+            d => !incomingIds.has(d.id) && d.etiquetas.length > 0
+        )
+        // Items a eliminar (sin etiquetas, no están en la lista entrante)
+        const toDelete = existingDetalles.filter(
+            d => !incomingIds.has(d.id) && d.etiquetas.length === 0
+        )
+
+        // Calcular subtotal incluyendo items preservados + actualizados + nuevos
+        let subtotalRaw = 0
+
+        for (const item of [...toUpdate, ...toCreate]) {
             const precio = Number(item.precio) || 0
             const cantidad = Number(item.cantidad) || 0
             const metros = item.tipo === "pieza" ? 50 : 1
-            return sum + (precio * cantidad * metros)
-        }, 0)
-        const subtotal = Math.round(subtotalRaw * 100) / 100
+            subtotalRaw += precio * cantidad * metros
+        }
+        for (const det of toPreserve) {
+            const precio = Number(det.precio) || 0
+            const cantidad = Number(det.cantidad) || 0
+            const metros = det.tipo === "pieza" ? 50 : 1
+            subtotalRaw += precio * cantidad * metros
+        }
 
+        const subtotal = Math.round(subtotalRaw * 100) / 100
         const totalRaw = subtotal + (Number(costoEnvio) || 0)
         const total = Math.round(totalRaw * 100) / 100
 
-        await prisma.pedidoDetalle.deleteMany({ where: { pedidoId: id } })
+        // Eliminar items que ya no están y no tienen etiquetas
+        if (toDelete.length > 0) {
+            await prisma.pedidoDetalle.deleteMany({
+                where: { id: { in: toDelete.map(d => d.id) } }
+            })
+        }
+
+        // Actualizar items existentes
+        for (const item of toUpdate) {
+            await prisma.pedidoDetalle.update({
+                where: { id: item.detalleId },
+                data: {
+                    cantidad: Number(item.cantidad),
+                    precio: Number(item.precio),
+                    indicacionesCorte: item.indicacionesCorte || null
+                }
+            })
+        }
 
         const updated = await prisma.pedido.update({
             where: { id },
@@ -125,15 +180,17 @@ export async function PUT(
                 agenciaOtro: agencia === "otros" ? cliente?.agenciaOtro : null,
                 costoEnvio: Number(costoEnvio) || 0,
                 notas: observaciones || null,
-                pedidoDetalle: {
-                    create: items.map((item: any) => ({
-                        productoId: item.productoId,
-                        cantidad: Number(item.cantidad),
-                        tipo: item.tipo || "metros",
-                        precio: Number(item.precio),
-                        indicacionesCorte: item.indicacionesCorte || null
-                    }))
-                },
+                ...(toCreate.length > 0 ? {
+                    pedidoDetalle: {
+                        create: toCreate.map((item: any) => ({
+                            productoId: item.productoId,
+                            cantidad: Number(item.cantidad),
+                            tipo: item.tipo || "metros",
+                            precio: Number(item.precio),
+                            indicacionesCorte: item.indicacionesCorte || null
+                        }))
+                    }
+                } : {}),
                 pedidoEmpleadoInfo: {
                     upsert: {
                         create: {
@@ -157,6 +214,15 @@ export async function PUT(
                 pedidoDetalle: { include: { producto: true } }
             }
         })
+
+        // Si se agregaron nuevos artículos tipo pieza y el estado era "metraje_confirmado",
+        // retroceder a "metraje_en_proceso" para que el empleado pueda registrar metraje
+        if (toCreate.some((item: any) => item.tipo === "pieza") && pedido.estado === "metraje_confirmado") {
+            await prisma.pedido.update({
+                where: { id },
+                data: { estado: "metraje_en_proceso" }
+            })
+        }
 
         return NextResponse.json({ success: true, pedido: updated })
     } catch (error: any) {
@@ -465,6 +531,8 @@ export async function PATCH(
             }
         }
 
+        }
+
         if (metrajeItemsArray && Array.isArray(metrajeItemsArray)) {
             for (const item of metrajeItemsArray) {
                 if (item.detalleId && item.metraje > 0) {
@@ -636,8 +704,6 @@ export async function PATCH(
                 })
             }
         }
-
-        } // fin if (!esPedidoDeStaff)
 
         return NextResponse.json({ success: true, pedido })
     } catch (error: any) {

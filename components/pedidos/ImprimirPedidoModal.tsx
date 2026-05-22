@@ -127,7 +127,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                 <style>
                     @page { 
                         size: 8cm auto; 
-                        margin: 0;
+                        margin: 0mm !important;
                     }
                     * {
                         box-sizing: border-box;
@@ -142,31 +142,32 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     }
                     body { 
                         font-family: 'Courier New', monospace; 
-                        font-size: 18px; 
+                        font-size: 14px; 
                         width: 8cm; 
                         margin: 0; 
-                        padding: 0;
+                        padding: 2mm;
                         min-width: 8cm;
                         max-width: 8cm;
                         text-transform: uppercase;
+                        min-height: 100vh;
                     }
-                    .header { text-align: center; border-bottom: 1px dashed #000; padding: 2mm 0; }
-                    .title { font-size: 22px; font-weight: bold; }
-                    .numero { font-size: 20px; font-weight: bold; }
-                    .section { margin-bottom: 4px; }
-                    .label { font-weight: bold; font-size: 17px; }
-                    .value { margin-bottom: 2px; font-size: 16px; word-wrap: break-word; }
-                    .productos-label { font-weight: bold; font-size: 17px; border-bottom: 1px dashed #000; padding-bottom: 2px; margin-bottom: 4px; }
-                    .producto { margin-bottom: 5px; padding: 2mm; background: #f0f0f0; border-left: 3px solid #333; }
-                    .producto-nombre { font-weight: bold; font-size: 17px; word-wrap: break-word; }
-                    .producto-detalle { font-size: 16px; margin-top: 2px; }
-                    .indicaciones { font-size: 16px; margin-top: 2px; white-space: pre-wrap; word-wrap: break-word; }
-                    .cantidad { font-weight: bold; font-size: 18px; color: #000; }
-                    .totales { border-top: 1px dashed #000; padding-top: 3px; margin-top: 5px; }
-                    .total-row { display: flex; justify-content: space-between; font-size: 16px; }
-                    .gran-total { font-weight: bold; font-size: 20px; border-top: 1px dashed #000; padding-top: 2px; }
-                    .notas { border-top: 1px dashed #000; padding-top: 3px; margin-top: 5px; }
-                    .rechazo { background: #ffe0e0; border: 1px dashed #c00; padding: 2mm; margin-bottom: 4px; }
+                    .header { text-align: center; border-bottom: 1px dashed #000; padding: 1.5mm 0; }
+                    .title { font-size: 18px; font-weight: bold; }
+                    .numero { font-size: 16px; font-weight: bold; }
+                    .section { margin-bottom: 2px; }
+                    .label { font-weight: bold; font-size: 14px; }
+                    .value { margin-bottom: 1px; font-size: 13px; word-wrap: break-word; }
+                    .productos-label { font-weight: bold; font-size: 14px; border-bottom: 1px dashed #000; padding-bottom: 1px; margin-bottom: 2px; }
+                    .producto { margin-bottom: 3px; padding: 1mm; background: #f0f0f0; border-left: 3px solid #333; page-break-inside: avoid; }
+                    .producto-nombre { font-weight: bold; font-size: 14px; word-wrap: break-word; }
+                    .producto-detalle { font-size: 13px; margin-top: 1px; }
+                    .indicaciones { font-size: 13px; margin-top: 1px; white-space: pre-wrap; word-wrap: break-word; }
+                    .cantidad { font-weight: bold; font-size: 15px; color: #000; }
+                    .totales { border-top: 1px dashed #000; padding-top: 2px; margin-top: 3px; }
+                    .total-row { display: flex; justify-content: space-between; font-size: 13px; }
+                    .gran-total { font-weight: bold; font-size: 16px; border-top: 1px dashed #000; padding-top: 1px; }
+                    .notas { border-top: 1px dashed #000; padding-top: 2px; margin-top: 3px; }
+                    .rechazo { background: #ffe0e0; border: 1px dashed #c00; padding: 1mm; margin-bottom: 2px; }
                 </style>
             `
             : `
@@ -227,6 +228,8 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         <div class="label">CLIENTE:</div>
                         <div class="value">${(pedido.nombreFactura || "").toUpperCase()}</div>
                         <div class="value">${pedido.tipoDocumento?.toUpperCase() || ""}: ${pedido.numeroDoc || ""}</div>
+                        ${pedido.metodoEnvio !== "agencia" ? `<div class="value">DIR: ${pedido.direccion?.toUpperCase()|| ""}</div>` : ""}
+
                     </div>
                     
                     ${pedido.numeroOperacion && pedido.numeroOperacion !== "012345678" ? `
@@ -243,7 +246,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     
                     ${pedido.metodoEnvio ? `
                     <div class="section">
-                        <div class="label">ENVÍO:</div>
+                        <div class="label">MÉTODO DE ENVÍO:</div>
                         <div class="value">${metodoEnvioLabel}</div>
                         ${pedido.metodoEnvio === "tienda" && pedido.tienda ? `
                             <div class="value">TIENDA: ${pedido.tienda.nombre?.toUpperCase() || ""}</div>

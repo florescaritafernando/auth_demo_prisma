@@ -556,6 +556,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                         costoEnvio: Number(costoEnvio) || 0,
                         observaciones,
                         items: items.map(i => ({
+                            detalleId: i.id,
                             productoId: i.productoId,
                             cantidad: i.cantidad,
                             tipo: i.tipo,
