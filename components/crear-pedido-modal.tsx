@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import { 
     X, Search, Plus, Trash2, FileText, Printer, Send, Save, 
     ArrowLeft, ArrowRight, Check, Package, Ruler, Loader2,
-    Building2, CreditCard, User, MapPin, Phone, Truck, FileCheck, ClipboardList, Pencil, Filter, AlertTriangle, Ban
+    Building2, CreditCard, User, MapPin, Phone, Truck, FileCheck, ClipboardList, Pencil, Filter, AlertTriangle, Ban, Copy
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -110,8 +110,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const productoSeleccionadoRef = useRef(false)
 
     const [items, setItems] = useState<ItemPedido[]>([])
-    const [editingItemId, setEditingItemId] = useState<string | null>(null)
-    const [editCantidad, setEditCantidad] = useState("")
+    const [editandoArticuloId, setEditandoArticuloId] = useState<string | null>(null)
     const [busquedaProducto, setBusquedaProducto] = useState("")
     const [productosEncontrados, setProductosEncontrados] = useState<Producto[]>([])
     const [categoriasDisponibles, setCategoriasDisponibles] = useState<string[]>([])
@@ -430,50 +429,69 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setMostrarDropdown(false)
     }
 
-    const agregarItem = () => {
-        if (!productoSeleccionado) return
-
-        const nuevoItem: ItemPedido = {
-            id: Date.now().toString(),
-            productoId: productoSeleccionado.id,
-            productoNombre: productoSeleccionado.nombre,
-            productoCategoria: productoSeleccionado.categoria,
-            productoPrecio: Number(productoSeleccionado.precio) || 0,
-            cantidad: Number(itemCantidad) || 0,
-            tipo: itemTipo,
-            indicacionesCorte: itemIndicaciones
-        }
-
-        setItems([...items, nuevoItem])
-        
+    const resetArticuloForm = () => {
         setProductoSeleccionado(null)
         setBusquedaProducto("")
         setItemCantidad("1")
         setItemTipo("metros")
         setItemIndicaciones("")
         setMostrarDropdownProducto(false)
+        setEditandoArticuloId(null)
         setShowAgregarArticulo(false)
+    }
+
+    const agregarItem = () => {
+        if (!productoSeleccionado) return
+
+        if (editandoArticuloId) {
+            setItems(items.map(i => i.id === editandoArticuloId ? {
+                ...i,
+                productoId: productoSeleccionado.id,
+                productoNombre: productoSeleccionado.nombre,
+                productoCategoria: productoSeleccionado.categoria,
+                productoPrecio: Number(productoSeleccionado.precio) || 0,
+                cantidad: Number(itemCantidad) || 0,
+                tipo: itemTipo,
+                indicacionesCorte: itemIndicaciones
+            } : i))
+        } else {
+            const nuevoItem: ItemPedido = {
+                id: Date.now().toString(),
+                productoId: productoSeleccionado.id,
+                productoNombre: productoSeleccionado.nombre,
+                productoCategoria: productoSeleccionado.categoria,
+                productoPrecio: Number(productoSeleccionado.precio) || 0,
+                cantidad: Number(itemCantidad) || 0,
+                tipo: itemTipo,
+                indicacionesCorte: itemIndicaciones
+            }
+            setItems([...items, nuevoItem])
+        }
+
+        resetArticuloForm()
+    }
+
+    const duplicarItem = (item: ItemPedido) => {
+        setItems([...items, { ...item, id: Date.now().toString() }])
     }
 
     const eliminarItem = (id: string) => {
         setItems(items.filter(i => i.id !== id))
     }
 
-    const startEditItem = (item: ItemPedido) => {
-        setEditingItemId(item.id)
-        setEditCantidad(item.cantidad.toString())
-    }
-
-    const saveEditItem = () => {
-        if (!editingItemId) return
-        const cantidad = Number(editCantidad) || 0
-        if (cantidad <= 0) return
-        setItems(items.map(i => i.id === editingItemId ? { ...i, cantidad } : i))
-        setEditingItemId(null)
-    }
-
-    const cancelEditItem = () => {
-        setEditingItemId(null)
+    const editarArticulo = (item: ItemPedido) => {
+        setEditandoArticuloId(item.id)
+        setProductoSeleccionado({
+            id: item.productoId,
+            nombre: item.productoNombre,
+            categoria: item.productoCategoria,
+            precio: item.productoPrecio,
+            stocks: []
+        })
+        setItemCantidad(item.cantidad.toString())
+        setItemTipo(item.tipo as "metros" | "pieza")
+        setItemIndicaciones(item.indicacionesCorte || "")
+        setShowAgregarArticulo(true)
     }
 
     const calcularSubtotal = () => {
@@ -1199,7 +1217,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                     {items.map((item, idx) => {
                                                         const metros = item.tipo === "pieza" ? 50 : 1
                                                         const subtotal = item.productoPrecio * item.cantidad * metros
-                                                        const isEditing = editingItemId === item.id
                                                         return (
                                                             <tr key={item.id} className={`border-t border-slate-50 hover:bg-slate-50/50 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/30"}`}>
                                                                 <td className="px-4 py-3">
@@ -1212,28 +1229,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                                     )}
                                                                 </td>
                                                                 <td className="px-4 py-3 text-center">
-                                                                    {isEditing ? (
-                                                                        <input
-                                                                            type="text"
-                                                                            inputMode={item.tipo === "pieza" ? "numeric" : "decimal"}
-                                                                            value={editCantidad}
-                                                                            onChange={(e) => {
-                                                                                const val = e.target.value
-                                                                                const regex = item.tipo === "pieza" ? /^\d+$/ : /^\d*\.?\d*$/
-                                                                                if (val === "" || regex.test(val)) {
-                                                                                    setEditCantidad(val)
-                                                                                }
-                                                                            }}
-                                                                            onKeyDown={(e) => {
-                                                                                if (e.key === "Enter") saveEditItem()
-                                                                                if (e.key === "Escape") cancelEditItem()
-                                                                            }}
-                                                                            autoFocus
-                                                                            className="w-20 px-2 py-1 border border-slate-300 rounded text-center text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                                                        />
-                                                                    ) : (
-                                                                        <span className="text-lg font-bold text-slate-900">{item.cantidad}</span>
-                                                                    )}
+                                                                    <span className="text-lg font-bold text-slate-900">{item.cantidad}</span>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-center">
                                                                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${item.tipo === "pieza" ? "bg-purple-50 text-purple-700" : "bg-blue-50 text-blue-700"}`}>
@@ -1246,25 +1242,15 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                                 <td className="px-4 py-3 text-right font-semibold text-slate-900">S/ {subtotal.toFixed(2)}</td>
                                                                 <td className="px-4 py-3">
                                                                     <div className="flex items-center justify-end gap-1">
-                                                                        {isEditing ? (
-                                                                            <>
-                                                                                <button onClick={saveEditItem} className="p-1.5 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors">
-                                                                                    <Check className="h-4 w-4" />
-                                                                                </button>
-                                                                                <button onClick={cancelEditItem} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                                                                                    <X className="h-4 w-4" />
-                                                                                </button>
-                                                                            </>
-                                                                        ) : (
-                                                                            <>
-                                                                                <button onClick={() => startEditItem(item)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
-                                                                                    <Pencil className="h-4 w-4" />
-                                                                                </button>
-                                                                                <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                                                                                    <Trash2 className="h-4 w-4" />
-                                                                                </button>
-                                                                            </>
-                                                                        )}
+                                                                        <button onClick={() => duplicarItem(item)} className="p-1.5 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="Duplicar">
+                                                                            <Copy className="h-4 w-4" />
+                                                                        </button>
+                                                                        <button onClick={() => editarArticulo(item)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
+                                                                            <Pencil className="h-4 w-4" />
+                                                                        </button>
+                                                                        <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </button>
                                                                     </div>
                                                                 </td>
                                                             </tr>
@@ -1278,7 +1264,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             {items.map(item => {
                                                 const metros = item.tipo === "pieza" ? 50 : 1
                                                 const subtotal = item.productoPrecio * item.cantidad * metros
-                                                const isEditing = editingItemId === item.id
                                                 return (
                                                     <div key={item.id} className="bg-white border border-slate-100 rounded-lg p-3">
                                                         <div className="flex items-start justify-between gap-2">
@@ -1288,28 +1273,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                                     <p className="font-bold text-slate-900 text-sm truncate">{item.productoNombre}</p>
                                                                 </div>
                                                                 <div className="flex items-center gap-2 mt-1">
-                                                                    {isEditing ? (
-                                                                        <input
-                                                                            type="text"
-                                                                            inputMode={item.tipo === "pieza" ? "numeric" : "decimal"}
-                                                                            value={editCantidad}
-                                                                            onChange={(e) => {
-                                                                                const val = e.target.value
-                                                                                const regex = item.tipo === "pieza" ? /^\d+$/ : /^\d*\.?\d*$/
-                                                                                if (val === "" || regex.test(val)) {
-                                                                                    setEditCantidad(val)
-                                                                                }
-                                                                            }}
-                                                                            onKeyDown={(e) => {
-                                                                                if (e.key === "Enter") saveEditItem()
-                                                                                if (e.key === "Escape") cancelEditItem()
-                                                                            }}
-                                                                            autoFocus
-                                                                            className="w-20 px-2 py-1 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                                                        />
-                                                                    ) : (
-                                                                        <span className="text-sm font-bold text-slate-900">{item.cantidad} {item.tipo === "pieza" ? "pieza(s)" : "metro(s)"}</span>
-                                                                    )}
+                                                                    <span className="text-sm font-bold text-slate-900">{item.cantidad} {item.tipo === "pieza" ? "pieza(s)" : "metro(s)"}</span>
                                                                     <span className="text-xs text-slate-300">•</span>
                                                                     <span className="text-sm font-bold text-slate-900">S/ {item.productoPrecio.toFixed(2)} /mts</span>
                                                                 </div>
@@ -1320,30 +1284,20 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                             <div className="flex flex-col items-end gap-1">
                                                                 <p className="font-semibold text-slate-900 text-sm">S/ {subtotal.toFixed(2)}</p>
                                                                 <div className="flex gap-1">
-                                                                    {isEditing ? (
-                                                                        <>
-                                                                            <button onClick={saveEditItem} className="p-1.5 text-slate-400 hover:text-green-500 rounded">
-                                                                                <Check className="h-4 w-4" />
-                                                                            </button>
-                                                                            <button onClick={cancelEditItem} className="p-1.5 text-slate-400 hover:text-red-500 rounded">
-                                                                                <X className="h-4 w-4" />
-                                                                            </button>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <button onClick={() => startEditItem(item)} className="p-1.5 text-slate-400 hover:text-blue-500 rounded">
-                                                                                <Pencil className="h-4 w-4" />
-                                                                            </button>
-                                                                            <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded">
-                                                                                <Trash2 className="h-4 w-4" />
-                                                                            </button>
-                                                                        </>
-                                                                    )}
+                                                                    <button onClick={() => duplicarItem(item)} className="p-1.5 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="Duplicar">
+                                                                        <Copy className="h-4 w-4" />
+                                                                    </button>
+                                                                    <button onClick={() => editarArticulo(item)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
+                                                                        <Pencil className="h-4 w-4" />
+                                                                    </button>
+                                                                    <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </button>
                                                                 </div>
                                                             </div>
-            </div>
-        </div>
-    )
+                                                        </div>
+                                                    </div>
+                                                )
                                             })}
                                         </div>
                                     </div>
@@ -1512,17 +1466,23 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             {/* Sub-modal agregar artículo */}
             {showAgregarArticulo && (
                 <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => setShowAgregarArticulo(false)} />
+                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => resetArticuloForm()} />
                     <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
                         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
                             <p className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                                <Plus className="h-4 w-4" /> Agregar Artículo
+                                {editandoArticuloId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />} {editandoArticuloId ? "Editar Artículo" : "Agregar Artículo"}
                             </p>
-                            <button onClick={() => setShowAgregarArticulo(false)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
+                            <button onClick={() => resetArticuloForm()} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
                                 <X className="h-4 w-4 text-slate-400" />
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                            {editandoArticuloId && productoSeleccionado && (
+                                <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <span className="inline-flex px-2 py-0.5 bg-slate-700 text-white rounded text-xs font-bold shrink-0">{productoSeleccionado.categoria}</span>
+                                    <p className="font-bold text-slate-900 text-sm truncate">{productoSeleccionado.nombre}</p>
+                                </div>
+                            )}
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <div className="relative w-full sm:w-auto">
                                     <button
@@ -1530,11 +1490,11 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                         data-categoria-toggle
                                         ref={categoriaToggleRef}
                                         onClick={() => setMostrarDropdownCategoria(!mostrarDropdownCategoria)}
-                                        className={`w-full sm:w-auto inline-flex items-center justify-center gap-1 px-2.5 py-2.5 border rounded-lg text-xs font-medium transition-all bg-white ${categoriaFiltro ? "border-blue-300 text-blue-700 bg-blue-50" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}
-                                        title={categoriaFiltro || "Filtrar por categoría"}
+                                        className={`w-full sm:w-auto inline-flex items-center justify-center gap-1 px-2.5 py-2.5 border-1 rounded-lg text-xs font-semibold transition-all bg-slate-100 ${categoriaFiltro ? "border-blue-500 text-blue-500 bg-blue-50" : "border-blue-500 text-blue-500 hover:bg-blue-50"}`}
+                                        title={categoriaFiltro || "Filtrar por Categoria"}
                                     >
                                         <Filter className="h-3.5 w-3.5 shrink-0" />
-                                        <span className="truncate">{categoriaFiltro || "Categoría"}</span>
+                                        <span className="truncate">{categoriaFiltro || "Filtrar por Categoria"}</span>
                                     </button>
                                     {mostrarDropdownCategoria && (
                                         <div data-categoria-dropdown className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg w-56 max-h-60 overflow-y-auto z-50">
@@ -1695,7 +1655,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 shrink-0">
                             <button
                                 type="button"
-                                onClick={() => setShowAgregarArticulo(false)}
+                                onClick={() => resetArticuloForm()}
                                 className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
                             >
                                 Cancelar
@@ -1705,7 +1665,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                 disabled={!productoSeleccionado || Number(itemCantidad) <= 0}
                                 className="bg-slate-900 hover:bg-slate-800 text-white text-sm h-9 px-4 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                <Plus className="h-4 w-4 mr-1" /> Agregar artículo
+                                {editandoArticuloId ? <Check className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} {editandoArticuloId ? "Guardar cambios" : "Agregar artículo"}
                             </Button>
                         </div>
                     </div>
