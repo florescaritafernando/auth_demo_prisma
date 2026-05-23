@@ -11,7 +11,6 @@ interface ParsedRow {
 
 export function BotonesImportExport() {
     const [loading, setLoading] = useState(false)
-    const [mode, setMode] = useState<"create" | "update">("create")
     const [showModal, setShowModal] = useState(false)
     const [step, setStep] = useState<"select" | "preview">("select")
     const [parsedData, setParsedData] = useState<ParsedRow[]>([])
@@ -153,8 +152,8 @@ export function BotonesImportExport() {
         setLoading(true)
         try {
             const data = parsedData.map(p => p.data)
-            const importPayload = { data, mode }
-            console.log("Sending import:", { mode, dataCount: data.length, sample: data[0], payload: importPayload }) // Debug
+            const importPayload = { data, mode: "create" as const }
+            console.log("Sending import:", { mode: "create", dataCount: data.length, sample: data[0], payload: importPayload }) // Debug
             const res = await fetch("/api/productos/import", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -308,15 +307,6 @@ export function BotonesImportExport() {
     return (
         <>
             <div className="flex flex-wrap gap-2 items-center">
-                <select
-                    value={mode}
-                    onChange={(e) => setMode(e.target.value as "create" | "update")}
-                    className="text-sm border rounded-lg px-2 py-2 bg-white text-slate-700"
-                >
-                    <option value="create">Solo crear nuevos</option>
-                    <option value="update">Crear y actualizar</option>
-                </select>
-
                 <button
                     onClick={() => window.location.href = "/api/productos/plantilla"}
                     className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200"

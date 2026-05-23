@@ -84,7 +84,7 @@ export default async function PedidosAdminPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 mb-4 md:mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-3 mb-4 md:mb-8">
                     <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                         <div className="flex items-center gap-2">
                             <Clock className="h-5 w-5 text-yellow-600" />
