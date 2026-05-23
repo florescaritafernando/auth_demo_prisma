@@ -150,7 +150,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         height: auto;
                     }
                     body { 
-                        font-family: 'Courier New', monospace; 
+                        font-family: 'Consolas', monospace; 
                         font-size: 16px; 
                         width: 8cm; 
                         margin: 0; 
