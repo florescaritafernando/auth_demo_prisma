@@ -30,7 +30,8 @@ export async function POST(request: NextRequest) {
             envioComprobante,
             costoEnvio,
             observaciones,
-            items
+            items,
+            estado: estadoFromBody
         } = body
 
         if (!cliente?.nombre || !cliente?.numeroDoc) {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
         // Determinar estado según tipo de artículos
         const tienePiezas = items.some((item: any) => item.tipo === "pieza")
-        const estado = tienePiezas ? "metraje_en_proceso" : "pendiente"
+        const estado = estadoFromBody || (tienePiezas ? "metraje_en_proceso" : "pendiente")
 
         // Upsert cliente_pedido por nombre + numeroDoc
         const clientePedido = await prisma.clientePedido.upsert({

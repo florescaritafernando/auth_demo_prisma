@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList } from "lucide-react"
+import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList, Search, X } from "lucide-react"
 
 const AGENCIA_LABELS: Record<string, string> = {
     shalom: "SHALOM",
@@ -80,6 +80,7 @@ interface Props {
 
 export default function NotaPedidoList({ pedidos, userRole }: Props) {
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+    const [busquedaCliente, setBusquedaCliente] = useState("")
 
     const toggleExpanded = (id: string) => {
         setExpandedIds(prev => {
@@ -93,9 +94,41 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
         })
     }
 
+    const pedidosFiltrados = pedidos.filter(p => {
+        if (!busquedaCliente) return true
+        const nombre = p.clientePedido?.nombre?.toLowerCase() || p.nombreFactura?.toLowerCase() || ""
+        return nombre.includes(busquedaCliente.toLowerCase())
+    })
+
     return (
         <div className="space-y-4">
-            {pedidos.map(pedido => {
+            {/* Búsqueda */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <input
+                    type="text"
+                    value={busquedaCliente}
+                    onChange={(e) => setBusquedaCliente(e.target.value)}
+                    placeholder="Buscar por nombre de cliente..."
+                    className="w-full pl-10 pr-10 py-2.5 border-2 border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all bg-white"
+                />
+                {busquedaCliente && (
+                    <button
+                        onClick={() => setBusquedaCliente("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
+
+            {pedidosFiltrados.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                    <Search className="h-10 w-10 mx-auto mb-3 text-slate-200" />
+                    <p className="text-sm">No se encontraron pedidos para "{busquedaCliente}"</p>
+                </div>
+            ) : (
+                pedidosFiltrados.map(pedido => {
                 const config = ESTADO_CONFIG[pedido.estado] || ESTADO_CONFIG.metraje_en_proceso
                 const isExpanded = expandedIds.has(pedido.id)
                 const subtotal = pedido.pedidoDetalle?.reduce((sum, d) => {
@@ -315,7 +348,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                         )}
                     </div>
                 )
-            })}
+            }))}
         </div>
     )
 }

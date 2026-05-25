@@ -55,7 +55,7 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: 
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
     metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800" },
     pendiente: { label: "Pago en revisión", color: "bg-blue-100", colorTexto: "text-blue-800" },
-    confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900" },
+    confirmado: { label: "Pago confirmado", color: "bg-green-200", colorTexto: "text-green-900" },
     pedido_enviado: { label: "Pedido enviado", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
     rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
     completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800" },

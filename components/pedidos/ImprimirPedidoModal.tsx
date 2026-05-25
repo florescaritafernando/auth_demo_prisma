@@ -580,16 +580,17 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     </div>
                 </div>
 
-                <div className="p-4 border-t flex gap-2">
-                    <Button onClick={onClose} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
+                <div className="p-4 border-t flex flex-col sm:flex-row gap-2">
+                    <Button onClick={onClose} className="w-full sm:flex-1 bg-red-600 hover:bg-red-700 text-white">
                         Cancelar
                     </Button>
-                    <Button onClick={handleDescargarPDF} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
-                        <Download className="h-4 w-4 mr-2" />
-                        Descargar PDF
+                    <Button onClick={handleDescargarPDF} className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white">
+                        <Download className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Descargar PDF</span>
+                        <span className="sm:hidden">PDF</span>
                     </Button>
-                    <Button onClick={handleImprimir} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                        <Printer className="h-4 w-4 mr-2" />
+                    <Button onClick={handleImprimir} className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                        <Printer className="h-4 w-4 sm:mr-2" />
                         Imprimir
                     </Button>
                 </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { CrearPedidoModal } from "@/components/crear-pedido-modal"
-import { X, File, ClipboardList, Pencil, RotateCcw, Trash2, Loader2 } from "lucide-react"
+import { X, File, ClipboardList, Pencil, RotateCcw, Trash2, Loader2, Search } from "lucide-react"
 
 interface Props {
     userName: string
@@ -25,6 +25,7 @@ export function DashboardModals({ userName, userRole }: Props) {
     const [borradorRestaurarId, setBorradorRestaurarId] = useState<string | null>(null)
     const [borradores, setBorradores] = useState<BorradorItem[]>([])
     const [pedidosAsignados, setPedidosAsignados] = useState<any[]>([])
+    const [busquedaPedido, setBusquedaPedido] = useState("")
     const [cargandoPedidos, setCargandoPedidos] = useState(false)
     const [cargandoBorradorList, setCargandoBorradorList] = useState(false)
 
@@ -144,7 +145,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                         <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between shrink-0">
                             <div>
                                 <h2 className="text-lg font-semibold text-slate-900">Modificar Pedido</h2>
-                                <p className="text-xs text-slate-400">Selecciona un pedido que creaste</p>
+                                <p className="text-xs text-slate-400">{userRole === "admin" ? "Selecciona un pedido" : "Selecciona un pedido que creaste"}</p>
                             </div>
                             <button onClick={() => setShowModificarPedido(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
                                 <X className="h-4 w-4 text-slate-400" />
@@ -156,14 +157,42 @@ export function DashboardModals({ userName, userRole }: Props) {
                                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
                                     <p className="text-sm">Cargando pedidos...</p>
                                 </div>
-                            ) : pedidosAsignados.length === 0 ? (
-                                <div className="text-center py-12 text-slate-400">
-                                    <ClipboardList className="h-10 w-10 mx-auto mb-3 text-slate-200" />
-                                    <p className="text-sm">No tienes pedidos asignados pendientes</p>
-                                </div>
                             ) : (
                                 <div className="p-4 space-y-3">
-                                    {pedidosAsignados.map((p) => {
+                                    {/* Búsqueda */}
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            value={busquedaPedido}
+                                            onChange={(e) => setBusquedaPedido(e.target.value)}
+                                            placeholder="Buscar por nombre de cliente..."
+                                            className="w-full pl-10 pr-10 py-2.5 border-2 border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all bg-white"
+                                        />
+                                        {busquedaPedido && (
+                                            <button
+                                                onClick={() => setBusquedaPedido("")}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    {(() => {
+                                        const pedidosFiltrados = pedidosAsignados.filter(p => {
+                                            if (!busquedaPedido) return true
+                                            const nombre = p.nombreFactura || p.clientePedido?.nombre || ""
+                                            return nombre.toLowerCase().includes(busquedaPedido.toLowerCase())
+                                        })
+                                        if (pedidosFiltrados.length === 0) {
+                                            return (
+                                                <div className="text-center py-12 text-slate-400">
+                                                    <Search className="h-10 w-10 mx-auto mb-3 text-slate-200" />
+                                                    <p className="text-sm">No se encontraron pedidos</p>
+                                                </div>
+                                            )
+                                        }
+                                        return pedidosFiltrados.map((p) => {
                                         const fecha = new Date(p.createdAt).toLocaleDateString("es-PE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
                                         const estadoLabels: Record<string, string> = {
                                             pendiente: "Pago en revisión",
@@ -197,7 +226,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                 </div>
                                             </button>
                                         )
-                                    })}
+                                    })})()}
                                 </div>
                             )}
                         </div>

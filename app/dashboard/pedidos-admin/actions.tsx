@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus, RefreshCw } from "lucide-react"
+import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus, RefreshCw, DollarSign } from "lucide-react"
 import { RechazarPedidoModal } from "@/components/pedidos/RechazarPedidoModal"
 import { ConfirmarMetrajeModal } from "@/components/pedidos/ConfirmarMetrajeModal"
 
@@ -73,6 +73,17 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
     const [costoEnvioManual, setCostoEnvioManual] = useState<string>(String(pedido.costoEnvio || 0))
     const [guardandoCosto, setGuardandoCosto] = useState(false)
+    const [showPagoPedidoModal, setShowPagoPedidoModal] = useState(false)
+    const [tipoPago, setTipoPago] = useState<"completo" | "dividido" | "">("")
+    const [detallesPago, setDetallesPago] = useState<{ monto: string; empresa: string; metodoPago: string }[]>([
+        { monto: "", empresa: "", metodoPago: "" },
+        { monto: "", empresa: "", metodoPago: "" }
+    ])
+    const [showDetallePagoModal, setShowDetallePagoModal] = useState(false)
+    const [detalleEditandoIdx, setDetalleEditandoIdx] = useState<number | null>(null)
+
+    const EMPRESAS = ["FLORES CARITAS", "TEXTILES MANCHESTER", "MANCHESTERTEX", "TEXTILES MEGO", "YAPE CARLOS", "YAPE ANGEL"]
+    const METODOS_PAGO = ["TRASNFERENCIA", "DEPOSITO", "EFECTIVO", "YAPE","PLIN", "BBVA"]
 
     const estaAsignado = pedido.delegados?.some(d => d.userId === userId)
     const puedeEditar = role === "admin" || (role === "empleado" && estaAsignado && pedido.estado !== "metraje_confirmado")
@@ -369,6 +380,15 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
 
     return (
         <div className="space-y-4">
+            {pedido.estado !== "confirmado" && pedido.estado !== "pedido_enviado" && pedido.estado !== "completado" && (
+                <Button
+                    onClick={() => setShowPagoPedidoModal(true)}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-10"
+                >
+                    <DollarSign className="h-4 w-4 mr-2" /> Pagar Pedido
+                </Button>
+            )}
+
             {(role === "admin" || (role === "empleado" && pedido.estado !== "pedido_enviado" && pedido.estado !== "completado")) && (
             <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-slate-700">Cambiar estado:</span>
@@ -717,6 +737,254 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                     }}
                     onCancel={() => setShowConfirmarMetrajeModal(false)}
                 />
+            )}
+
+            {/* Sub-modal pago */}
+            {showPagoPedidoModal && (
+                <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Pagar el pedido: Nro Orden Pedido: {pedido.numeroOrden}</h3>
+                                <p className="text-sm text-slate-500 mt-0.5">Total a pagar: <span className="font-bold text-slate-900">S/ {Number(pedido.total).toFixed(2)}</span></p>
+                            </div>
+                            <button onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                            <div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setTipoPago("completo")}
+                                        className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${tipoPago === "completo" ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
+                                    >
+                                        PAGO COMPLETO
+                                    </button>
+                                    <button
+                                        onClick={() => setTipoPago("dividido")}
+                                        className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${tipoPago === "dividido" ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
+                                    >
+                                        DIVIDIR PAGO
+                                    </button>
+                                </div>
+                            </div>
+                            {tipoPago === "dividido" && (
+                                <div>
+                                    <p className="text-sm font-medium text-slate-700 mb-2">Montos</p>
+                                    <div className="space-y-2">
+                                        {detallesPago.map((det, idx) => (
+                                            <div key={idx} className="flex items-center gap-2">
+                                                <span className="text-sm font-medium text-slate-500">S/</span>
+                                                <input
+                                                    type="text" inputMode="decimal"
+                                                    value={det.monto}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value
+                                                        if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                                                            const nuevo = [...detallesPago]
+                                                            nuevo[idx] = { ...nuevo[idx], monto: val }
+                                                            setDetallesPago(nuevo)
+                                                        }
+                                                    }}
+                                                    placeholder="0.00"
+                                                    className="w-24 px-3 py-2 border-2 border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white"
+                                                />
+                                                <button
+                                                    onClick={() => { setDetalleEditandoIdx(idx); setShowDetallePagoModal(true) }}
+                                                    className={`px-2 py-1.5 text-xs font-bold border-2 rounded-lg transition-all uppercase ${det.empresa || det.metodoPago ? 
+                                                        "bg-emerald-600 border-emerald-600 text-white" : "bg-red-600 border-red-600 text-white"}`}
+                                                >
+                                                    {det.empresa ? `${det.empresa} / ${det.metodoPago}` : det.metodoPago || "Seleccionar Detalle"}
+                                                </button>
+                                                <button
+                                                    onClick={() => { if (detallesPago.length > 2) setDetallesPago(detallesPago.filter((_, i) => i !== idx)) }}
+                                                    disabled={detallesPago.length <= 2}
+                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                >
+                                                    <X className="h-4 w-4 text-red-900" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => setDetallesPago([...detallesPago, { monto: "", empresa: "", metodoPago: "" }])}
+                                        className="mt-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                                    >
+                                        + Agregar
+                                    </button>
+                                </div>
+                            )}
+                            {tipoPago === "dividido" && (
+                                (() => {
+                                    const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
+                                    const total = Number(pedido.total)
+                                    const coincide = Math.abs(suma - total) < 0.01
+                                    return (
+                                        <div className={`p-3 rounded-lg border text-sm font-medium ${coincide ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"}`}>
+                                            <p>
+                                                Total ingresado: <span className="font-bold">S/ {suma.toFixed(2)}</span>
+                                                {coincide ? (
+                                                    <span className="ml-2 inline-flex items-center gap-1"><CheckCircle className="h-4 w-4" /> Coincide con el total</span>
+                                                ) : (
+                                                    detallesPago.some(d => d.monto !== "") && (
+                                                        <span className="ml-2">(Diferencia: S/ {Math.abs(total - suma).toFixed(2)})</span>
+                                                    )
+                                                )}
+                                            </p>
+                                        </div>
+                                    )
+                                })()
+                            )}
+                        </div>
+                        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }}
+                                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <Button
+                                onClick={async () => {
+                                    if (!tipoPago) return
+                                    let textoPago = ""
+                                    if (tipoPago === "completo") {
+                                        textoPago = `PAGO: Completo - S/ ${Number(pedido.total).toFixed(2)}`
+                                    } else {
+                                        const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
+                                        const total = Number(pedido.total)
+                                        if (Math.abs(suma - total) >= 0.01) {
+                                            return
+                                        }
+                                        const detallesStr = detallesPago
+                                            .filter(d => d.monto)
+                                            .map(d => {
+                                                let s = `S/ ${Number(d.monto).toFixed(2)}`
+                                                if (d.empresa) {
+                                                    if (d.empresa === "YAPE CARLOS" || d.empresa === "YAPE ANGEL") {
+                                                        s += ` (${d.empresa})`
+                                                    } else {
+                                                        s += ` (${d.empresa} / ${d.metodoPago})`
+                                                    }
+                                                } else if (d.metodoPago === "EFECTIVO") {
+                                                    s += ` (EFECTIVO)`
+                                                }
+                                                return s
+                                            })
+                                            .join(" + ")
+                                        textoPago = `PAGO: Dividido - ${detallesStr} = S/ ${suma.toFixed(2)}`
+                                    }
+                                    const currentNotas = (pedido as any).notas || ""
+                                    const newNotas = currentNotas ? currentNotas + "\n" + textoPago : textoPago
+                                    try {
+                                        await fetch(`/api/pedidos/${pedido.id}`, {
+                                            method: "PATCH",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ notas: newNotas, estado: "confirmado" })
+                                        })
+                                    } catch (e) {
+                                        console.error("Error guardando pago:", e)
+                                    }
+                                    setShowPagoPedidoModal(false)
+                                    setTipoPago("")
+                                    setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }])
+                                    window.location.reload()
+                                }}
+                                disabled={!tipoPago || (tipoPago === "dividido" && !detallesPago.every(d => {
+                                    if (!d.monto) return false
+                                    if (d.metodoPago === "EFECTIVO") return true
+                                    return d.empresa && d.metodoPago
+                                }))}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 px-4 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Confirmar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sub-modal Detalle de pago */}
+            {showDetallePagoModal && detalleEditandoIdx !== null && (
+                <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => setShowDetallePagoModal(false)} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+                            <h3 className="text-base font-bold text-slate-900">Detalle de pago #{detalleEditandoIdx + 1}</h3>
+                            <button onClick={() => setShowDetallePagoModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                            <div>
+                                <p className="text-sm font-medium text-slate-700 mb-2">Empresa</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {EMPRESAS.map(emp => (
+                                        <button
+                                            key={emp}
+                                            onClick={() => {
+                                                const nuevo = [...detallesPago]
+                                                const yaSeleccionada = nuevo[detalleEditandoIdx].empresa === emp
+                                                const empresaFinal = yaSeleccionada ? "" : emp
+                                                const metodo = (emp === "YAPE CARLOS" || emp === "YAPE ANGEL") && !yaSeleccionada ? "YAPE" : yaSeleccionada ? "" : nuevo[detalleEditandoIdx].metodoPago
+                                                nuevo[detalleEditandoIdx] = { ...nuevo[detalleEditandoIdx], empresa: empresaFinal, metodoPago: metodo }
+                                                setDetallesPago(nuevo)
+                                            }}
+                                            className={`px-3 py-2 border-2 rounded-lg text-sm font-medium transition-all ${detallesPago[detalleEditandoIdx].empresa === emp ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
+                                        >
+                                            {emp}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-700 mb-2">Método de Pago</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {METODOS_PAGO.map(mp => (
+                                        <button
+                                            key={mp}
+                                            onClick={() => {
+                                                const nuevo = [...detallesPago]
+                                                nuevo[detalleEditandoIdx] = { ...nuevo[detalleEditandoIdx], metodoPago: mp }
+                                                setDetallesPago(nuevo)
+                                            }}
+                                            className={`px-3 py-1.5 border-2 rounded-lg text-sm font-medium transition-all ${detallesPago[detalleEditandoIdx].metodoPago === mp ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
+                                        >
+                                            {mp}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowDetallePagoModal(false)}
+                                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <Button
+                                onClick={() => {
+                                    const det = detallesPago[detalleEditandoIdx]
+                                    if (!det.metodoPago || (det.metodoPago !== "EFECTIVO" && !det.empresa)) {
+                                        return
+                                    }
+                                    setShowDetallePagoModal(false)
+                                }}
+                                disabled={
+                                    !detallesPago[detalleEditandoIdx].metodoPago ||
+                                    (detallesPago[detalleEditandoIdx].metodoPago !== "EFECTIVO" && !detallesPago[detalleEditandoIdx].empresa)
+                                }
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 px-4 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Guardar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )

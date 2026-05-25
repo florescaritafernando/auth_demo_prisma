@@ -18,9 +18,9 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 })
         }
 
-        // Solo pedidos CREADOS por este empleado
+        // Admin ve todos los pedidos, empleado solo los suyos
         const pedidos = await prisma.pedido.findMany({
-            where: { userId: session.user.id },
+            where: userRole === "admin" ? {} : { userId: session.user.id },
             include: {
                 user: { select: { id: true, name: true, email: true } },
                 pedidoDetalle: {

@@ -32,6 +32,9 @@ export async function POST(request: NextRequest) {
         console.log(`Respuesta API ${tipo}:`, data)
 
         if (tipo === "dni") {
+            if (data.success === false) {
+                return NextResponse.json({ success: false, message: data.message || "No se encontraron resultados." })
+            }
             const nombres = data.nombres || ""
             const apellidoPaterno = data.apellidoPaterno || ""
             const apellidoMaterno = data.apellidoMaterno || ""

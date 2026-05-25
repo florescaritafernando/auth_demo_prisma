@@ -217,7 +217,7 @@ export async function PUT(
 
         // Si se agregaron nuevos artículos tipo pieza y el estado era "metraje_confirmado",
         // retroceder a "metraje_en_proceso" para que el empleado pueda registrar metraje
-        if (toCreate.some((item: any) => item.tipo === "pieza") && pedido.estado === "metraje_confirmado") {
+        if (toCreate.some((item: any) => item.tipo === "pieza") && ["metraje_confirmado", "pendiente", "confirmado"].includes(pedido.estado)) {
             await prisma.pedido.update({
                 where: { id },
                 data: { estado: "metraje_en_proceso" }
@@ -259,7 +259,7 @@ export async function PATCH(
             return NextResponse.json({ success: false, error: "Datos inválidos" }, { status: 400 })
         }
 
-        const { estado, metraje_items, numeroOperacion, motivoRechazo, costoEnvio, comprobantePago } = body
+        const { estado, metraje_items, numeroOperacion, motivoRechazo, costoEnvio, comprobantePago, notas } = body
 
         const estadosValidos = ["metraje_en_proceso", "metraje_confirmado", "pendiente", "confirmado", "pedido_enviado", "rechazado", "completado"]
 
@@ -337,6 +337,7 @@ export async function PATCH(
         if (numeroOperacion) updateData.numeroOperacion = numeroOperacion
         if (comprobantePago !== undefined) updateData.comprobantePago = comprobantePago
         if (motivoRechazo && estado === "rechazado") updateData.motivoRechazo = motivoRechazo
+        if (notas !== undefined) updateData.notas = notas
         if (costoEnvio !== undefined && (isAdmin || isEmpleado)) {
             if (typeof costoEnvio === "number" && costoEnvio >= 0) {
                 // Si solo se actualiza costoEnvio, recalcular total = subtotal + costoEnvio
@@ -631,21 +632,23 @@ export async function PATCH(
                     await prisma.pedido.update({
                         where: { id },
                         data: {
-                            estado: "metraje_confirmado",
+                            estado: esPedidoDeStaff ? "pendiente" : "metraje_confirmado",
                             total: totalConEnvio,
                             costoEnvio: costoEnvio
                         }
                     })
 
-                    await prisma.notificacion.create({
-                        data: {
-                            userId: pedido.userId,
-                            tipo: "metraje_confirmado",
-                            titulo: "Metraje confirmado",
-                            mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado. Puedes continuar con el pago.`,
-                            pedidoId: id
-                        }
-                    })
+                    if (!esPedidoDeStaff) {
+                        await prisma.notificacion.create({
+                            data: {
+                                userId: pedido.userId,
+                                tipo: "metraje_confirmado",
+                                titulo: "Metraje confirmado",
+                                mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado. Puedes continuar con el pago.`,
+                                pedidoId: id
+                            }
+                        })
+                    }
 
                 }
             }
@@ -685,7 +688,7 @@ export async function PATCH(
                 await prisma.pedido.update({
                     where: { id },
                     data: {
-                        estado: "metraje_confirmado",
+                        estado: esPedidoDeStaff ? "pendiente" : "metraje_confirmado",
                         total: totalConEnvio,
                         costoEnvio: costoEnvio
                     }
@@ -693,15 +696,17 @@ export async function PATCH(
 
                 const pedidoActualizado = await prisma.pedido.findUnique({ where: { id } })
 
-                await prisma.notificacion.create({
-                    data: {
-                        userId: pedido.userId,
-                        tipo: "metraje_confirmado",
-                        titulo: "Metraje confirmado",
-                        mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado. Puedes continuar con el pago.`,
-                        pedidoId: id
-                    }
-                })
+                if (!esPedidoDeStaff) {
+                    await prisma.notificacion.create({
+                        data: {
+                            userId: pedido.userId,
+                            tipo: "metraje_confirmado",
+                            titulo: "Metraje confirmado",
+                            mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado. Puedes continuar con el pago.`,
+                            pedidoId: id
+                        }
+                    })
+                }
             }
         }
 

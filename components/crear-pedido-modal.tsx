@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import { 
     X, Search, Plus, Trash2, FileText, Printer, Send, Save, 
     ArrowLeft, ArrowRight, Check, Package, Ruler, Loader2,
-    Building2, CreditCard, User, MapPin, Phone, Truck, FileCheck, ClipboardList, Pencil, Filter, AlertTriangle, Ban, Copy
+    Building2, CreditCard, User, MapPin, Phone, Truck, FileCheck, ClipboardList, Pencil, Filter, AlertTriangle, Ban, Copy, DollarSign
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -53,18 +53,18 @@ interface Props {
     borradorRestaurarId?: string | null
 }
 
-const EMPRESAS = ["Flores Caritas", "Textiles Manchester", "ManchesterTex", "Textiles Mego"]
-const METODOS_PAGO = ["Transferencia", "Depósito", "Efectivo", "Yape", "BBVA"]
+const EMPRESAS = ["FLORES CARITAS", "TEXTILES MANCHESTER", "MANCHESTERTEX", "TEXTILES MEGO", "YAPE CARLOS", "YAPE ANGEL"]
+const METODOS_PAGO = ["TRASNFERENCIA", "DEPOSITO", "EFECTIVO", "YAPE","PLIN", "BBVA"]
 const AGENCIAS = [
-    { value: "antezana", label: "Antezana" },
-    { value: "shalom", label: "Shalom" },
-    { value: "flores", label: "Flores" },
-    { value: "marvisur", label: "Marvisur" },
-    { value: "grael", label: "Grael" },
-    { value: "raza", label: "Raza" },
-    { value: "rana_express", label: "Rana express" },
-    { value: "carhuamayo", label: "Carhuamayo" },
-    { value: "otros", label: "Otros" }
+    { value: "antezana", label: "ANTEZANA" },
+    { value: "shalom", label: "SHALOM" },
+    { value: "flores", label: "FLORES" },
+    { value: "marvisur", label: "MARVISUR" },
+    { value: "grael", label: "GRAEL" },
+    { value: "raza", label: "RAZA" },
+    { value: "rana_express", label: "RANA EXPRESS" },
+    { value: "carhuamayo", label: "CARHUAMAYO" },
+    { value: "otros", label: "OTRA AGENCIA" }
 ]
 
 export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borradorRestaurarId }: Props) {
@@ -123,6 +123,15 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const [observaciones, setObservaciones] = useState("")
     const [showAgregarArticulo, setShowAgregarArticulo] = useState(false)
     const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
+    const [showPagoModal, setShowPagoModal] = useState(false)
+    const [tipoPago, setTipoPago] = useState<"completo" | "dividido" | "">("")
+    const [detallesPago, setDetallesPago] = useState<{ monto: string; empresa: string; metodoPago: string }[]>([
+        { monto: "", empresa: "", metodoPago: "" },
+        { monto: "", empresa: "", metodoPago: "" }
+    ])
+    const [showDetallePagoModal, setShowDetallePagoModal] = useState(false)
+    const [detalleEditandoIdx, setDetalleEditandoIdx] = useState<number | null>(null)
+    const [pagoConfirmado, setPagoConfirmado] = useState(false)
 
     useEffect(() => {
         setIsMounted(true)
@@ -530,7 +539,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     }
 
     const crearPedido = async () => {
-        if (!empresa || !metodoPago || !cliente.nombre || !cliente.numeroDoc || items.length === 0) {
+        if (!metodoPago || !cliente.nombre || !cliente.numeroDoc || items.length === 0) {
             setToastMessage({ show: true, message: "Complete todos los campos requeridos", type: "error" })
             return
         }
@@ -550,38 +559,40 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setLoading(true)
         try {
             if (pedidoEditar) {
+                const bodyData: any = {
+                    empresa,
+                    metodoPago,
+                    cliente: {
+                        nombre: cliente.nombre,
+                        tipoDoc: cliente.tipoDoc,
+                        numeroDoc: cliente.numeroDoc,
+                        razonSocial: cliente.razonSocial,
+                        direccion: cliente.direccion,
+                        telefono: cliente.telefono,
+                        departamento: cliente.departamento || null,
+                        provincia: cliente.provincia || null,
+                        distrito: cliente.distrito || null,
+                        agenciaOtro
+                    },
+                    agencia,
+                    guiaRemision,
+                    envioComprobante,
+                    costoEnvio: Number(costoEnvio) || 0,
+                    observaciones,
+                    items: items.map(i => ({
+                        detalleId: i.id,
+                        productoId: i.productoId,
+                        cantidad: i.cantidad,
+                        tipo: i.tipo,
+                        precio: i.productoPrecio,
+                        indicacionesCorte: i.indicacionesCorte
+                    }))
+                }
+                if (pagoConfirmado) bodyData.estado = "confirmado"
                 const res = await fetch(`/api/pedidos/${pedidoEditar.id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        empresa,
-                        metodoPago,
-                        cliente: {
-                            nombre: cliente.nombre,
-                            tipoDoc: cliente.tipoDoc,
-                            numeroDoc: cliente.numeroDoc,
-                            razonSocial: cliente.razonSocial,
-                            direccion: cliente.direccion,
-                            telefono: cliente.telefono,
-                            departamento: cliente.departamento || null,
-                            provincia: cliente.provincia || null,
-                            distrito: cliente.distrito || null,
-                            agenciaOtro
-                        },
-                        agencia,
-                        guiaRemision,
-                        envioComprobante,
-                        costoEnvio: Number(costoEnvio) || 0,
-                        observaciones,
-                        items: items.map(i => ({
-                            detalleId: i.id,
-                            productoId: i.productoId,
-                            cantidad: i.cantidad,
-                            tipo: i.tipo,
-                            precio: i.productoPrecio,
-                            indicacionesCorte: i.indicacionesCorte
-                        }))
-                    }),
+                    body: JSON.stringify(bodyData),
                     credentials: "include"
                 })
                 const json = await res.json()
@@ -595,10 +606,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                     setToastMessage({ show: true, message: json.error || "Error al actualizar pedido", type: "error" })
                 }
             } else {
-                const res = await fetch("/api/pedido-empleado", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+                const bodyData: any = {
                     empresa,
                     metodoPago,
                     cliente: {
@@ -625,7 +633,12 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                         precio: i.productoPrecio,
                         indicacionesCorte: i.indicacionesCorte
                     }))
-                }),
+                }
+                if (pagoConfirmado) bodyData.estado = "confirmado"
+                const res = await fetch("/api/pedido-empleado", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(bodyData),
                 credentials: "include"
             })
             const json = await res.json()
@@ -797,7 +810,12 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                         {EMPRESAS.map(emp => (
                                             <button
                                                 key={emp}
-                                                onClick={() => setEmpresa(emp)}
+                                                onClick={() => {
+                                                    setEmpresa(emp);
+                                                    if (emp === "YAPE CARLOS" || emp === "YAPE ANGEL") {
+                                                        setMetodoPago("YAPE");
+                                                    }
+                                                }}
                                                 className={`px-3 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
                                                     empresa === emp 
                                                         ? "bg-blue-600 border-blue-600 text-white shadow-sm" 
@@ -861,7 +879,28 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
 
                                 {/* Buscar cliente */}
                                 <div>
-                                    <p className={labelBase}><User className="h-3.5 w-3.5" /> Buscar Cliente</p>
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <p className={labelBase}><User className="h-3.5 w-3.5" /> Buscar Cliente</p>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const res = await fetch(`/api/cliente-buscar?q=${encodeURIComponent("CLIENTE GENERAL")}`, { credentials: "include" })
+                                                    const json = await res.json()
+                                                    if (json.success && json.clientes?.length > 0) {
+                                                        seleccionarCliente(json.clientes[0])
+                                                    }
+                                                } catch (e) {
+                                                    console.error("Error buscando CLIENTE GENERAL:", e)
+                                                }
+                                                setClienteBusqueda("")
+                                                setClientesEncontrados([])
+                                                setMostrarDropdown(false)
+                                            }}
+                                            className="px-2 py-1 text-xs font-bold border-2 rounded-lg uppercase bg-amber-300 border-amber-400 text-black hover:bg-amber-400 transition-all whitespace-nowrap"
+                                        >
+                                            CLIENTE GENERAL
+                                        </button>
+                                    </div>
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                                         <input
@@ -1352,6 +1391,14 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                         placeholder="Notas adicionales..."
                                     />
                                 </div>
+
+                                {/* Pago */}
+                                <Button
+                                    onClick={() => setShowPagoModal(true)}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-10"
+                                >
+                                    <DollarSign className="h-4 w-4 mr-2" /> Pagar Pedido
+                                </Button>
                             </div>
                         )}
                     </div>
@@ -1671,6 +1718,293 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                     </div>
                 </div>
             )}
+
+            {/* Sub-modal pago */}
+            {showPagoModal && (
+                <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => { setShowPagoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Total a pagar: S/ {calcularTotal().toFixed(2)}</h3>
+                            </div>
+                            <button onClick={() => { setShowPagoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                            {/* Opciones de pago */}
+                            <div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setTipoPago("completo")}
+                                        className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${
+                                            tipoPago === "completo"
+                                                ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
+                                                : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"
+                                        }`}
+                                    >
+                                        PAGO COMPLETO
+                                    </button>
+                                    <button
+                                        onClick={() => setTipoPago("dividido")}
+                                        className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${
+                                            tipoPago === "dividido"
+                                                ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
+                                                : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"
+                                        }`}
+                                    >
+                                        DIVIDIR PAGO
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Montos divididos */}
+                            {tipoPago === "dividido" && (
+                                <div>
+                                    <p className="text-sm font-medium text-slate-700 mb-2">Montos</p>
+                                    <div className="space-y-2">
+                                        {detallesPago.map((det, idx) => (
+                                            <div key={idx} className="flex items-center gap-2">
+                                                <span className="text-sm font-medium text-slate-500">S/</span>
+                                                <input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={det.monto}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value
+                                                        if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                                                            const nuevo = [...detallesPago]
+                                                            nuevo[idx] = { ...nuevo[idx], monto: val }
+                                                            setDetallesPago(nuevo)
+                                                        }
+                                                    }}
+                                                    placeholder="0.00"
+                                                    className="w-24 px-3 py-2 border-2 border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white"
+                                                />
+                                                <button
+                                                    onClick={() => { setDetalleEditandoIdx(idx); setShowDetallePagoModal(true) }}
+                                                    className={`px-2 py-1.5 text-xs border-2 font-bold rounded-lg transition-all uppercase ${
+                                                        det.empresa || det.metodoPago
+                                                            ? "bg-emerald-600 border-emerald-600 text-white"
+                                                            : "bg-red-600 border-red-600 text-white"
+                                                    }`}
+                                                >
+                                                    {det.empresa ? `${det.empresa} / ${det.metodoPago}` : det.metodoPago || "Seleccionar Detalle"}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (detallesPago.length > 2) {
+                                                            setDetallesPago(detallesPago.filter((_, i) => i !== idx))
+                                                        }
+                                                    }}
+                                                    disabled={detallesPago.length <= 2}
+                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                >
+                                                    <X className="h-4 w-4 text-red-900" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => setDetallesPago([...detallesPago, { monto: "", empresa: "", metodoPago: "" }])}
+                                        className="mt-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                                    >
+                                        + Agregar
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Validación en tiempo real */}
+                            {tipoPago === "dividido" && (
+                                (() => {
+                                    const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
+                                    const total = calcularTotal()
+                                    const coincide = Math.abs(suma - total) < 0.01
+                                    return (
+                                        <div className={`p-3 rounded-lg border text-sm font-medium ${
+                                            coincide
+                                                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                                : "bg-red-50 border-red-200 text-red-700"
+                                        }`}>
+                                            <p>
+                                                Total ingresado: <span className="font-bold">S/ {suma.toFixed(2)}</span>
+                                                {coincide ? (
+                                                    <span className="ml-2 inline-flex items-center gap-1"><Check className="h-4 w-4" /> Coincide con el total</span>
+                                                ) : (
+                                                    detallesPago.some(d => d.monto !== "") && (
+                                                        <span className="ml-2">(Diferencia: S/ {Math.abs(total - suma).toFixed(2)})</span>
+                                                    )
+                                                )}
+                                            </p>
+                                        </div>
+                                    )
+                                })()
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => { setShowPagoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }}
+                                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <Button
+                                onClick={() => {
+                                    if (!tipoPago) return
+                                    if (tipoPago === "completo") {
+                                        const total = calcularTotal().toFixed(2)
+                                        setObservaciones(prev => (prev ? prev + "\n" : "") + `PAGO: Completo - S/ ${total}`)
+                                        setToastMessage({ show: true, message: "Pago registrado en Observaciones", type: "success" })
+                                    } else {
+                                        const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
+                                        const total = calcularTotal()
+                                        if (Math.abs(suma - total) >= 0.01) {
+                                            setToastMessage({ show: true, message: "La suma de los montos no coincide con el total", type: "error" })
+                                            return
+                                        }
+                                        const detallesStr = detallesPago
+                                            .filter(d => d.monto)
+                                            .map(d => {
+                                                let s = `S/ ${Number(d.monto).toFixed(2)}`
+                                                if (d.empresa) {
+                                                    if (d.empresa === "YAPE CARLOS" || d.empresa === "YAPE ANGEL") {
+                                                        s += ` (${d.empresa})`
+                                                    } else {
+                                                        s += ` (${d.empresa} / ${d.metodoPago})`
+                                                    }
+                                                } else if (d.metodoPago === "EFECTIVO") {
+                                                    s += ` (EFECTIVO)`
+                                                }
+                                                return s
+                                            })
+                                            .join(" + ")
+                                        setObservaciones(prev => (prev ? prev + "\n" : "") + `PAGO: Dividido - ${detallesStr} = S/ ${suma.toFixed(2)}`)
+                                        setToastMessage({ show: true, message: "Pago registrado en Observaciones", type: "success" })
+                                    }
+                                    setPagoConfirmado(true)
+                                    setShowPagoModal(false)
+                                    setTipoPago("")
+                                    setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }])
+                                }}
+                                disabled={!tipoPago || (tipoPago === "dividido" && !detallesPago.every(d => {
+                                    if (!d.monto) return false
+                                    if (d.metodoPago === "EFECTIVO") return true
+                                    return d.empresa && d.metodoPago
+                                }))}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 px-4 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Confirmar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sub-modal Detalle de pago */}
+            {showDetallePagoModal && detalleEditandoIdx !== null && (
+                <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => setShowDetallePagoModal(false)} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+                            <h3 className="text-base font-bold text-slate-900">Detalle de pago #{detalleEditandoIdx + 1}</h3>
+                            <button onClick={() => setShowDetallePagoModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                            {/* Empresa */}
+                            <div>
+                                <p className="text-sm font-medium text-slate-700 mb-2">Empresa</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {EMPRESAS.map(emp => (
+                                        <button
+                                            key={emp}
+                                            onClick={() => {
+                                                const nuevo = [...detallesPago]
+                                                const yaSeleccionada = nuevo[detalleEditandoIdx].empresa === emp
+                                                const empresaFinal = yaSeleccionada ? "" : emp
+                                                const metodo = (emp === "YAPE CARLOS" || emp === "YAPE ANGEL") && !yaSeleccionada ? "YAPE" : yaSeleccionada ? "" : nuevo[detalleEditandoIdx].metodoPago
+                                                nuevo[detalleEditandoIdx] = { ...nuevo[detalleEditandoIdx], empresa: empresaFinal, metodoPago: metodo }
+                                                setDetallesPago(nuevo)
+                                            }}
+                                            className={`px-3 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                                                detallesPago[detalleEditandoIdx].empresa === emp
+                                                    ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
+                                                    : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"
+                                            }`}
+                                        >
+                                            {emp}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Método de pago */}
+                            <div>
+                                <p className="text-sm font-medium text-slate-700 mb-2">Método de Pago</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {METODOS_PAGO.map(mp => (
+                                        <button
+                                            key={mp}
+                                            onClick={() => {
+                                                const nuevo = [...detallesPago]
+                                                nuevo[detalleEditandoIdx] = { ...nuevo[detalleEditandoIdx], metodoPago: mp }
+                                                setDetallesPago(nuevo)
+                                            }}
+                                            className={`px-3 py-1.5 border-2 rounded-lg text-sm font-medium transition-all ${
+                                                detallesPago[detalleEditandoIdx].metodoPago === mp
+                                                    ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
+                                                    : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"
+                                            }`}
+                                        >
+                                            {mp}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowDetallePagoModal(false)}
+                                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <Button
+                                onClick={() => {
+                                    const det = detallesPago[detalleEditandoIdx]
+                                    if (!det.metodoPago || (det.metodoPago !== "EFECTIVO" && !det.empresa)) {
+                                        setToastMessage({ show: true, message: "Seleccione método de pago" + (det.metodoPago !== "EFECTIVO" ? " y empresa" : ""), type: "error" })
+                                        return
+                                    }
+                                    setShowDetallePagoModal(false)
+                                }}
+                                disabled={
+                                    !detallesPago[detalleEditandoIdx].metodoPago ||
+                                    (detallesPago[detalleEditandoIdx].metodoPago !== "EFECTIVO" && !detallesPago[detalleEditandoIdx].empresa)
+                                }
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 px-4 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Guardar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     )
 
