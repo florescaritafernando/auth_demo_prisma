@@ -54,7 +54,7 @@ interface Pedido {
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
     metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800" },
-    pendiente: { label: "Pago en revisión", color: "bg-blue-100", colorTexto: "text-blue-800" },
+    pendiente: { label: "Pago en revisión", color: "bg-amber-100", colorTexto: "text-amber-800" },
     confirmado: { label: "Pago confirmado", color: "bg-green-200", colorTexto: "text-green-900" },
     pedido_enviado: { label: "Pedido enviado", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
     rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
@@ -72,6 +72,18 @@ const DELIVERY_LABELS: Record<string, string> = {
     olva: "OLVA",
     safexpress: "SAF EXPRESS",
     otros: "OTROS"
+}
+
+const extraerTotalPagado = (notas: string | null): number => {
+    if (!notas) return 0
+    let totalPagado = 0
+    for (const linea of notas.split("\n")) {
+        const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
+        if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
+        const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
+        if (mDividido) totalPagado += Number(mDividido[1])
+    }
+    return totalPagado
 }
 
 interface Props {
@@ -259,7 +271,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                     {pedido.notas && (
                                         <div className="mb-4 bg-slate-100 border border-slate-200 rounded-lg p-3">
                                             <p className="font-bold text-slate-700 text-sm mb-1">Observaciones</p>
-                                            <p className="text-sm text-slate-600">{pedido.notas}</p>
+                                            <p className="text-sm text-slate-600 whitespace-pre-wrap">{pedido.notas}</p>
                                         </div>
                                     )}
 
@@ -488,6 +500,19 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                     <span className="font-bold text-slate-900">Total:</span>
                                                     <span className="font-bold text-green-700 text-lg">S/ {Number(pedido.total).toFixed(2)}</span>
                                                 </div>
+                                                {(() => {
+                                                    const pagado = extraerTotalPagado((pedido as any).notas)
+                                                    const falta = Number(pedido.total) - pagado
+                                                    if (falta > 0.01) {
+                                                        return (
+                                                            <div className="flex justify-between pt-1">
+                                                                <span className="text-sm text-red-600 font-semibold">Falta pagar:</span>
+                                                                <span className="text-sm font-bold text-red-600">S/ {falta.toFixed(2)}</span>
+                                                            </div>
+                                                        )
+                                                    }
+                                                    return null
+                                                })()}
                                             </div>
 
                                             <div className="text-sm bg-white rounded-lg p-3">

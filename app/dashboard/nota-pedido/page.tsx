@@ -13,7 +13,7 @@ async function getPedidos(userRole: string) {
         const cookieStore = await cookies()
         const allCookies = cookieStore.toString()
 
-        const query = userRole === "empleado" ? "?mis=true" : ""
+        const query = userRole === "empleado" ? "?todas=true" : ""
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/pedidos${query}`, {
             headers: { Cookie: allCookies || "" }
         })
@@ -46,17 +46,9 @@ export default async function NotaPedidoPage() {
     return (
         <div className="p-4 md:p-6 lg:p-10 font-sans">
             <div className="max-w-5xl mx-auto">
-                <div className="mb-6 flex items-center gap-3">
-                    <Link href="/dashboard">
-                        <Button variant="outline" size="sm" className="gap-1.5">
-                            <ArrowLeft className="h-4 w-4" />
-                            Volver
-                        </Button>
-                    </Link>
-                    <div>
-                        <h1 className="text-xl md:text-2xl font-bold text-slate-900">Notas de Pedido</h1>
+                <div className="mb-6 flex-2 items-center gap-3">
+                        <h1 className="text-xl md:text-2xl font-bold text-slate-900">Historial de Pedidos</h1>
                         <p className="text-sm text-slate-500">Detalle completo de pedidos creados</p>
-                    </div>
                 </div>
 
                 {pedidos.length === 0 ? (

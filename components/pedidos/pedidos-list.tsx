@@ -15,8 +15,8 @@ import { ImprimirPedidoModal } from "./ImprimirPedidoModal"
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string; icon: any }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800", icon: Clock },
     metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800", icon: CheckCircle },
-    pendiente: { label: "Pago en revisión", color: "bg-blue-100", colorTexto: "text-blue-800", icon: CircleDollarSign },
-    confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900", icon: Wallet },
+    pendiente: { label: "Pago en revisión", color: "bg-amber-100", colorTexto: "text-amber-800", icon: CircleDollarSign },
+    confirmado: { label: "Pago confirmado", color: "bg-emerald-200", colorTexto: "text-emerald-900", icon: Wallet },
     pedido_enviado: { label: "Pedido en transito", color: "bg-yellow-100", colorTexto: "text-yellow-800", icon: Truck },
     rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800", icon: XCircle },
     completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800", icon: CheckCircle },
@@ -60,7 +60,10 @@ interface PedidoItem {
     dniRecibe: string
     numeroOperacion: string
     comprobantePago: string | null
+    notas: string | null
     motivoRechazo: string | null
+    user: { id: string; name: string | null; email: string | null } | null
+    celularRecibe: string | null
     pedidoDetalle?: Array<{
         id: string
         cantidad: number
@@ -70,6 +73,7 @@ interface PedidoItem {
         producto?: {
             id: string
             nombre: string
+            categoria: string
         }
         etiquetas?: Array<{ valor: number }>
         indicacionesCorte?: string | null
@@ -114,8 +118,20 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
     const [showPagoDetails, setShowPagoDetails] = useState(false)
     const [showImprimir, setShowImprimir] = useState(false)
     const [indicacionModal, setIndicacionModal] = useState<{ nombre: string; texto: string } | null>(null)
+    const [comprobantePreview, setComprobantePreview] = useState<string | null>(null)
     const config = ESTADO_CONFIG[pedido.estado] || ESTADO_CONFIG.metraje_en_proceso
     const IconComponent = config.icon
+    const extraerTotalPagado = (notas: string | null): number => {
+        if (!notas) return 0
+        let totalPagado = 0
+        for (const linea of notas.split("\n")) {
+            const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
+            if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
+            const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
+            if (mDividido) totalPagado += Number(mDividido[1])
+        }
+        return totalPagado
+    }
     const agenciaLabel = (() => {
         const ag = pedido.agencia || pedido.clientePedido?.agencia
         const agOtro = pedido.agenciaOtro || pedido.clientePedido?.agenciaOtro
@@ -127,23 +143,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
 
     const ocultarPrecio = pedido.estado === "metraje_en_proceso" || pedido.estado === "rechazado"
     const mostrarContinuar = pedido.estado === "metraje_confirmado"
-    const ocultarPago = ocultarPrecio || pedido.estado === "metraje_confirmado"
     const tieneReclamo = (pedido as any).reclamos?.length > 0
-
-    const getEstadoArticulo = (detalle: any) => {
-        if (detalle.tipo !== "pieza") return null
-
-        const solicitados = Number(detalle.cantidad)
-        const registrados = detalle.etiquetas?.length || 0
-
-        if (registrados === 0) {
-            return { estado: "sin_existencias", label: `Sin existencias 0/${solicitados} pieza(s)`, color: "bg-red-100 text-red-700", colorTexto: "text-red-700" }
-        }
-        if (registrados === solicitados) {
-            return { estado: "completo", label: `Completo ${registrados}/${solicitados} pieza(s)`, color: "bg-green-100 text-green-700", colorTexto: "text-green-700" }
-        }
-        return { estado: "parcial", label: `Parcial ${registrados}/${solicitados} pieza(s)`, color: "bg-yellow-100 text-yellow-700", colorTexto: "text-yellow-700" }
-    }
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -285,138 +285,281 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
             {expanded && (
                 <div className="border-t border-slate-100">
                     <div className="p-4 bg-slate-50">
-                        <p className="font-bold text-slate-800 mb-3">Artículos:</p>
-                        <div className="space-y-2 mb-4">
-                            {pedido.pedidoDetalle?.map((detalle, idx) => {
-                                const isPiezaPendingMetraje = pedido.estado === "metraje_en_proceso" && detalle.tipo === "pieza"
-                                const estadoArticulo = getEstadoArticulo(detalle)
-                                const mostrarBadge = estadoArticulo && (pedido.estado === "metraje_confirmado")
-                                return (
-                                    <div key={idx} className={`flex justify-between items-center text-sm bg-white p-2 rounded border ${isPiezaPendingMetraje ? "border-amber-300 bg-amber-50" : "border-slate-200"}`}>
-                                        <div className="text-slate-800 flex-1">
-                                            <p className="font-bold text-lg">{detalle.producto?.nombre || `Producto ${idx + 1}`}</p>
-                                            {isPiezaPendingMetraje ? (
-                                                <p className="text-md text-slate-500 mt-1">
-                                                    {detalle.cantidad} pieza(s) {Number(detalle.metraje || 0).toFixed(2)} mts × S/ {Number(detalle.precio).toFixed(2)}/mts
-                                                </p>
-                                            ) : (
-                                                <p className="text-md text-slate-500">
-                                                    {detalle.tipo === "pieza"
-                                                        ? `${(pedido.estado === "metraje_en_proceso" ? Number(detalle.cantidad) : (detalle.etiquetas?.length || Number(detalle.cantidad)))} pieza(s) ${(detalle.etiquetas?.reduce((sum: number, e: any) => sum + e.valor, 0) || 0).toFixed(2)} mts × S/ ${Number(detalle.precio).toFixed(2)}`
-                                                        : detalle.metraje
-                                                            ? `${detalle.metraje} mts × S/ ${Number(detalle.precio).toFixed(2)}`
-                                                            : `${detalle.cantidad} mts × S/ ${Number(detalle.precio).toFixed(2)}`
-                                                    }
-                                                </p>
-                                            )}
-                                            {mostrarBadge && (
-                                                <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${estadoArticulo.color} ${estadoArticulo.colorTexto}`}>
-                                                    {estadoArticulo.label}
-                                                </span>
-                                            )}
-                                            {detalle.indicacionesCorte && pedido.estado !== "completado" && (
-                                                <button
-                                                    onClick={() => setIndicacionModal({ nombre: detalle.producto?.nombre || "", texto: detalle.indicacionesCorte || "" })}
-                                                    className="mt-2 flex items-center gap-1 px-2 py-1 text-xs font-medium bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors "
-                                                >
-                                                    <span>Ver indicaciones</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            {isPiezaPendingMetraje ? (
-                                                <span className="text-xs text-amber-600 font-medium whitespace-nowrap">
-                                                    Metraje por confirmar
-                                                </span>
-                                            ) : (
-                                                <span className="text-slate-800 font-medium">
-                                                    {detalle.tipo === "pieza" && ((detalle.etiquetas?.reduce((sum: number, e: any) => sum + e.valor, 0) || 0) === 0)
-                                                        ? "-"
-                                                        : `S/ ${(detalle.metraje ? detalle.metraje * detalle.precio : detalle.cantidad * detalle.precio).toFixed(2)}`
-                                                    }
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-
-                        {!ocultarPrecio && (
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Subtotal:</span>
-                                    <span className="text-slate-800">S/ {Number(pedido.subtotal || 0).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Costo envío:</span>
-                                    <span className="text-slate-800">S/ {Number(pedido.costoEnvio || 0).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between font-bold">
-                                    <span className="text-slate-800">Total:</span>
-                                    <span className="text-slate-800">S/ {Number(pedido.total).toFixed(2)}</span>
+                        {pedido.motivoRechazo && pedido.estado === "rechazado" && (
+                            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
+                                <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="font-bold text-red-800 text-sm">Pedido Rechazado</p>
+                                    <p className="text-sm text-red-700 mt-1">{pedido.motivoRechazo}</p>
                                 </div>
                             </div>
                         )}
-                    </div>
 
-                    <div className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                            <div className="flex items-start gap-2">
-                                <CreditCard className="h-4 w-4 text-slate-400 mt-0.5" />
-                                <div>
-                                    <p className="text-slate-500">Facturación:</p>
-                                    <p className="font-medium text-slate-800">
-                                        {pedido.nombreFactura?.toUpperCase()} ({pedido.tipoDocumento?.toUpperCase()} {pedido.numeroDoc})
-                                    </p>
+                        {pedido.notas && (
+                            <div className="mb-4 bg-slate-100 border border-slate-200 rounded-lg p-3">
+                                <p className="font-bold text-slate-700 text-sm mb-1">Observaciones</p>
+                                <p className="text-sm text-slate-600 whitespace-pre-wrap">{pedido.notas}</p>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                    Productos
+                                </h3>
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                    {(pedido.pedidoDetalle ?? [])
+                                        .filter(detalle => {
+                                            if (detalle.tipo === "pieza" && pedido.estado !== "metraje_en_proceso") {
+                                                const etiquetasCount = detalle.etiquetas?.length || 0
+                                                if (etiquetasCount === 0) return false
+                                            }
+                                            return true
+                                        })
+                                        .map((detalle, idx) => {
+                                        const metrajeTotal = Number((detalle.etiquetas?.reduce((sum, e) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2));
+                                        const precioTotal = detalle.tipo === "pieza"
+                                            ? Number(detalle.precio) * metrajeTotal
+                                            : Number(detalle.precio) * detalle.cantidad;
+                                        return (
+                                            <div key={detalle.id || idx} className="flex flex-col text-sm bg-white rounded-lg p-2">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="font-bold text-slate-900">{detalle.producto?.nombre || `Producto ${idx + 1}`}</p>
+                                                    {detalle.producto?.categoria && (
+                                                        <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-medium text-slate-600 shrink-0">{detalle.producto.categoria}</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        {detalle.tipo === "pieza" ? (
+                                                            <>
+                                                                <span className="text-sm text-slate-500">
+                                                                    {(detalle.etiquetas?.length || Number(detalle.cantidad))} PZ(S)
+                                                                </span>
+                                                                {pedido.estado === "metraje_en_proceso" ? (
+                                                                    <span className="text-sm text-slate-500 font-medium">(METRAJE POR CONFIRMAR)</span>
+                                                                ) : metrajeTotal > 0 && (
+                                                                    <span className="text-sm text-slate-400">
+                                                                        ({metrajeTotal.toFixed(2)} MTS)
+                                                                    </span>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-sm text-slate-500">
+                                                                {detalle.cantidad} MTS
+                                                            </span>
+                                                        )}
+                                                        <span className="text-sm text-slate-500">
+                                                            S/ {Number(detalle.precio).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-sm font-bold text-slate-900">S/ {precioTotal.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
+
+                                {(() => {
+                                    const detallesConIndicaciones = pedido.pedidoDetalle?.filter((d: any) => {
+                                        if (!d.indicacionesCorte) return false
+                                        if (d.tipo === "pieza" && pedido.estado !== "metraje_en_proceso") {
+                                            const etiquetasCount = d.etiquetas?.length || 0
+                                            if (etiquetasCount === 0) return false
+                                        }
+                                        return true
+                                    })
+                                    if (!detallesConIndicaciones || detallesConIndicaciones.length === 0) return null
+                                    return (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                            <h3 className="font-bold text-amber-800 flex items-center gap-2 text-sm mb-2">
+                                                Indicaciones de corte
+                                            </h3>
+                                            <div className="space-y-2">
+                                                {detallesConIndicaciones.map((detalle: any) => {
+                                                    const metrajeTotal = Number((detalle.etiquetas?.reduce((sum: number, e: any) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2))
+                                                    const precioTotal = detalle.tipo === "pieza"
+                                                        ? Number(detalle.precio) * metrajeTotal
+                                                        : Number(detalle.precio) * detalle.cantidad
+                                                    return (
+                                                        <div key={detalle.id} className="flex flex-col text-sm bg-white rounded p-2">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <p className="font-bold text-slate-900">{detalle.producto?.nombre}</p>
+                                                                {detalle.producto?.categoria && (
+                                                                    <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-medium text-slate-600 shrink-0">{detalle.producto.categoria}</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    {detalle.tipo === "pieza" ? (
+                                                                        <>
+                                                                            <span className="text-sm text-slate-500">
+                                                                                {(detalle.etiquetas?.length || Number(detalle.cantidad))} PZ(S)
+                                                                            </span>
+                                                                            {pedido.estado === "metraje_en_proceso" ? (
+                                                                                <span className="text-sm text-slate-500 font-medium">(METRAJE POR CONFIRMAR)</span>
+                                                                            ) : metrajeTotal > 0 && (
+                                                                                <span className="text-sm text-slate-400">
+                                                                                    ({metrajeTotal.toFixed(2)} MTS)
+                                                                                </span>
+                                                                            )}
+                                                                        </>
+                                                                    ) : (
+                                                                        <span className="text-sm text-slate-500">
+                                                                            {detalle.cantidad} MTS
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-sm text-slate-500">
+                                                                        S/ {Number(detalle.precio).toFixed(2)}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-sm font-bold text-slate-900">S/ {precioTotal.toFixed(2)}</span>
+                                                            </div>
+                                                            {detalle.indicacionesCorte && (
+                                                                <p className="text-xs text-amber-700 mt-1.5 italic break-words whitespace-normal leading-relaxed border-t border-amber-100 pt-1.5">
+                                                                    "{detalle.indicacionesCorte}"
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
                             </div>
 
-                            <div className="flex items-start gap-2">
-                                <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
-                                <div>
-                                    <p className="text-slate-500">Envío:</p>
-                                    <p className="font-medium text-slate-800">
-                                        {pedido.metodoEnvio === "tienda" ? "Retiro en Tienda" :
-                                            pedido.metodoEnvio === "agencia" ? `Agencia: ${agenciaLabel || pedido.agenciaOtro || "No especificada"}` :
-                                                pedido.metodoEnvio === "delivery" ? `Delivery: ${deliveryLabel || pedido.deliveryOtro || "No especificado"}` :
-                                                    "-"}
-                                    </p>
-                                    {pedido.tienda && pedido.tienda && (
-                                        <p className="text-slate-500">{pedido.tienda.nombre} - {pedido.tienda.direccion}</p>
-                                    )}
-                                    {pedido.tipoEnvio === "otropersona" && pedido.nombreRecibe && (
-                                        <p className="text-slate-500">Recibe: {pedido.nombreRecibe} (DNI: {pedido.dniRecibe})</p>
-                                    )}
-                                    {pedido.direccion && pedido.metodoEnvio !== "tienda" && (
-                                        <p className="text-slate-500">{pedido.direccion?.toUpperCase()}</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {!ocultarPago && (
-                                <div className="flex items-start gap-2">
-                                    <Wallet className="h-4 w-4 text-slate-400 mt-0.5" />
-                                    <div>
-                                        <p className="text-slate-500">Pago:</p>
-                                        <p className="font-medium text-slate-800">
-                                            Nro. Operación: {pedido.numeroOperacion || "No registrado"}
-                                        </p>
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                    Facturación y Pago
+                                </h3>
+                                <div className="space-y-2 text-sm bg-white rounded-lg p-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">Documento:</span>
+                                        <span className="font-bold text-slate-900">{pedido.tipoDocumento?.toUpperCase()} {pedido.numeroDoc}</span>
                                     </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">Nombre:</span>
+                                        <span className="font-bold text-slate-900 text-right">{pedido.nombreFactura?.toUpperCase()}</span>
+                                    </div>
+                                    {pedido.numeroOperacion && pedido.numeroOperacion !== "012345678" && (
+                                    <div className="flex justify-between">
+                                        <span className={`font-bold ${pedido.estado === "pendiente" ? "text-yellow-700" : "text-slate-600"}`}>Nro. Operación:</span>
+                                        <span className={`font-bold ${pedido.estado === "pendiente" ? "text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded" : "text-slate-900"}`}>
+                                            {pedido.numeroOperacion}
+                                        </span>
+                                    </div>
+                                    )}
+                                    {pedido.comprobantePago && (
+                                        <div className="flex justify-between items-center mt-2">
+                                            <span className="text-slate-600">Comprobante:</span>
+                                            <button
+                                                onClick={() => setComprobantePreview(pedido.comprobantePago)}
+                                                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                            >
+                                                <File className="h-3 w-3" />
+                                                Ver comprobante
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
 
-                            <div className="flex items-start gap-2">
-                                <Truck className="h-4 w-4 text-slate-400 mt-0.5" />
-                                <div>
-                                    <p className="text-slate-500">Costo envío:</p>
-                                    <p className="font-medium text-slate-800">S/ {Number(pedido.costoEnvio || 0).toFixed(2)}</p>
+                                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                    Envío
+                                </h3>
+                                <div className="space-y-2 text-sm bg-white rounded-lg p-3">
+                                    {pedido.metodoEnvio && (
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-600">Método:</span>
+                                            <span className="font-bold text-slate-900 text-right">
+                                                {pedido.metodoEnvio === "tienda" ? "(TIENDA) - RETIRO EN TIENDA" :
+                                                    pedido.metodoEnvio === "agencia" ? `(AGENCIA) - ${((pedido.agencia === "otros" ? (pedido.agenciaOtro || "OTROS") : (agenciaLabel ?? pedido.agencia)) ?? "").toUpperCase()}` :
+                                                        pedido.metodoEnvio === "delivery" ? `(DELIVERY) - ${((pedido.delivery === "otros" ? (pedido.deliveryOtro || "OTROS") : (deliveryLabel ?? pedido.delivery)) ?? "").toUpperCase()}` :
+                                                            (pedido.metodoEnvio ?? "").toUpperCase()}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {pedido.metodoEnvio === "tienda" && pedido.tienda && (
+                                        <>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-600">Tienda:</span>
+                                                <span className="font-medium text-slate-900 text-right">{pedido.tienda.nombre?.toUpperCase()}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-600">Dirección:</span>
+                                                <span className="font-medium text-slate-900 text-right">{pedido.tienda.direccion?.toUpperCase()}</span>
+                                            </div>
+                                        </>
+                                    )}
+                                    {pedido.direccion && (
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-600">Dirección:</span>
+                                            <span className="font-bold text-slate-900 text-right">{pedido.direccion?.toUpperCase()}</span>
+                                        </div>
+                                    )}
+                                    {(pedido.departamento || pedido.provincia || pedido.distrito) && (
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-600">Ubicación:</span>
+                                            <span className="font-medium text-slate-900 text-right">
+                                                {[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(", ").toUpperCase()}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {pedido.nombreRecibe && (
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-600">Recibe:</span>
+                                            <span className="font-medium text-right">{pedido.nombreRecibe?.toUpperCase()} {pedido.dniRecibe ? `(DNI: ${pedido.dniRecibe})` : ""}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                    Resumen y Contacto
+                                </h3>
+                                <div className="space-y-2 text-sm bg-white rounded-lg p-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">Subtotal:</span>
+                                        <span className="font-bold text-slate-900">S/ {Number(pedido.total - pedido.costoEnvio).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">Costo envío:</span>
+                                        <span className="font-bold text-slate-900">S/ {Number(pedido.costoEnvio || 0).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t pt-2">
+                                        <span className="font-bold text-slate-900">Total:</span>
+                                        <span className="font-bold text-green-700 text-lg">S/ {Number(pedido.total).toFixed(2)}</span>
+                                    </div>
+                                    {(() => {
+                                        const pagado = extraerTotalPagado(pedido.notas)
+                                        const falta = Number(pedido.total) - pagado
+                                        if (falta > 0.01) {
+                                            return (
+                                                <div className="flex justify-between pt-1">
+                                                    <span className="text-sm text-red-600 font-semibold">Falta pagar:</span>
+                                                    <span className="text-sm font-bold text-red-600">S/ {falta.toFixed(2)}</span>
+                                                </div>
+                                            )
+                                        }
+                                        return null
+                                    })()}
+                                </div>
+
+                                <div className="text-sm bg-white rounded-lg p-3">
+                                    <p className="text-slate-600">Creado por:</p>
+                                    <p className="font-bold text-slate-900">{pedido.user?.name || pedido.user?.email || "N/A"}</p>
+                                    <p className="text-xs text-slate-500">{pedido.user?.email}</p>
+                                    {pedido.celularRecibe && (
+                                        <>
+                                            <p className="text-slate-600 mt-3">Celular:</p>
+                                            <p className="font-bold text-slate-900">{pedido.celularRecibe}</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
                         {pedido.pedidoEmpleadoInfo && (
-                            <div className="mt-4 pt-4 border-t border-slate-100">
+                            <div className="mt-6 pt-4 border-t border-slate-200">
                                 <div className="flex items-center gap-2 mb-3">
                                     <FileText className="h-4 w-4 text-blue-500" />
                                     <p className="font-semibold text-slate-700 text-sm">Info Empleado</p>
@@ -461,7 +604,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                         )}
 
                         {pedido.clientePedido && (
-                            <div className="mt-4 pt-4 border-t border-slate-100">
+                            <div className="mt-6 pt-4 border-t border-slate-200">
                                 <div className="flex items-center gap-2 mb-3">
                                     <Phone className="h-4 w-4 text-green-500" />
                                     <p className="font-semibold text-slate-700 text-sm">Datos del Cliente</p>
@@ -618,6 +761,47 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                         </div>
                         <div className="mt-4 flex justify-end">
                             <Button onClick={() => setIndicacionModal(null)} variant="outline">Cerrar</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {comprobantePreview && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setComprobantePreview(null)}>
+                    <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-slate-700">Comprobante de Pago</h2>
+                            <button onClick={() => setComprobantePreview(null)} className="text-slate-400 hover:text-slate-600">
+                                <XCircle className="h-5 w-5" />
+                            </button>
+                        </div>
+                        {comprobantePreview.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <div className="relative w-full h-96 bg-slate-100 rounded-lg overflow-hidden">
+                                <Image
+                                    src={comprobantePreview}
+                                    alt="Comprobante de pago"
+                                    fill
+                                    className="object-contain"
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-3 p-6 bg-slate-50 rounded-lg border border-slate-200">
+                                <File className="h-10 w-10 text-red-500" />
+                                <div>
+                                    <p className="text-sm font-medium text-slate-700">Archivo PDF</p>
+                                    <a
+                                        href={comprobantePreview}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-blue-600 hover:text-blue-800 underline mt-1 inline-block"
+                                    >
+                                        Abrir PDF en nueva pestaña
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+                        <div className="mt-4 flex justify-end">
+                            <Button onClick={() => setComprobantePreview(null)} variant="outline">Cerrar</Button>
                         </div>
                     </div>
                 </div>

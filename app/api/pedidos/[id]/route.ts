@@ -215,7 +215,16 @@ export async function PUT(
             }
         })
 
-        // Si se agregaron nuevos artículos tipo pieza y el estado era "metraje_confirmado",
+        // Si se agregaron nuevos artículos tipo metros y el estado era "confirmado",
+        // retroceder a "pendiente" para que puedan pagar la diferencia
+        if (toCreate.some((item: any) => item.tipo === "metros") && pedido.estado === "confirmado") {
+            await prisma.pedido.update({
+                where: { id },
+                data: { estado: "pendiente" }
+            })
+        }
+
+        // Si se agregaron nuevos artículos tipo pieza y el estado requería metraje,
         // retroceder a "metraje_en_proceso" para que el empleado pueda registrar metraje
         if (toCreate.some((item: any) => item.tipo === "pieza") && ["metraje_confirmado", "pendiente", "confirmado"].includes(pedido.estado)) {
             await prisma.pedido.update({
@@ -532,6 +541,26 @@ export async function PATCH(
             }
         }
 
+        }
+
+        // Notificar a administradores cuando un pedido de empleado cambia a confirmado
+        if (esPedidoDeStaff && estado === "confirmado") {
+            const empleadoNombre = session.user.name || session.user.email || "Empleado"
+            const admins = await prisma.user.findMany({
+                where: { role: "admin" },
+                select: { id: true }
+            })
+            for (const admin of admins) {
+                await prisma.notificacion.create({
+                    data: {
+                        userId: admin.id,
+                        tipo: "pedido_estado",
+                        titulo: "Pago confirmado",
+                        mensaje: `Pedido ${pedido.numeroOrden} confirmado por ${empleadoNombre}.`,
+                        pedidoId: id
+                    }
+                })
+            }
         }
 
         if (metrajeItemsArray && Array.isArray(metrajeItemsArray)) {

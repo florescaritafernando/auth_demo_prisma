@@ -2,17 +2,7 @@ import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
-import { Clock, CheckCircle, Package, XCircle, Truck } from "lucide-react"
 import { PedidosAdminClient } from "@/components/pedidos-admin-client"
-
-const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string }> = {
-    metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
-    metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800" },
-    pendiente: { label: "Pago en revisión", color: "bg-blue-100", colorTexto: "text-blue-800" },
-    confirmado: { label: "Pago confirmado", color: "bg-blue-200", colorTexto: "text-blue-900" },
-    rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
-    completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800" },
-}
 
 async function getPedidos() {
     try {
@@ -84,55 +74,41 @@ export default async function PedidosAdminPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-3 mb-4 md:mb-8">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                        <div className="flex items-center gap-2">
-                            <Clock className="h-5 w-5 text-yellow-600" />
-                            <p className="text-sm text-yellow-800 font-medium">Metraje en proceso</p>
-                        </div>
-                        <p className="text-2xl font-bold text-yellow-700 mt-2">{stats.metraje_en_proceso}</p>
+                <div className="flex flex-wrap gap-1.5 mb-4 md:mb-8">
+                    <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-gray-500 shrink-0" />
+                        <span className="text-[10px] text-gray-800 leading-tight whitespace-nowrap">Metraje en proceso</span>
+                        <span className="text-xs font-bold text-gray-900">{stats.metraje_en_proceso}</span>
                     </div>
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                        <div className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                            <p className="text-sm text-green-800 font-medium">Metraje confirmado</p>
-                        </div>
-                        <p className="text-2xl font-bold text-green-700 mt-2">{stats.metraje_confirmado}</p>
+                    <div className="flex items-center gap-1.5 bg-sky-50 border border-sky-200 rounded-md px-2 py-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
+                        <span className="text-[10px] text-sky-800 leading-tight whitespace-nowrap">Metraje confirmado</span>
+                        <span className="text-xs font-bold text-sky-900">{stats.metraje_confirmado}</span>
                     </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                        <div className="flex items-center gap-2">
-                            <Package className="h-5 w-5 text-blue-600" />
-                            <p className="text-sm text-blue-800 font-medium">Pago en revisión</p>
-                        </div>
-                        <p className="text-2xl font-bold text-blue-700 mt-2">{stats.pendiente}</p>
+                    <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                        <span className="text-[10px] text-amber-800 leading-tight whitespace-nowrap">Pago en revisión</span>
+                        <span className="text-xs font-bold text-amber-900">{stats.pendiente}</span>
                     </div>
-                    <div className="bg-blue-100 border border-blue-300 rounded-xl p-4">
-                        <div className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-blue-700" />
-                            <p className="text-sm text-blue-900 font-medium">Pago confirmado</p>
-                        </div>
-                        <p className="text-2xl font-bold text-blue-800 mt-2">{stats.confirmado}</p>
+                    <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 rounded-md px-2 py-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                        <span className="text-[10px] text-emerald-800 leading-tight whitespace-nowrap">Pago confirmado</span>
+                        <span className="text-xs font-bold text-emerald-900">{stats.confirmado}</span>
                     </div>
-                    <div className="bg-yellow-100 border border-yellow-300 rounded-xl p-4">
-                        <div className="flex items-center gap-2">
-                            <Truck className="h-5 w-5 text-yellow-600" />
-                            <p className="text-sm text-yellow-800 font-medium">Pedido Enviado</p>
-                        </div>
-                        <p className="text-2xl font-bold text-yellow-700 mt-2">{stats.enviado}</p>
+                    <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-300 rounded-md px-2 py-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                        <span className="text-[10px] text-blue-800 leading-tight whitespace-nowrap">Pedido enviado</span>
+                        <span className="text-xs font-bold text-blue-900">{stats.enviado}</span>
                     </div>
-                    <div className="bg-green-100 border border-green-300 rounded-xl p-4">
-                        <div className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-700" />
-                            <p className="text-sm text-green-900 font-medium">Pedido completado</p>
-                        </div>
-                        <p className="text-2xl font-bold text-green-800 mt-2">{stats.completado}</p>
+                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-md px-2 py-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-slate-500 shrink-0" />
+                        <span className="text-[10px] text-slate-800 leading-tight whitespace-nowrap">Completado</span>
+                        <span className="text-xs font-bold text-slate-900">{stats.completado}</span>
                     </div>
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                        <div className="flex items-center gap-2">
-                            <XCircle className="h-5 w-5 text-red-600" />
-                            <p className="text-sm text-red-800 font-medium">Pedido rechazado</p>
-                        </div>
-                        <p className="text-2xl font-bold text-red-700 mt-2">{stats.rechazado}</p>
+                    <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-md px-2 py-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                        <span className="text-[10px] text-red-800 leading-tight whitespace-nowrap">Rechazado</span>
+                        <span className="text-xs font-bold text-red-900">{stats.rechazado}</span>
                     </div>
                 </div>
 

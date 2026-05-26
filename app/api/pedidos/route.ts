@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
         const session = await auth.api.getSession({ headers: headersList })
         const { searchParams } = new URL(request.url)
         const misPedidos = searchParams.get("mis") === "true"
+        const todas = searchParams.get("todas") === "true"
 
         if (!session?.user) {
             return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 })
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
         const userRole = (session.user as any)?.role || "cliente"
         let pedidos
 
-        if (userRole === "admin") {
+        if (userRole === "admin" || (userRole === "empleado" && todas)) {
             pedidos = await prisma.pedido.findMany({
                 include: {
                     user: { select: { id: true, name: true, email: true } },

@@ -806,7 +806,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                 {/* Empresa */}
                                 <div>
                                     <p className={labelBase}><Building2 className="h-3.5 w-3.5" /> Empresa</p>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
                                         {EMPRESAS.map(emp => (
                                             <button
                                                 key={emp}
@@ -816,13 +816,18 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                         setMetodoPago("YAPE");
                                                     }
                                                 }}
-                                                className={`px-3 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                                                className={`px-3 py-2 border-2 rounded-lg text-sm font-medium transition-all whitespace-normal ${
                                                     empresa === emp 
                                                         ? "bg-blue-600 border-blue-600 text-white shadow-sm" 
                                                         : "border-blue-300 text-slate-600 hover:border-blue-400 hover:bg-blue-50"
                                                 }`}
                                             >
-                                                {emp}
+                                                {emp.split(" ").map((w, wi) => (
+                                                    <span key={wi}>
+                                                        {wi > 0 && " "}
+                                                        {w.length > 9 ? <>{w.slice(0, 10)}<br />{w.slice(10)}</> : w}
+                                                    </span>
+                                                ))}
                                             </button>
                                         ))}
                                     </div>
@@ -836,7 +841,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             <button
                                                 key={mp}
                                                 onClick={() => setMetodoPago(mp)}
-                                                className={`px-3 py-1.5 border-2 rounded-lg text-sm font-medium transition-all ${
+                                                className={`px-3 py-1.5 border-2 rounded-lg text-sm font-medium transition-all break-words whitespace-normal ${
                                                     metodoPago === mp 
                                                         ? "bg-blue-600 border-blue-600 text-white shadow-sm" 
                                                         : "border-blue-300 text-slate-600 hover:border-blue-400 hover:bg-blue-50"
@@ -985,15 +990,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
 
                                 {/* Datos del cliente */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label className={labelBase}>Nombre / Razón Social</label>
-                                        <input
-                                            type="text"
-                                            value={cliente.nombre}
-                                            onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
-                                            className={inputStep1}
-                                        />
-                                    </div>
                                     <div className="flex gap-2">
                                         <div className="w-20 shrink-0">
                                             <label className={labelBase}>Tipo</label>
@@ -1043,6 +1039,15 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             </div>
                                         </div>
                                     </div>
+                                    <div>
+                                            <label className={labelBase}>Nombre / Razón Social</label>
+                                            <input
+                                                type="text"
+                                                value={cliente.nombre}
+                                                onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
+                                                className={inputStep1}
+                                            />
+                                        </div>
                                     <div>
                                         <label className={labelBase}>Dirección</label>
                                         <input
@@ -1354,8 +1359,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             <span className="text-slate-500">Subtotal</span>
                                             <span className="font-medium text-slate-900">S/ {calcularSubtotal().toFixed(2)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-slate-500">Costo envío</span>
+                                        <div className="flex justify-end text-sm items-center gap-2">
+                                            <span className="text-amber-500">COSTO DE ENVIO</span>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-xs text-slate-400">S/</span>
                                                 <input
@@ -1420,14 +1425,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                         </Button>
                         {step === 2 && (
                             <div className="flex items-center gap-2">
-                                <Button 
-                                    onClick={guardarBorrador} 
-                                    variant="outline" 
-                                    className={`items-center gap-1.5 text-sm h-9 ${borradorGuardado ? "text-green-600 border-green-200 bg-green-50" : "text-slate-600 border-slate-200 hover:bg-slate-50"}`}
-                                >
-                                    <Save className="h-4 w-4" />
-                                    <span className="hidden sm:inline">{borradorGuardado ? "Guardado" : "Guardar borrador"}</span>
-                                </Button>
                                 <Button 
                                     onClick={crearPedido} 
                                     disabled={loading || items.length === 0} 
@@ -1499,10 +1496,10 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                             <Button onClick={async () => { await guardarBorrador(); resetForm(); setShowConfirmClose(false); onClose() }} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm h-9">
                                 <Save className="h-4 w-4 mr-1" /> Guardar borrador y salir
                             </Button>
-                            <Button variant="outline" onClick={async () => { await limpiarBorrador(); setShowConfirmClose(false); onClose() }} className="w-full text-slate-600 border-slate-200 hover:bg-slate-50 text-sm h-9">
+                            <Button onClick={async () => { await limpiarBorrador(); setShowConfirmClose(false); onClose() }} className="w-full bg-amber-600 hover:bg-amber-700 text-white text-sm h-9">
                                 Salir sin guardar
                             </Button>
-                            <Button variant="outline" onClick={() => setShowConfirmClose(false)} className="w-full text-slate-600 border-slate-200 hover:bg-slate-50 text-sm h-9">
+                            <Button onClick={() => setShowConfirmClose(false)} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9">
                                 Continuar editando
                             </Button>
                         </div>
@@ -1524,7 +1521,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                            {editandoArticuloId && productoSeleccionado && (
+                            {productoSeleccionado && (
                                 <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
                                     <span className="inline-flex px-2 py-0.5 bg-slate-700 text-white rounded text-xs font-bold shrink-0">{productoSeleccionado.categoria}</span>
                                     <p className="font-bold text-slate-900 text-sm truncate">{productoSeleccionado.nombre}</p>
@@ -1679,11 +1676,18 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                     />
                                 </div>
                             </div>
-                            <div>
+                            <div className="grid grid-cols-2 gap-3">
                                 <label className={labelBase}>Precio Unitario</label>
                                 <input
                                     type="text"
                                     value={productoSeleccionado ? `S/ ${Number(productoSeleccionado.precio).toFixed(2)}` : "—"}
+                                    disabled
+                                    className="w-full px-3 py-2.5 border border-slate-100 rounded-lg text-sm text-slate-500 bg-slate-100/50"
+                                />
+                                <label className={labelBase}>SubTotal</label>
+                                <input
+                                    type="text"
+                                    value={productoSeleccionado && itemCantidad ? `S/ ${(Number(itemCantidad) * Number(productoSeleccionado.precio)).toFixed(2)}` : "—"}
                                     disabled
                                     className="w-full px-3 py-2.5 border border-slate-100 rounded-lg text-sm text-slate-500 bg-slate-100/50"
                                 />
@@ -1763,11 +1767,16 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                             </div>
 
                             {/* Montos divididos */}
-                            {tipoPago === "dividido" && (
+                            {(tipoPago === "completo" || tipoPago === "dividido") && (
                                 <div>
-                                    <p className="text-sm font-medium text-slate-700 mb-2">Montos</p>
+                                    <p className="text-sm font-medium text-slate-700 mb-2">
+                                        {tipoPago === "completo" ? "Detalle del pago" : "Montos"}
+                                    </p>
                                     <div className="space-y-2">
-                                        {detallesPago.map((det, idx) => (
+                                        {(tipoPago === "completo"
+                                            ? [{ monto: calcularTotal().toFixed(2), empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
+                                            : detallesPago
+                                        ).map((det, idx) => (
                                             <div key={idx} className="flex items-center gap-2">
                                                 <span className="text-sm font-medium text-slate-500">S/</span>
                                                 <input
@@ -1775,18 +1784,29 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                     inputMode="decimal"
                                                     value={det.monto}
                                                     onChange={(e) => {
-                                                        const val = e.target.value
-                                                        if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
-                                                            const nuevo = [...detallesPago]
-                                                            nuevo[idx] = { ...nuevo[idx], monto: val }
-                                                            setDetallesPago(nuevo)
+                                                        if (tipoPago === "dividido") {
+                                                            const val = e.target.value
+                                                            if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                                                                const nuevo = [...detallesPago]
+                                                                nuevo[idx] = { ...nuevo[idx], monto: val }
+                                                                setDetallesPago(nuevo)
+                                                            }
                                                         }
                                                     }}
+                                                    readOnly={tipoPago === "completo"}
                                                     placeholder="0.00"
-                                                    className="w-24 px-3 py-2 border-2 border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white"
+                                                    className={`w-24 px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white ${tipoPago === "completo" ? "border-emerald-300 bg-emerald-50" : "border-slate-200"}`}
                                                 />
                                                 <button
-                                                    onClick={() => { setDetalleEditandoIdx(idx); setShowDetallePagoModal(true) }}
+                                                    onClick={() => {
+                                                        if (tipoPago === "completo") {
+                                                            setDetalleEditandoIdx(0);
+                                                            setShowDetallePagoModal(true)
+                                                        } else {
+                                                            setDetalleEditandoIdx(idx);
+                                                            setShowDetallePagoModal(true)
+                                                        }
+                                                    }}
                                                     className={`px-2 py-1.5 text-xs border-2 font-bold rounded-lg transition-all uppercase ${
                                                         det.empresa || det.metodoPago
                                                             ? "bg-emerald-600 border-emerald-600 text-white"
@@ -1795,26 +1815,30 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                 >
                                                     {det.empresa ? `${det.empresa} / ${det.metodoPago}` : det.metodoPago || "Seleccionar Detalle"}
                                                 </button>
-                                                <button
-                                                    onClick={() => {
-                                                        if (detallesPago.length > 2) {
-                                                            setDetallesPago(detallesPago.filter((_, i) => i !== idx))
-                                                        }
-                                                    }}
-                                                    disabled={detallesPago.length <= 2}
-                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                                >
-                                                    <X className="h-4 w-4 text-red-900" />
-                                                </button>
+                                                {tipoPago === "dividido" && (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (detallesPago.length > 2) {
+                                                                setDetallesPago(detallesPago.filter((_, i) => i !== idx))
+                                                            }
+                                                        }}
+                                                        disabled={detallesPago.length <= 2}
+                                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    >
+                                                        <X className="h-4 w-4 text-red-900" />
+                                                    </button>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
-                                    <button
-                                        onClick={() => setDetallesPago([...detallesPago, { monto: "", empresa: "", metodoPago: "" }])}
-                                        className="mt-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
-                                    >
-                                        + Agregar
-                                    </button>
+                                    {tipoPago === "dividido" && (
+                                        <button
+                                            onClick={() => setDetallesPago([...detallesPago, { monto: "", empresa: "", metodoPago: "" }])}
+                                            className="mt-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                                        >
+                                            + Agregar
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
@@ -1860,7 +1884,18 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                     if (!tipoPago) return
                                     if (tipoPago === "completo") {
                                         const total = calcularTotal().toFixed(2)
-                                        setObservaciones(prev => (prev ? prev + "\n" : "") + `PAGO: Completo - S/ ${total}`)
+                                        const det = detallesPago[0]
+                                        let texto = `PAGO: Completo - S/ ${total}`
+                                        if (det?.empresa) {
+                                            if (det.empresa === "YAPE CARLOS" || det.empresa === "YAPE ANGEL") {
+                                                texto += ` (${det.empresa})`
+                                            } else {
+                                                texto += ` (${det.empresa} / ${det.metodoPago})`
+                                            }
+                                        } else if (det?.metodoPago === "EFECTIVO") {
+                                            texto += ` (EFECTIVO)`
+                                        }
+                                        setObservaciones(prev => (prev ? prev + "\n" : "") + texto)
                                         setToastMessage({ show: true, message: "Pago registrado en Observaciones", type: "success" })
                                     } else {
                                         const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
@@ -1893,7 +1928,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                     setTipoPago("")
                                     setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }])
                                 }}
-                                disabled={!tipoPago || (tipoPago === "dividido" && !detallesPago.every(d => {
+                                disabled={!tipoPago || (tipoPago !== "completo" && tipoPago !== "dividido") || (tipoPago === "completo" && !detallesPago[0]?.metodoPago) || (tipoPago === "dividido" && !detallesPago.every(d => {
                                     if (!d.monto) return false
                                     if (d.metodoPago === "EFECTIVO") return true
                                     return d.empresa && d.metodoPago

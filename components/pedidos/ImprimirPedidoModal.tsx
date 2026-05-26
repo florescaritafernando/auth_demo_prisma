@@ -59,6 +59,18 @@ interface Props {
     onClose: () => void
 }
 
+const extraerTotalPagado = (notas: string | null): number => {
+    if (!notas) return 0
+    let totalPagado = 0
+    for (const linea of notas.split("\n")) {
+        const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
+        if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
+        const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
+        if (mDividido) totalPagado += Number(mDividido[1])
+    }
+    return totalPagado
+}
+
 export function ImprimirPedidoModal({ pedido, onClose }: Props) {
     const [formato, setFormato] = useState<"ticket" | "a4">("ticket")
 
@@ -300,6 +312,17 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                             <span>TOTAL:</span>
                             <span>S/ ${pedido.total.toFixed(2)}</span>
                         </div>
+                        ${(() => {
+                            const pagado = extraerTotalPagado(pedido.notas)
+                            const falta = Number(pedido.total) - pagado
+                            if (falta > 0.01) {
+                                return `<div class="total-row" style="border-top:1px dashed #c00;color:#c00;font-weight:bold;padding-top:4px;margin-top:4px">
+                                    <span>FALTA PAGAR:</span>
+                                    <span>S/ ${falta.toFixed(2)}</span>
+                                </div>`
+                            }
+                            return ""
+                        })()}
                     </div>
                     
                     ${pedido.notas ? `
@@ -456,6 +479,17 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     <span>TOTAL A PAGAR:</span>
                     <span>S/ ${pedido.total.toFixed(2)}</span>
                 </div>
+                ${(() => {
+                    const pagado = extraerTotalPagado(pedido.notas)
+                    const falta = Number(pedido.total) - pagado
+                    if (falta > 0.01) {
+                        return `<div class="totales-row" style="color:#c00;font-weight:bold;border-top:1px dashed #c00;padding-top:8px;margin-top:4px;font-size:16px">
+                            <span>FALTA PAGAR:</span>
+                            <span>S/ ${falta.toFixed(2)}</span>
+                        </div>`
+                    }
+                    return ""
+                })()}
             </div>
             
             ${pedido.notas ? `

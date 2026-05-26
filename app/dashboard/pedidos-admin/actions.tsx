@@ -85,6 +85,21 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const EMPRESAS = ["FLORES CARITAS", "TEXTILES MANCHESTER", "MANCHESTERTEX", "TEXTILES MEGO", "YAPE CARLOS", "YAPE ANGEL"]
     const METODOS_PAGO = ["TRASNFERENCIA", "DEPOSITO", "EFECTIVO", "YAPE","PLIN", "BBVA"]
 
+    const extraerTotalPagado = (notas: string | null): number => {
+        if (!notas) return 0
+        let totalPagado = 0
+        for (const linea of notas.split("\n")) {
+            const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
+            if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
+            const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
+            if (mDividido) totalPagado += Number(mDividido[1])
+        }
+        return totalPagado
+    }
+
+    const totalPagado = extraerTotalPagado((pedido as any).notas)
+    const faltaPagar = Math.max(0, Number(pedido.total) - totalPagado)
+
     const estaAsignado = pedido.delegados?.some(d => d.userId === userId)
     const puedeEditar = role === "admin" || (role === "empleado" && estaAsignado && pedido.estado !== "metraje_confirmado")
 
@@ -380,12 +395,12 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
 
     return (
         <div className="space-y-4">
-            {pedido.estado !== "confirmado" && pedido.estado !== "pedido_enviado" && pedido.estado !== "completado" && (
+            {faltaPagar > 0.01 && (
                 <Button
                     onClick={() => setShowPagoPedidoModal(true)}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-10"
                 >
-                    <DollarSign className="h-4 w-4 mr-2" /> Pagar Pedido
+                    <DollarSign className="h-4 w-4 mr-2" /> Pagar Pedido (S/ {faltaPagar.toFixed(2)})
                 </Button>
             )}
 
@@ -747,7 +762,11 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">Pagar el pedido: Nro Orden Pedido: {pedido.numeroOrden}</h3>
-                                <p className="text-sm text-slate-500 mt-0.5">Total a pagar: <span className="font-bold text-slate-900">S/ {Number(pedido.total).toFixed(2)}</span></p>
+                                <p className="text-sm text-slate-500 mt-0.5">
+                                    Total: <span className="font-bold text-slate-900">S/ {Number(pedido.total).toFixed(2)}</span>
+                                    {totalPagado > 0 && <>, Pagado: <span className="font-bold text-green-700">S/ {totalPagado.toFixed(2)}</span></>}
+                                    {" | "}<span className="text-red-600 font-bold">Falta: S/ {faltaPagar.toFixed(2)}</span>
+                                </p>
                             </div>
                             <button onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                                 <X className="h-5 w-5" />
@@ -770,66 +789,77 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                     </button>
                                 </div>
                             </div>
-                            {tipoPago === "dividido" && (
+                            {(tipoPago === "completo" || tipoPago === "dividido") && (
                                 <div>
-                                    <p className="text-sm font-medium text-slate-700 mb-2">Montos</p>
+                                    <p className="text-sm font-medium text-slate-700 mb-2">
+                                        {tipoPago === "completo" ? "Detalle del pago" : "Montos"}
+                                    </p>
                                     <div className="space-y-2">
-                                        {detallesPago.map((det, idx) => (
+                                        {(tipoPago === "completo"
+                                            ? [{ monto: faltaPagar.toFixed(2), empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
+                                            : detallesPago
+                                        ).map((det, idx) => (
                                             <div key={idx} className="flex items-center gap-2">
                                                 <span className="text-sm font-medium text-slate-500">S/</span>
                                                 <input
                                                     type="text" inputMode="decimal"
                                                     value={det.monto}
                                                     onChange={(e) => {
-                                                        const val = e.target.value
-                                                        if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
-                                                            const nuevo = [...detallesPago]
-                                                            nuevo[idx] = { ...nuevo[idx], monto: val }
-                                                            setDetallesPago(nuevo)
+                                                        if (tipoPago === "dividido") {
+                                                            const val = e.target.value
+                                                            if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                                                                const nuevo = [...detallesPago]
+                                                                nuevo[idx] = { ...nuevo[idx], monto: val }
+                                                                setDetallesPago(nuevo)
+                                                            }
                                                         }
                                                     }}
+                                                    readOnly={tipoPago === "completo"}
                                                     placeholder="0.00"
-                                                    className="w-24 px-3 py-2 border-2 border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white"
+                                                    className={`w-24 px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white ${tipoPago === "completo" ? "border-emerald-300 bg-emerald-50" : "border-slate-200"}`}
                                                 />
                                                 <button
-                                                    onClick={() => { setDetalleEditandoIdx(idx); setShowDetallePagoModal(true) }}
+                                                    onClick={() => { setDetalleEditandoIdx(tipoPago === "completo" ? 0 : idx); setShowDetallePagoModal(true) }}
                                                     className={`px-2 py-1.5 text-xs font-bold border-2 rounded-lg transition-all uppercase ${det.empresa || det.metodoPago ? 
                                                         "bg-emerald-600 border-emerald-600 text-white" : "bg-red-600 border-red-600 text-white"}`}
                                                 >
                                                     {det.empresa ? `${det.empresa} / ${det.metodoPago}` : det.metodoPago || "Seleccionar Detalle"}
                                                 </button>
-                                                <button
-                                                    onClick={() => { if (detallesPago.length > 2) setDetallesPago(detallesPago.filter((_, i) => i !== idx)) }}
-                                                    disabled={detallesPago.length <= 2}
-                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                                >
-                                                    <X className="h-4 w-4 text-red-900" />
-                                                </button>
+                                                {tipoPago === "dividido" && (
+                                                    <button
+                                                        onClick={() => { if (detallesPago.length > 2) setDetallesPago(detallesPago.filter((_, i) => i !== idx)) }}
+                                                        disabled={detallesPago.length <= 2}
+                                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    >
+                                                        <X className="h-4 w-4 text-red-900" />
+                                                    </button>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
-                                    <button
-                                        onClick={() => setDetallesPago([...detallesPago, { monto: "", empresa: "", metodoPago: "" }])}
-                                        className="mt-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
-                                    >
-                                        + Agregar
-                                    </button>
+                                    {tipoPago === "dividido" && (
+                                        <button
+                                            onClick={() => setDetallesPago([...detallesPago, { monto: "", empresa: "", metodoPago: "" }])}
+                                            className="mt-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                                        >
+                                            + Agregar
+                                        </button>
+                                    )}
                                 </div>
                             )}
                             {tipoPago === "dividido" && (
                                 (() => {
                                     const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
-                                    const total = Number(pedido.total)
-                                    const coincide = Math.abs(suma - total) < 0.01
+                                    const coincide = Math.abs(suma - faltaPagar) < 0.01
                                     return (
                                         <div className={`p-3 rounded-lg border text-sm font-medium ${coincide ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"}`}>
                                             <p>
-                                                Total ingresado: <span className="font-bold">S/ {suma.toFixed(2)}</span>
+                                                Total ingresado: <span className="font-bold">S/ {suma.toFixed(2)}</span> / <span className="font-bold">Falta: S/ {faltaPagar.toFixed(2)}</span>
                                                 {coincide ? (
-                                                    <span className="ml-2 inline-flex items-center gap-1"><CheckCircle className="h-4 w-4" /> Coincide con el total</span>
+                                                    <span className="ml-2 inline-flex items-center gap-1"><CheckCircle className="h-4 w-4" /> Coincide con la deuda</span>
                                                 ) : (
                                                     detallesPago.some(d => d.monto !== "") && (
-                                                        <span className="ml-2">(Diferencia: S/ {Math.abs(total - suma).toFixed(2)})</span>
+                                                        <span className="ml-2">(Diferencia: S/ {Math.abs(faltaPagar - suma).toFixed(2)})</span>
                                                     )
                                                 )}
                                             </p>
@@ -851,11 +881,20 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                     if (!tipoPago) return
                                     let textoPago = ""
                                     if (tipoPago === "completo") {
-                                        textoPago = `PAGO: Completo - S/ ${Number(pedido.total).toFixed(2)}`
+                                        textoPago = `PAGO: Completo - S/ ${faltaPagar.toFixed(2)}`
+                                        const det = detallesPago[0]
+                                        if (det?.empresa) {
+                                            if (det.empresa === "YAPE CARLOS" || det.empresa === "YAPE ANGEL") {
+                                                textoPago += ` (${det.empresa})`
+                                            } else {
+                                                textoPago += ` (${det.empresa} / ${det.metodoPago})`
+                                            }
+                                        } else if (det?.metodoPago === "EFECTIVO") {
+                                            textoPago += ` (EFECTIVO)`
+                                        }
                                     } else {
                                         const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
-                                        const total = Number(pedido.total)
-                                        if (Math.abs(suma - total) >= 0.01) {
+                                        if (Math.abs(suma - faltaPagar) >= 0.01) {
                                             return
                                         }
                                         const detallesStr = detallesPago
@@ -892,7 +931,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                     setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }])
                                     window.location.reload()
                                 }}
-                                disabled={!tipoPago || (tipoPago === "dividido" && !detallesPago.every(d => {
+                                disabled={!tipoPago || (tipoPago !== "completo" && tipoPago !== "dividido") || (tipoPago === "completo" && !detallesPago[0]?.metodoPago) || (tipoPago === "dividido" && !detallesPago.every(d => {
                                     if (!d.monto) return false
                                     if (d.metodoPago === "EFECTIVO") return true
                                     return d.empresa && d.metodoPago

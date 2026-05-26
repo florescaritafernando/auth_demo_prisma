@@ -200,6 +200,18 @@ interface PedidoData {
     }[]
 }
 
+const extraerTotalPagado = (notas: string | null): number => {
+    if (!notas) return 0
+    let totalPagado = 0
+    for (const linea of notas.split("\n")) {
+        const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
+        if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
+        const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
+        if (mDividido) totalPagado += Number(mDividido[1])
+    }
+    return totalPagado
+}
+
 export function PedidoPDF({ pedido }: { pedido: PedidoData }) {
     const fecha = new Date(pedido.createdAt).toLocaleDateString("es-PE", {
         day: "numeric",
@@ -356,6 +368,19 @@ export function PedidoPDF({ pedido }: { pedido: PedidoData }) {
                         <Text>TOTAL A PAGAR:</Text>
                         <Text>S/ {pedido.total.toFixed(2)}</Text>
                     </View>
+                    {(() => {
+                        const pagado = extraerTotalPagado(pedido.notas)
+                        const falta = Number(pedido.total) - pagado
+                        if (falta > 0.01) {
+                            return (
+                                <View style={{ ...styles.totalRow, borderTop: "1 dashed #cc0000", marginTop: 4, paddingTop: 4 }}>
+                                    <Text style={{ color: "#cc0000", fontWeight: "bold", fontSize: 13 }}>FALTA PAGAR:</Text>
+                                    <Text style={{ color: "#cc0000", fontWeight: "bold", fontSize: 13 }}>S/ {falta.toFixed(2)}</Text>
+                                </View>
+                            )
+                        }
+                        return null
+                    })()}
                 </View>
 
                 {pedido.notas && (

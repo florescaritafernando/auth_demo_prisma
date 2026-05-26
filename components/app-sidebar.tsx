@@ -30,7 +30,7 @@ const clienteItems = [
 ]
 
 const adminItems = [
-    { title: "Dashboard", url: "/dashboard", icon: Home },
+    { title: "Inicio", url: "/dashboard", icon: Home },
     { title: "Gestion Articulos", url: "/dashboard/articulos", icon: Tag },
     { title: "Gestion Tiendas", url: "/dashboard/tiendas", icon: Warehouse },
     { title: "Gestion Almacenes", url: "/dashboard/almacenes", icon: Warehouse },
@@ -42,8 +42,7 @@ const adminItems = [
 ]
 
 const empleadoItems = [
-    { title: "Dashboard", url: "/dashboard", icon: Home },
-    { title: "Gestion Articulos", url: "/dashboard/articulos", icon: Tag },
+    { title: "Inicio", url: "/dashboard", icon: Home },
     { title: "Ver Tiendas", url: "/dashboard/tiendas", icon: Warehouse },
     { title: "Ver Almacenes", url: "/dashboard/almacenes", icon: Warehouse },
     { title: "Atender Pedidos", url: "/dashboard/pedidos-admin", icon: ShoppingBag },
@@ -338,7 +337,7 @@ export function AppSidebar({ role = "cliente", userName = "Usuario", userImage =
                             </p>
                         </div>
                         <div className="px-4 py-3 bg-slate-50 flex justify-between items-center">
-                            <a href="/dashboard/notificaciones" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                            <a href={notificacionActual.pedidoId ? "/dashboard/nota-pedido" : "/dashboard/notificaciones"} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
                                 Ver detalle →
                             </a>
                             <span className="text-xs text-amber-600 font-medium">Cerrando en 10s...</span>

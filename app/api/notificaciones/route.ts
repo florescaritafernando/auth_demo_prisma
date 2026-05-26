@@ -22,14 +22,7 @@ export async function GET(request: NextRequest) {
         }
 
         const notificaciones = await prisma.notificacion.findMany({
-            where: {
-                ...whereClause,
-                NOT: {
-                    pedido: {
-                        pedidoEmpleadoInfo: { isNot: null }
-                    }
-                }
-            },
+            where: whereClause,
             include: {
                 pedido: { select: { numeroOrden: true, estado: true, total: true } }
             },
@@ -40,12 +33,7 @@ export async function GET(request: NextRequest) {
         const sinLeer = await prisma.notificacion.count({
             where: {
                 userId: session.user.id,
-                leida: false,
-                NOT: {
-                    pedido: {
-                        pedidoEmpleadoInfo: { isNot: null }
-                    }
-                }
+                leida: false
             }
         })
 
