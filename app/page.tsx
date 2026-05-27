@@ -265,7 +265,7 @@ export default function Home() {
 
               {/* Barra de busqueda + Filtro por diseño (Desktop) */}
               <div className="flex w-full lg:w-[450px] xl:w-[520px] items-center mt-4 lg:mt-0 gap-2">
-                <div className="relative flex-1">
+                <form onSubmit={(e) => e.preventDefault()} className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
                     type="text"
@@ -274,7 +274,7 @@ export default function Home() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-9 pr-3 py-3 lg:py-2.5 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm placeholder:text-slate-400 shadow-sm"
                   />
-                </div>
+                </form>
                 <div className="relative flex-1">
                   <select
                     value={tipoDisenoSeleccionado}
@@ -324,7 +324,7 @@ export default function Home() {
         {/* Barra de búsqueda móvil + filtro diseño - 50/50 */}
         <div className="mb-4 px-2 md:hidden">
           <div className="grid grid-cols-2 gap-2">
-            <div className="relative">
+            <form onSubmit={(e) => e.preventDefault()} className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
               <input
                 type="text"
@@ -333,7 +333,7 @@ export default function Home() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm"
               />
-            </div>
+            </form>
             <div className="relative">
               <select
                 value={tipoDisenoSeleccionado}
