@@ -71,6 +71,15 @@ const SOCIOS_CLAVES = [
   },
 ];
 
+function getImageSrc(url: string | null): string {
+  if (!url) return ''
+  const parts = url.split('/upload/')
+  if (parts.length === 2) {
+    return `${parts[0]}/upload/w_900,h_700,c_fit/${parts[1]}`
+  }
+  return url
+}
+
 function ProductCard({ prod, onClick, priority }: { prod: any, onClick?: () => void, priority?: boolean }) {
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -79,14 +88,14 @@ function ProductCard({ prod, onClick, priority }: { prod: any, onClick?: () => v
       className="group relative bg-white border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col rounded-lg overflow-hidden"
       onClick={onClick}
     >
-      <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
+      <div className="relative w-full aspect-[6/6] bg-slate-100 flex items-center justify-center overflow-hidden">
         {prod.imagen ? (
           <>
             {!imageLoaded && (
               <div className="absolute inset-0 bg-slate-200 animate-pulse z-10" />
             )}
             <Image
-              src={prod.imagen}
+              src={getImageSrc(prod.imagen)}
               alt={prod.nombre}
               fill
               priority={priority}
@@ -195,13 +204,7 @@ export default function Home() {
       p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (p.categoria && p.categoria.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (p.descripcion && p.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-    .sort((a, b) => {
-      const ordenA = getOrdenCategoria(a.categoria || "");
-      const ordenB = getOrdenCategoria(b.categoria || "");
-      if (ordenA !== ordenB) return ordenA - ordenB;
-      return (a.nombre || "").localeCompare(b.nombre || "");
-    });
+    );
 
   const productosCarrusel = categoriaSeleccionada === "todas" && searchTerm === "" && !colorSeleccionado && tipoDisenoSeleccionado === "todos"
     ? productosRandom
@@ -444,38 +447,31 @@ export default function Home() {
               </Button>
             </div>
           </div>
-        ) : searchTerm.trim() === "" && !colorSeleccionado && tipoDisenoSeleccionado === "todos" ? (
-          <>
-            {/* Grid para móvil - 2x2 pero mostrando todos los productos del carrusel (20 max) */}
-            <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
-              {productosCarrusel.slice(0, 16).map((prod, idx) => (
-                <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
-              ))}
-            </div>
-            {/* Carrusel para desktop */}
-            <Carousel
-              className="w-full max-w-[90rem] mx-auto p-4 md:py-10 hidden md:block h-[calc(100vh-200px)]"
-              opts={{
-                loop: true,
-                duration: 60,
-              }}
-              setApi={setCarouselApi}
-              onMouseEnter={() => { }}
-              onMouseLeave={() => { }}
-            >
-              <CarouselContent className="-ml-6 items-stretch [transition-timing-function:cubic-bezier(0.25,0.1,0.25,1)]">
-                {productosCarrusel.map((prod, idx) => (
-                  <CarouselItem key={prod.id || prod.nombre} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
-                    <ProductCard prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="hidden md:flex -left-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
-              <CarouselNext className="hidden md:flex -right-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
-            </Carousel>
-          </>
         ) : (
           <>
+            {/* Carrusel para desktop - solo cuando no hay filtros activos */}
+            {searchTerm.trim() === "" && !colorSeleccionado && tipoDisenoSeleccionado === "todos" && categoriaSeleccionada === "todas" && (
+              <Carousel
+                className="w-full max-w-[90rem] mx-auto p-4 md:py-10 hidden md:block h-[calc(100vh-200px)]"
+                opts={{
+                  loop: true,
+                  duration: 120,
+                }}
+                setApi={setCarouselApi}
+                onMouseEnter={() => { }}
+                onMouseLeave={() => { }}
+              >
+                <CarouselContent className="-ml-6 items-stretch [transition-timing-function:cubic-bezier(0.25,0.1,0.25,1)]">
+                  {productosCarrusel.map((prod, idx) => (
+                    <CarouselItem key={prod.id || prod.nombre} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
+                      <ProductCard prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="hidden md:flex -left-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
+                <CarouselNext className="hidden md:flex -right-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
+              </Carousel>
+            )}
             {/* Grid para móvil - resultados paginados */}
             <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
               {productosOrdenados.slice(0, visibleCount).map((prod, idx) => (
@@ -483,7 +479,7 @@ export default function Home() {
               ))}
             </div>
             {/* Grid para desktop */}
-            <div className="hidden md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-10 h-full">
+            <div className="hidden md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-10">
               {productosOrdenados.slice(0, visibleCount).map((prod, idx) => (
                 <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
               ))}
@@ -494,9 +490,8 @@ export default function Home() {
                   Mostrando {Math.min(visibleCount, productosOrdenados.length)} de {productosOrdenados.length} resultados
                 </p>
                 <Button
-                  variant="outline"
                   onClick={() => setVisibleCount(prev => prev + LOAD_MORE)}
-                  className="border-slate-300 text-slate-700"
+                  className="border-slate-300 border-2 text-slate-700 bg-slate-100 hover:bg-slate-200"
                 >
                   Ver más ({productosOrdenados.length - visibleCount} restantes)
                 </Button>
