@@ -77,7 +77,7 @@ export async function PUT(
         const { id } = await params
         const body = await request.json()
 
-        const { empresa, metodoPago, cliente, agencia, guiaRemision, envioComprobante, costoEnvio, observaciones, items } = body
+        const { empresa, metodoPago, cliente, agencia, guiaRemision, nombreRecibe, dniRecibe, celularRecibe, envioComprobante, costoEnvio, observaciones, items } = body
 
         if (!items || items.length === 0) {
             return NextResponse.json({ success: false, error: "Sin artículos" }, { status: 400 })
@@ -175,6 +175,9 @@ export async function PUT(
                 departamento: cliente?.departamento || null,
                 provincia: cliente?.provincia || null,
                 distrito: cliente?.distrito || null,
+                nombreRecibe: nombreRecibe || null,
+                dniRecibe: dniRecibe || null,
+                celularRecibe: celularRecibe || null,
                 metodoEnvio: agencia ? "agencia" : pedido.metodoEnvio,
                 agencia: agencia || null,
                 agenciaOtro: agencia === "otros" ? cliente?.agenciaOtro : null,

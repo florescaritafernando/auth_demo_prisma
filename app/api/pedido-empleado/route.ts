@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
             cliente,
             agencia,
             guiaRemision,
+            nombreRecibe,
+            dniRecibe,
+            celularRecibe,
             envioComprobante,
             costoEnvio,
             observaciones,
@@ -120,6 +123,12 @@ export async function POST(request: NextRequest) {
                 costoEnvio: Number(costoEnvio) || 0,
                 notas: observaciones || null,
                 clientePedidoId: clientePedido.id,
+                departamento: cliente.departamento || null,
+                provincia: cliente.provincia || null,
+                distrito: cliente.distrito || null,
+                nombreRecibe: nombreRecibe || null,
+                dniRecibe: dniRecibe || null,
+                celularRecibe: celularRecibe || null,
                 pedidoDetalle: {
                     create: items.map((item: any) => ({
                         productoId: item.productoId,

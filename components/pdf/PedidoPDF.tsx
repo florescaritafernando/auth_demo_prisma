@@ -306,7 +306,7 @@ export function PedidoPDF({ pedido }: { pedido: PedidoData }) {
                         {pedido.direccion && <Text style={styles.infoValue}>DIR: {pedido.direccion.toUpperCase()}</Text>}
                         {(pedido.departamento || pedido.provincia || pedido.distrito) && (
                             <Text style={styles.infoValue}>
-                                UBI: {[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(", ").toUpperCase()}
+                                UBI: {[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(" - ").toUpperCase()}
                             </Text>
                         )}
                         {pedido.nombreRecibe && (

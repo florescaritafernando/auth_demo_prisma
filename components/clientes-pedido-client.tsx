@@ -157,7 +157,7 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                                             <td className="px-3 py-3 text-sm text-slate-600">{cli.telefono || "-"}</td>
                                             <td className="px-3 py-3 text-sm text-slate-600">{getAgenciaLabel(cli.agencia, cli.agenciaOtro)}</td>
                                             <td className="px-3 py-3 text-sm text-slate-600">
-                                                {[cli.departamento, cli.provincia, cli.distrito].filter(Boolean).join(", ") || "-"}
+                                                {[cli.departamento, cli.provincia, cli.distrito].filter(Boolean).join(" - ") || "-"}
                                             </td>
                                             <td className="px-3 py-3 text-center">
                                                 <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">

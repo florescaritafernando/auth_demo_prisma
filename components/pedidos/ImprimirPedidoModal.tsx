@@ -271,7 +271,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                             <div class="value">DIR: ${pedido.tienda.direccion?.toUpperCase() || ""}</div>
                         ` : ""}
                         ${pedido.direccion ? `<div class="value">DIR: ${pedido.direccion.toUpperCase()}</div>` : ""}
-                        ${(pedido.departamento || pedido.provincia || pedido.distrito) ? `<div class="value">UBI: ${[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(", ").toUpperCase()}</div>` : ""}
+                        ${(pedido.departamento || pedido.provincia || pedido.distrito) ? `<div class="value">UBI: ${[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(" - ").toUpperCase()}</div>` : ""}
                         ${pedido.nombreRecibe ? `<div class="value">RECIBE: ${pedido.nombreRecibe.toUpperCase()} ${pedido.dniRecibe ? `(DNI: ${pedido.dniRecibe})` : ""}</div>` : ""}
                     </div>
                     ` : ""}
@@ -316,7 +316,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                             const pagado = extraerTotalPagado(pedido.notas)
                             const falta = Number(pedido.total) - pagado
                             if (falta > 0.01) {
-                                return `<div class="total-row" style="border-top:1px dashed #c00;color:#c00;font-weight:bold;padding-top:4px;margin-top:4px">
+                                return `<div class="total-row" style="border-top:1px dashed #000;color:#000;font-weight:bold;padding-top:4px;margin-top:4px">
                                     <span>FALTA PAGAR:</span>
                                     <span>S/ ${falta.toFixed(2)}</span>
                                 </div>`
@@ -422,10 +422,10 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     <div class="info-value">${metodoEnvioLabel}</div>
                     ${pedido.metodoEnvio === "tienda" && pedido.tienda ? `
                         <div class="info-value">TIENDA: ${pedido.tienda.nombre?.toUpperCase() || ""}</div>
-                        <div class="info-value">DIR: ${pedido.tienda.direccion?.toUpperCase() || ""}</div>
+                        <div class="info-value">DIRECCIÓN: ${pedido.tienda.direccion?.toUpperCase() || ""}</div>
                     ` : ""}
-                    ${pedido.direccion ? `<div class="info-value">DIR: ${pedido.direccion.toUpperCase()}</div>` : ""}
-                    ${pedido.departamento || pedido.provincia || pedido.distrito ? `<div class="info-value">UBI: ${[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(", ").toUpperCase()}</div>` : ""}
+                    ${pedido.direccion ? `<div class="info-value">DIRECCIÓN: ${pedido.direccion.toUpperCase()}</div>` : ""}
+                    ${pedido.departamento || pedido.provincia || pedido.distrito ? `<div class="info-value">UBICACIÓN: ${[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(" - ").toUpperCase()}</div>` : ""}
                     ${pedido.nombreRecibe ? `<div class="info-value">RECIBE: ${pedido.nombreRecibe.toUpperCase()} ${pedido.dniRecibe ? `(DNI: ${pedido.dniRecibe})` : ""}</div>` : ""}
                     ${pedido.celularRecibe ? `<div class="info-value">CELULAR: ${pedido.celularRecibe}</div>` : ""}
                 </div>
@@ -483,7 +483,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     const pagado = extraerTotalPagado(pedido.notas)
                     const falta = Number(pedido.total) - pagado
                     if (falta > 0.01) {
-                        return `<div class="totales-row" style="color:#c00;font-weight:bold;border-top:1px dashed #c00;padding-top:8px;margin-top:4px;font-size:16px">
+                        return `<div class="totales-row" style="color:#c00;font-weight:bold;border-top:1px dashed rgb(99, 5, 5);padding-top:8px;margin-top:4px;font-size:16px">
                             <span>FALTA PAGAR:</span>
                             <span>S/ ${falta.toFixed(2)}</span>
                         </div>`

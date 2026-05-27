@@ -43,6 +43,12 @@ interface PedidoItem {
     numeroDoc: string
     nombreFactura: string
     direccion: string
+    departamento: string | null
+    provincia: string | null
+    distrito: string | null
+    nombreRecibe: string | null
+    dniRecibe: string | null
+    celularRecibe: string | null
     agencia: string
     agenciaOtro: string
     notas: string | null
@@ -439,18 +445,18 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         </button>
                                                     </div>
                                                 )}
-                                                {c.direccion && (
+                                                {(c.direccion || pedido.direccion) && (
                                                     <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
                                                         <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                                                         <span className="text-slate-500 text-xs w-16 shrink-0">Dirección:</span>
                                                         <span className="font-medium text-slate-800 flex-1">
-                                                            {c.direccion?.toUpperCase()}
-                                                            {c.departamento && (
-                                                                <span className="text-xs text-slate-400 ml-1">({c.departamento} / {c.provincia} / {c.distrito})</span>
+                                                            {(c.direccion || pedido.direccion)?.toUpperCase()}
+                                                            {(c.departamento || pedido.departamento) && (
+                                                                <span className="text-xs text-slate-400 ml-1">({(c.departamento || pedido.departamento)?.toUpperCase()} / {(c.provincia || pedido.provincia)?.toUpperCase()} / {(c.distrito || pedido.distrito)?.toUpperCase()})</span>
                                                             )}
                                                         </span>
                                                         <button
-                                                            onClick={() => copiarAlPortapapeles(c.direccion || "", "direccion")}
+                                                            onClick={() => copiarAlPortapapeles(c.direccion || pedido.direccion || "", "direccion")}
                                                             className="p-1.5 rounded hover:bg-slate-200 transition-colors"
                                                             title="Copiar dirección"
                                                         >
@@ -505,6 +511,72 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                         </div>
                                         )
                                     })()}
+
+                                    {/* Datos de Envío / Recepción */}
+                                    {(pedido.nombreRecibe || pedido.dniRecibe || pedido.celularRecibe) && (
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                                                <Truck className="h-4 w-4 text-amber-500" />
+                                                <p className="font-semibold text-slate-700 text-sm">Datos de Envío - Recibe otra persona</p>
+                                            </div>
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+                                                {pedido.nombreRecibe && (
+                                                    <div className="flex items-center gap-2 bg-white rounded-lg p-2.5">
+                                                        <User className="h-4 w-4 text-amber-600 shrink-0" />
+                                                        <span className="text-slate-500 text-xs w-16 shrink-0">Recibe:</span>
+                                                        <span className="text-slate-900 uppercase flex-1">{pedido.nombreRecibe}</span>
+                                                        <button
+                                                            onClick={() => copiarAlPortapapeles(pedido.nombreRecibe || "", "nombreRecibe")}
+                                                            className="p-1.5 rounded hover:bg-slate-200 transition-colors"
+                                                            title="Copiar nombre"
+                                                        >
+                                                            {copiedField === "nombreRecibe" ? (
+                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                            ) : (
+                                                                <Copy className="h-3.5 w-3.5 text-slate-400" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {pedido.dniRecibe && (
+                                                    <div className="flex items-center gap-2 bg-white rounded-lg p-2.5">
+                                                        <FileText className="h-4 w-4 text-amber-600 shrink-0" />
+                                                        <span className="text-slate-500 text-xs w-16 shrink-0">DNI:</span>
+                                                        <span className="text-slate-800 flex-1">{pedido.dniRecibe}</span>
+                                                        <button
+                                                            onClick={() => copiarAlPortapapeles(pedido.dniRecibe || "", "dniRecibe")}
+                                                            className="p-1.5 rounded hover:bg-slate-200 transition-colors"
+                                                            title="Copiar DNI"
+                                                        >
+                                                            {copiedField === "dniRecibe" ? (
+                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                            ) : (
+                                                                <Copy className="h-3.5 w-3.5 text-slate-400" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {pedido.celularRecibe && (
+                                                    <div className="flex items-center gap-2 bg-white rounded-lg p-2.5">
+                                                        <Phone className="h-4 w-4 text-amber-600 shrink-0" />
+                                                        <span className="text-slate-500 text-xs w-16 shrink-0">Celular:</span>
+                                                        <span className="text-slate-800 flex-1">{pedido.celularRecibe}</span>
+                                                        <button
+                                                            onClick={() => copiarAlPortapapeles(pedido.celularRecibe || "", "celularRecibe")}
+                                                            className="p-1.5 rounded hover:bg-slate-200 transition-colors"
+                                                            title="Copiar celular"
+                                                        >
+                                                            {copiedField === "celularRecibe" ? (
+                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                            ) : (
+                                                                <Copy className="h-3.5 w-3.5 text-slate-400" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Artículos */}
                                     {pedido.pedidoDetalle && pedido.pedidoDetalle.length > 0 && (

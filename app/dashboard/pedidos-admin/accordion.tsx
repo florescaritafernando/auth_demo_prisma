@@ -472,14 +472,16 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                     <div className="flex justify-between">
                                                         <span className="text-slate-600">Ubicación:</span>
                                                         <span className="font-medium text-slate-900 text-right">
-                                                            {[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(", ").toUpperCase()}
+                                                            {[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(" - ").toUpperCase()}
                                                         </span>
                                                     </div>
                                                 )}
-                                                {pedido.nombreRecibe && (
+                                                {(pedido.nombreRecibe || pedido.dniRecibe || pedido.celularRecibe) && (
                                                     <div className="flex justify-between">
                                                         <span className="text-slate-600">Recibe:</span>
-                                                        <span className="font-medium text-right">{pedido.nombreRecibe?.toUpperCase()} {pedido.dniRecibe ? `(DNI: ${pedido.dniRecibe})` : ""}</span>
+                                                        <span className="font-bold text-slate-900 text-right">
+                                                            {[pedido.nombreRecibe, pedido.dniRecibe && `DNI: ${pedido.dniRecibe}`, pedido.celularRecibe && `CEL: ${pedido.celularRecibe}`].filter(Boolean).join(" - ").toUpperCase()}
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>

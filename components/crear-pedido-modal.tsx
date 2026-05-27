@@ -64,7 +64,7 @@ const AGENCIAS = [
     { value: "raza", label: "RAZA" },
     { value: "rana_express", label: "RANA EXPRESS" },
     { value: "carhuamayo", label: "CARHUAMAYO" },
-    { value: "otros", label: "OTRA AGENCIA" }
+    { value: "otros", label: "Escribir otra agencia" }
 ]
 
 export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borradorRestaurarId }: Props) {
@@ -99,12 +99,17 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const [agenciaDropdownPos, setAgenciaDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null)
     const agenciaToggleRef = useRef<HTMLButtonElement>(null)
     const [guiaRemision, setGuiaRemision] = useState(false)
+    const [mostrarRecibe, setMostrarRecibe] = useState(false)
+    const [nombreRecibe, setNombreRecibe] = useState("")
+    const [dniRecibe, setDniRecibe] = useState("")
+    const [celularRecibe, setCelularRecibe] = useState("")
     const [envioComprobante, setEnvioComprobante] = useState("Imprimir")
 
     const [empleadosTelefonos, setEmpleadosTelefonos] = useState<{ id: string; nombre: string; celular: string }[]>([])
     const [mostrarDropdownEmpleados, setMostrarDropdownEmpleados] = useState(false)
     const [cargandoEmpleados, setCargandoEmpleados] = useState(false)
     const [buscandoDoc, setBuscandoDoc] = useState(false)
+    const [buscandoDocRecibe, setBuscandoDocRecibe] = useState(false)
     const [mostrarUbicacion, setMostrarUbicacion] = useState(false)
     const clienteSeleccionadoRef = useRef(false)
     const productoSeleccionadoRef = useRef(false)
@@ -190,6 +195,10 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             setAgencia(p.agencia || "")
             setAgenciaOtro(p.agenciaOtro || "")
             setGuiaRemision(p.pedidoEmpleadoInfo?.guiaRemision || false)
+            setNombreRecibe(p.nombreRecibe || "")
+            setDniRecibe(p.dniRecibe || "")
+            setCelularRecibe(p.celularRecibe || "")
+            setMostrarRecibe(!!(p.nombreRecibe || p.dniRecibe || p.celularRecibe))
             setEnvioComprobante(p.pedidoEmpleadoInfo?.envioComprobante || "Imprimir")
             setCostoEnvio(String(p.costoEnvio || 0))
             setObservaciones(p.notas || "")
@@ -349,6 +358,29 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             setToastMessage({ show: true, message: "Error al buscar documento", type: "error" })
         } finally {
             setBuscandoDoc(false)
+        }
+    }
+
+    const buscarDocRecibe = async () => {
+        if (!dniRecibe || dniRecibe.length < 8) return
+        setBuscandoDocRecibe(true)
+        try {
+            const res = await fetch("/api/buscar-documento", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tipo: "dni", numero: dniRecibe })
+            })
+            const json = await res.json()
+            if (json.success) {
+                setNombreRecibe(json.nombre || "")
+            } else {
+                setToastMessage({ show: true, message: "DNI no encontrado", type: "error" })
+            }
+        } catch (e) {
+            console.error("Error buscando DNI recibe:", e)
+            setToastMessage({ show: true, message: "Error al buscar DNI", type: "error" })
+        } finally {
+            setBuscandoDocRecibe(false)
         }
     }
 
@@ -576,6 +608,9 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                     },
                     agencia,
                     guiaRemision,
+                    nombreRecibe,
+                    dniRecibe,
+                    celularRecibe,
                     envioComprobante,
                     costoEnvio: Number(costoEnvio) || 0,
                     observaciones,
@@ -623,6 +658,9 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                     },
                     agencia,
                     guiaRemision,
+                    nombreRecibe,
+                    dniRecibe,
+                    celularRecibe,
                     envioComprobante,
                     costoEnvio: Number(costoEnvio) || 0,
                     observaciones,
@@ -672,6 +710,10 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setAgencia("")
         setAgenciaOtro("")
         setGuiaRemision(false)
+        setMostrarRecibe(false)
+        setNombreRecibe("")
+        setDniRecibe("")
+        setCelularRecibe("")
         setItems([])
         setCostoEnvio("0")
         setObservaciones("")
@@ -1057,6 +1099,37 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             className={inputStep1}
                                         />
                                     </div>
+                                    {mostrarUbicacion && (
+                                        <>
+                                            <div>
+                                                <label className={labelBase}>Departamento</label>
+                                                <input
+                                                    type="text"
+                                                    value={cliente.departamento || ""}
+                                                    onChange={(e) => setCliente({ ...cliente, departamento: e.target.value })}
+                                                    className={inputStep1}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={labelBase}>Provincia</label>
+                                                <input
+                                                    type="text"
+                                                    value={cliente.provincia || ""}
+                                                    onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })}
+                                                    className={inputStep1}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={labelBase}>Distrito</label>
+                                                <input
+                                                    type="text"
+                                                    value={cliente.distrito || ""}
+                                                    onChange={(e) => setCliente({ ...cliente, distrito: e.target.value })}
+                                                    className={inputStep1}
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                     <div>
                                         <label className={labelBase}><Phone className="h-3.5 w-3.5" /> Teléfono</label>
                                         <div className="flex gap-2">
@@ -1148,37 +1221,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             />
                                         </div>
                                     )}
-                                    {mostrarUbicacion && (
-                                        <>
-                                            <div>
-                                                <label className={labelBase}>Departamento</label>
-                                                <input
-                                                    type="text"
-                                                    value={cliente.departamento || ""}
-                                                    onChange={(e) => setCliente({ ...cliente, departamento: e.target.value })}
-                                                    className={inputStep1}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className={labelBase}>Provincia</label>
-                                                <input
-                                                    type="text"
-                                                    value={cliente.provincia || ""}
-                                                    onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })}
-                                                    className={inputStep1}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className={labelBase}>Distrito</label>
-                                                <input
-                                                    type="text"
-                                                    value={cliente.distrito || ""}
-                                                    onChange={(e) => setCliente({ ...cliente, distrito: e.target.value })}
-                                                    className={inputStep1}
-                                                />
-                                            </div>
-                                        </>
-                                    )}
+                                    
                                     <div className="flex items-center gap-2 sm:col-span-2">
                                         <button
                                             type="button"
@@ -1188,7 +1231,73 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-transform shadow-sm ${guiaRemision ? "translate-x-10" : "translate-x-1"}`} />
                                         </button>
                                         <span className="text-sm text-slate-600">GUÍA DE REMISIÓN</span>
+                                        <div className="flex-1" />
+                                        <button
+                                            type="button"
+                                            onClick={() => setMostrarRecibe(!mostrarRecibe)}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border-2 ${
+                                                mostrarRecibe
+                                                    ? "bg-amber-300 text-black shadow-sm"
+                                                    : "bg-amber-300 text-black shadow-sm"
+                                            }`}
+                                        >
+                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                            RECIBI OTRA PERSONA
+                                        </button>
                                     </div>
+                                    {mostrarRecibe && (
+                                        <div className="sm:col-span-2 space-y-3">
+                                            <div className="flex gap-2 items-end">
+                                                <div className="w-full">
+                                                    <label className={labelBase}>DNI</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="DNI (8 dígitos)"
+                                                        value={dniRecibe}
+                                                        onChange={(e) => setDniRecibe(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                                                        maxLength={8}
+                                                        className={inputStep1}
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={buscarDocRecibe}
+                                                    disabled={buscandoDocRecibe || dniRecibe.length < 8}
+                                                    className="px-3 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                                                >
+                                                    {buscandoDocRecibe ? (
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Search className="h-3.5 w-3.5" />
+                                                    )}
+                                                    Buscar
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className={labelBase}>Nombre completo</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Nombre de quien recibe"
+                                                        value={nombreRecibe}
+                                                        onChange={(e) => setNombreRecibe(e.target.value)}
+                                                        className={inputStep1}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className={labelBase}>Celular</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Celular (opcional)"
+                                                        value={celularRecibe}
+                                                        onChange={(e) => setCelularRecibe(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                                                        maxLength={9}
+                                                        className={inputStep1}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="sm:col-span-2">
                                         <p className={labelBase}><Printer className="h-3.5 w-3.5" /> Envío de comprobante</p>
                                         <div className="flex gap-3">
