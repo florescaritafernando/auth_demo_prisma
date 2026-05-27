@@ -518,6 +518,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                 </tbody>
             </table>
             
+            
             <div class="totales">
                 <div class="totales-row">
                     <span>Subtotal:</span>
