@@ -124,6 +124,8 @@ export default function Home() {
   const [colorSeleccionado, setColorSeleccionado] = useState<string | null>(null);
   const [tipoDisenoSeleccionado, setTipoDisenoSeleccionado] = useState<string>("todos");
   const [productosRandom, setProductosRandom] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const LOAD_MORE = 20;
 
   const shuffleArray = (array: any[]) => {
     const shuffled = [...array];
@@ -139,6 +141,10 @@ export default function Home() {
       setProductosRandom(shuffleArray(productos).slice(0, 20));
     }
   }, [productos, categoriaSeleccionada, searchTerm, colorSeleccionado, tipoDisenoSeleccionado]);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [searchTerm, categoriaSeleccionada, colorSeleccionado, tipoDisenoSeleccionado]);
 
   const ORDEN_CATEGORIAS = [
     "MANCHESTER SUITING",
@@ -470,18 +476,32 @@ export default function Home() {
           </>
         ) : (
           <>
-            {/* Grid para móvil - mostrar todos los resultados de la búsqueda/filtro */}
+            {/* Grid para móvil - resultados paginados */}
             <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
-              {productosOrdenados.map((prod, idx) => (
+              {productosOrdenados.slice(0, visibleCount).map((prod, idx) => (
                 <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
               ))}
             </div>
             {/* Grid para desktop */}
             <div className="hidden md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-10 h-full">
-              {productosOrdenados.map((prod, idx) => (
+              {productosOrdenados.slice(0, visibleCount).map((prod, idx) => (
                 <ProductCard key={prod.id || prod.nombre} prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
               ))}
             </div>
+            {visibleCount < productosOrdenados.length && (
+              <div className="flex flex-col items-center mt-8 px-4">
+                <p className="text-sm text-slate-500 mb-3">
+                  Mostrando {Math.min(visibleCount, productosOrdenados.length)} de {productosOrdenados.length} resultados
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => setVisibleCount(prev => prev + LOAD_MORE)}
+                  className="border-slate-300 text-slate-700"
+                >
+                  Ver más ({productosOrdenados.length - visibleCount} restantes)
+                </Button>
+              </div>
+            )}
           </>
         )}
       </section>
