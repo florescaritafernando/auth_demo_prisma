@@ -130,7 +130,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
 
     const { fecha, metodoEnvioLabel, productos, empleadoNames: colaboradores } = generarContenido()
 
-    const handleImprimir = async () => {
+    const handleImprimir = () => {
         const esMovil = /Mobi|Android|iPad|iPhone|iPod|Tablet/i.test(navigator.userAgent) || ('ontouchstart' in window) || window.innerWidth <= 1024
 
         const estilos = formato === "ticket"
@@ -377,21 +377,9 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
 </html>`
 
             if (esMovil) {
-                const file = new File([htmlCompleto], `Pedido_${pedido.numeroOrden}.html`, { type: 'text/html' })
-                if (navigator.canShare?.({ files: [file] })) {
-                    try {
-                        await navigator.share({ files: [file], title: `Pedido ${pedido.numeroOrden}` })
-                        return
-                    } catch { }
-                }
                 const blob = new Blob([htmlCompleto], { type: 'text/html;charset=utf-8' })
                 const url = URL.createObjectURL(blob)
-                const link = document.createElement('a')
-                link.href = url
-                link.download = `Pedido_${pedido.numeroOrden}.html`
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
+                window.open(url, '_blank')
                 setTimeout(() => URL.revokeObjectURL(url), 60000)
             } else {
                 const printWindow = window.open("", "_blank", "width=800,height=600")
@@ -412,21 +400,9 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
 </html>`
 
             if (esMovil) {
-                const file = new File([htmlCompletoA4], `Pedido_${pedido.numeroOrden}.html`, { type: 'text/html' })
-                if (navigator.canShare?.({ files: [file] })) {
-                    try {
-                        await navigator.share({ files: [file], title: `Pedido ${pedido.numeroOrden}` })
-                        return
-                    } catch { }
-                }
                 const blob = new Blob([htmlCompletoA4], { type: 'text/html;charset=utf-8' })
                 const url = URL.createObjectURL(blob)
-                const link = document.createElement('a')
-                link.href = url
-                link.download = `Pedido_${pedido.numeroOrden}.html`
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
+                window.open(url, '_blank')
                 setTimeout(() => URL.revokeObjectURL(url), 60000)
             } else {
                 const printWindow = window.open("", "_blank", "width=800,height=600")
