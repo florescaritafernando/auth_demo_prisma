@@ -131,14 +131,13 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
     const { fecha, metodoEnvioLabel, productos, empleadoNames: colaboradores } = generarContenido()
 
     const handleImprimir = () => {
-        const printWindow = window.open("", "_blank", "width=800,height=600")
-        if (!printWindow) return
+        const esMovil = window.innerWidth <= 768
 
         const estilos = formato === "ticket"
             ? `
                 <style>
                     @page { 
-                        size: 8cm auto; 
+                        size: 7.2cm auto; 
                         margin: 0mm !important;
                         @top-left { content: none; }
                         @top-center { content: none; }
@@ -149,47 +148,51 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     }
                     * {
                         box-sizing: border-box;
-                        max-width: 8cm;
+                        max-width: 7.2cm;
                         margin: 0;
                         padding: 0;
                     }
                     html, body {
                         margin: 0;
                         padding: 0;
-                        width: 8cm;
-                        min-width: 8cm;
-                        max-width: 8cm;
+                        width: 7.2cm;
+                        min-width: 7.2cm;
+                        max-width: 7.2cm;
                         height: auto;
                     }
                     body { 
-                        font-family: 'Consolas', monospace; 
-                        font-size: 16px; 
-                        width: 8cm; 
+                        font-family: Arial, Helvetica, sans-serif; 
+                        font-size: 9pt; 
+                        font-weight: bold;
+                        width: 7.2cm; 
                         margin: 0; 
                         padding: 0;
-                        min-width: 8cm;
-                        max-width: 8cm;
+                        min-width: 7.2cm;
+                        max-width: 7.2cm;
                         text-transform: uppercase;
+                        color: #000;
                         height: auto;
                         page-break-after: avoid;
                     }
-                    .header { text-align: center; border-bottom: 1px dashed #000; }
-                    .title { font-weight: bold; }
-                    .numero { font-weight: bold; }
-                    .section { }
-                    .label { font-weight: bold; }
-                    .value { word-wrap: break-word; }
-                    .productos-label { font-weight: bold; border-bottom: 1px dashed #000;  }
-                    .producto { padding-left: 1mm; background: #f0f0f0; border-left: 3px solid #333; page-break-inside: avoid; margin-bottom: 1mm;}
-                    .producto-nombre { font-weight: bold; word-wrap: break-word; }
-                    .producto-detalle { }
-                    .indicaciones { white-space: pre-wrap; word-wrap: break-word; }
-                    .cantidad { font-weight: bold; color: #000; }
-                    .totales { border-top: 1px dashed #000; }
-                    .total-row { display: flex; justify-content: space-between; }
-                    .gran-total { font-weight: bold; font-size: 20px; border-top: 1px dashed #000; }
-                    .notas { border-top: 1px dashed #000; }
-                    .rechazo { background: #ffe0e0; border: 1px dashed #c00; }
+                    .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 6pt; margin-bottom: 6pt; }
+                    .title { font-weight: bold; font-size: 14pt; }
+                    .numero { font-weight: bold; font-size: 12pt; margin-top: 4pt; }
+                    .estado { font-size: 10pt; margin-top: 2pt; }
+                    .section { margin-bottom: 4pt; }
+                    .label { font-weight: bold; font-size: 10pt; margin-bottom: 1pt; }
+                    .value { word-wrap: break-word; font-size: 10pt; margin-bottom: 1pt; }
+                    .productos-label { font-weight: bold; font-size: 10pt; border-bottom: 1px dashed #000; margin-bottom: 4pt; padding-bottom: 3pt; }
+                    .producto { padding-left: 4pt; background: #f0f0f0; border-left: 3px solid #333; page-break-inside: avoid; margin-bottom: 4pt; padding-top: 3pt; padding-bottom: 3pt; padding-right: 4pt; }
+                    .producto-nombre { font-weight: bold; font-size: 12pt; word-wrap: break-word; }
+                    .producto-detalle { font-size: 12pt; margin-top: 1pt; }
+                    .producto-total { font-weight: bold; font-size: 10pt; text-align: right; margin-top: 1pt; }
+                    .indicaciones { white-space: pre-wrap; word-wrap: break-word; font-size: 9pt; font-style: italic; margin-top: 1pt; border-top: 1px solid #ccc; padding-top: 1pt; }
+                    .totales { border-top: 1px dashed #000; padding-top: 6pt; margin-top: 4pt; }
+                    .total-row { display: flex; justify-content: space-between; font-size: 10pt; margin-bottom: 2pt; }
+                    .gran-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 14pt; border-top: 1px dashed #000; padding-top: 4pt; margin-top: 4pt; }
+                    .falta-pagar { display: flex; justify-content: space-between; font-weight: bold; font-size: 11pt; border-top: 1px dashed #000; }
+                    .notas { border-top: 1px dashed #000; padding-top: 4pt; margin-top: 4pt; }
+                    .rechazo { border: 1px dashed #000; padding: 6pt; margin-bottom: 4pt; }
                 </style>
             `
             : `
@@ -225,7 +228,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     .totales-row { display: flex; justify-content: space-between; padding: 4px 0; }
                     .gran-total { font-size: 20px; font-weight: bold; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
                     .notas-box { border: 1px solid #ddd; padding: 8px; background: #f9f9f9; page-break-inside: avoid; }
-                    .rechazo-box { border: 1px solid #c00; padding: 8px; background: #ffe0e0; page-break-inside: avoid; }
+                    .rechazo-box { border: 1px solid rgb(255, 255, 255); padding: 8px; background: #ffffff; page-break-inside: avoid; }
                 </style>
             `
 
@@ -234,7 +237,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     <div class="header">
                         <div class="title">PEDIDO</div>
                         <div class="numero">${pedido.numeroOrden}</div>
-                        <div class="value">ESTADO: ${pedido.estado.toUpperCase()}</div>
+                        <div class="estado">ESTADO: ${pedido.estado.toUpperCase()}</div>
                     </div>
                     
                     <div class="section">
@@ -272,7 +275,9 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         ` : ""}
                         ${pedido.direccion ? `<div class="value">DIR: ${pedido.direccion.toUpperCase()}</div>` : ""}
                         ${(pedido.departamento || pedido.provincia || pedido.distrito) ? `<div class="value">UBI: ${[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(" - ").toUpperCase()}</div>` : ""}
-                        ${pedido.nombreRecibe ? `<div class="value">RECIBE: ${pedido.nombreRecibe.toUpperCase()} ${pedido.dniRecibe ? `(DNI: ${pedido.dniRecibe})` : ""}</div>` : ""}
+                        ${pedido.nombreRecibe || pedido.celularRecibe ? `
+                            <div class="value">RECIBE: ${pedido.nombreRecibe?.toUpperCase() || ""}${pedido.dniRecibe && pedido.celularRecibe ? ` (DNI: ${pedido.dniRecibe}, CEL: ${pedido.celularRecibe})` : pedido.dniRecibe ? ` (DNI: ${pedido.dniRecibe})` : pedido.celularRecibe ? ` (CEL: ${pedido.celularRecibe})` : ""}</div>
+                        ` : ""}
                     </div>
                     ` : ""}
                     
@@ -285,16 +290,25 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     
                     <div class="section">
                         <div class="productos-label">ARTÍCULOS:</div>
-                        ${productos.map(p => `
+                        ${productos.map(p => {
+                            const cUpper = p.cantidad.toUpperCase()
+                            const cMatch = cUpper.match(/^([\d.]+)\s+(.+)$/)
+                            const cNum = cMatch ? cMatch[1] : cUpper
+                            const cUnit = cMatch ? cMatch[2] : ''
+                            const mUpper = p.metraje?.toUpperCase() || ''
+                            const mMatch = mUpper.match(/^([\d.]+)\s+(.+)$/)
+                            const mVal = mMatch ? mMatch[1] : ''
+                            const mUnit = mMatch ? mMatch[2] : mUpper || ''
+                            return `
                             <div class="producto">
-                                <div class="producto-nombre">${p.nombre} <span style="font-weight: normal;">${p.categoria || ""}</span></div>
+                                <div class="producto-nombre">${p.nombre.toUpperCase()} <span style="font-weight: bold; font-size: 10pt;">${p.categoria ? `(${p.categoria.toUpperCase()})` : ""}</span></div>
                                 <div class="producto-detalle">
-                                    <span class="cantidad">${p.cantidad}${p.metraje ? ` ${p.metraje}` : ''} x ${p.precio}</span>
+                                    <span>${cNum}</span>${cUnit ? `<span style="font-size:10pt"> ${cUnit}</span>` : ''}${mVal ? `<span style="font-size:10pt"> ${mVal}</span>` : ''}${mUnit ? `<span style="font-size:10pt"> ${mUnit}</span>` : ''}<span style="font-size:10pt"> X ${p.precio.toUpperCase()}</span>
                                 </div>
-                                ${p.mostrarCalculo ? `<div style="font-weight: bold; text-align: right;">= S/ ${p.total.toFixed(2)}</div>` : ""}
-                                ${p.indicaciones ? `<div class="indicaciones" style="border-top: 1px solid #ccc;">"${p.indicaciones}"</div>` : ""}
-                            </div>
-                        `).join("")}
+                                ${p.mostrarCalculo ? `<div class="producto-total">= S/ ${p.total.toFixed(2)}</div>` : ""}
+                                ${p.indicaciones ? `<div class="indicaciones">"${p.indicaciones.toUpperCase()}"</div>` : ""}
+                            </div>`
+                        }).join("")}
                     </div>
                     
                     <div class="totales">
@@ -316,7 +330,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                             const pagado = extraerTotalPagado(pedido.notas)
                             const falta = Number(pedido.total) - pagado
                             if (falta > 0.01) {
-                                return `<div class="total-row" style="border-top:1px dashed #000;color:#000;font-weight:bold;padding-top:4px;margin-top:4px">
+                                return `<div class="falta-pagar">
                                     <span>FALTA PAGAR:</span>
                                     <span>S/ ${falta.toFixed(2)}</span>
                                 </div>`
@@ -330,59 +344,75 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         <div class="label">OBSERVACIONES:</div>
                         <div class="value">${pedido.notas}</div>
                     </div>
-                    ` : ""}
-                    
-                    ${pedido.celularRecibe ? `
-                    <div class="section">
-                        <div class="label">CELULAR:</div>
-                        <div class="value">${pedido.celularRecibe}</div>
-                    </div>
                     ` : ""}`
 
-            // Medir altura exacta del contenido
-            const measurer = document.createElement("div")
-            measurer.style.cssText = "position:fixed;left:-9999px;top:0;width:8cm;visibility:hidden;pointer-events:none"
-            measurer.innerHTML = `<!DOCTYPE html><html><head>${estilos}</head><body>${ticketBodyHtml}</body></html>`
-            document.body.appendChild(measurer)
+            const estilosFinal = esMovil
+                ? (() => {
+                    const measurer = document.createElement("div")
+                    measurer.style.cssText = "position:fixed;left:-9999px;top:0;width:7.2cm;visibility:hidden;pointer-events:none"
+                    measurer.innerHTML = `<!DOCTYPE html><html><head>${estilos}</head><body>${ticketBodyHtml}</body></html>`
+                    document.body.appendChild(measurer)
 
-            const scrollH = measurer.scrollHeight
-            const widthPx = measurer.offsetWidth || (8 * 37.8)
-            const pxPerCm = widthPx / 8
-            const alturaCm = Math.max(Math.ceil((scrollH + 8) / pxPerCm), 5)
+                    const scrollH = measurer.scrollHeight
+                    const widthPx = measurer.offsetWidth || (7.2 * 37.8)
+                    const pxPerCm = widthPx / 7.2
+                    const alturaCm = Math.max(Math.ceil((scrollH + 8) / pxPerCm), 5)
 
-            document.body.removeChild(measurer)
+                    document.body.removeChild(measurer)
 
-            const estilosFinal = estilos.replace(
-                "size: 8cm auto;",
-                `size: 8cm ${alturaCm}cm;`
-            )
+                    return estilos.replace(
+                        "size: 7.2cm auto;",
+                        `size: 7.2cm ${alturaCm}cm;`
+                    )
+                })()
+                : estilos
 
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head><title>Pedido ${pedido.numeroOrden}</title>${estilosFinal}</head>
-                <body>${ticketBodyHtml}
-                </body>
-                </html>
-            `)
+            const htmlCompleto = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Pedido ${pedido.numeroOrden}</title>
+    ${estilosFinal}
+    </head>
+<body>${ticketBodyHtml}</body>
+</html>`
+
+            if (esMovil) {
+                const blob = new Blob([htmlCompleto], { type: 'text/html;charset=utf-8' })
+                const url = URL.createObjectURL(blob)
+                window.open(url, '_blank')
+                setTimeout(() => URL.revokeObjectURL(url), 60000)
+            } else {
+                const printWindow = window.open("", "_blank", "width=800,height=600")
+                if (!printWindow) return
+                printWindow.document.write(htmlCompleto)
+                printWindow.document.close()
+                printWindow.focus()
+                setTimeout(() => printWindow.print(), 500)
+            }
         } else {
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head><title>Pedido ${pedido.numeroOrden}</title>${estilos}</head>
-                <body>
-                    ${generarContenidoA4()}
-                </body>
-                </html>
-            `)
+            const htmlCompletoA4 = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Pedido ${pedido.numeroOrden}</title>
+    ${estilos}
+    </head>
+<body>${generarContenidoA4()}</body>
+</html>`
+
+            if (esMovil) {
+                const blob = new Blob([htmlCompletoA4], { type: 'text/html;charset=utf-8' })
+                const url = URL.createObjectURL(blob)
+                window.open(url, '_blank')
+                setTimeout(() => URL.revokeObjectURL(url), 60000)
+            } else {
+                const printWindow = window.open("", "_blank", "width=800,height=600")
+                if (!printWindow) return
+                printWindow.document.write(htmlCompletoA4)
+                printWindow.document.close()
+                printWindow.focus()
+                setTimeout(() => printWindow.print(), 500)
+            }
         }
-
-        printWindow.document.close()
-        printWindow.focus()
-
-        setTimeout(() => {
-            printWindow.print()
-        }, 500)
     }
 
     const generarContenidoA4 = () => {
@@ -543,7 +573,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
             const response = await fetch("/api/pedido-pdf", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(pedidoData),
+                body: JSON.stringify({ ...pedidoData, formato }),
             })
 
             if (!response.ok) throw new Error("Error al generar PDF")
@@ -598,7 +628,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                                     }`}
                             >
                                 <FileText className="h-4 w-4" />
-                                <span className="text-sm">A4</span>
+                                <span className="text-sm">Hoja A4</span>
                             </button>
                         </div>
                     </div>
@@ -615,15 +645,15 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                 </div>
 
                 <div className="p-4 border-t flex flex-col sm:flex-row gap-2">
-                    <Button onClick={onClose} className="w-full sm:flex-1 bg-red-600 hover:bg-red-700 text-white">
+                    <Button onClick={onClose} className="w-full border-slate-500 border-2 sm:flex-1 bg-slate-200 hover:bg-slate-300 text-black">
                         Cancelar
                     </Button>
-                    <Button onClick={handleDescargarPDF} className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white">
+                    <Button onClick={handleDescargarPDF} className="w-full sm:flex-1 border-green-900 border-2 bg-green-600 hover:bg-green-700 text-white">
                         <Download className="h-4 w-4 sm:mr-2" />
                         <span className="hidden sm:inline">Descargar PDF</span>
-                        <span className="sm:hidden">PDF</span>
+                        <span className="sm:hidden">Descargar PDF</span>
                     </Button>
-                    <Button onClick={handleImprimir} className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                    <Button onClick={handleImprimir} className="w-full sm:flex-1 border-blue-900 border-2 bg-blue-600 hover:bg-blue-700 text-white">
                         <Printer className="h-4 w-4 sm:mr-2" />
                         Imprimir
                     </Button>

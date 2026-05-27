@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     },
     infoLabel: {
         fontWeight: "bold",
-        color: "#666666",
+        color: "#000000",
         fontSize: 8,
         marginBottom: 3,
     },
@@ -126,9 +126,9 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
     },
     rechazoBox: {
-        border: "1 solid #cc0000",
+        border: "1 solid #000000",
         padding: 8,
-        backgroundColor: "#ffe0e0",
+        backgroundColor: "#ffffff",
         marginBottom: 15,
     },
     notasBox: {
@@ -144,9 +144,140 @@ const styles = StyleSheet.create({
         right: 38,
         textAlign: "center",
         fontSize: 8,
-        color: "#999999",
+        color: "#000000",
         borderTop: "1 solid #dddddd",
         paddingTop: 5,
+    },
+})
+
+const ticketStyles = StyleSheet.create({
+    page: {
+        padding: 0,
+        fontFamily: "Helvetica",
+        fontWeight: "bold",
+        fontSize: 9,
+        color: "#000000",
+    },
+    header: {
+        textAlign: "center",
+        marginBottom: 6,
+        borderBottom: "1 dashed #000000",
+        paddingBottom: 6,
+    },
+    title: {
+        fontSize: 14,
+        fontWeight: "bold",
+        color: "#000000",
+    },
+    orderNumber: {
+        fontSize: 12,
+        fontWeight: "bold",
+        marginTop: 4,
+        color: "#000000",
+    },
+    estado: {
+        fontSize: 10,
+        marginTop: 2,
+        color: "#000000",
+    },
+    section: {
+        marginBottom: 4,
+    },
+    label: {
+        fontWeight: "bold",
+        fontSize: 10,
+        marginBottom: 1,
+        color: "#000000",
+    },
+    value: {
+        fontSize: 10,
+        marginBottom: 1,
+        color: "#000000",
+    },
+    productosLabel: {
+        fontWeight: "bold",
+        fontSize: 10,
+        marginBottom: 4,
+        borderBottom: "1 dashed #000000",
+        paddingBottom: 3,
+        color: "#000000",
+    },
+    producto: {
+        marginBottom: 4,
+        paddingLeft: 4,
+        backgroundColor: "#f0f0f0",
+        borderLeft: "3 solid #333333",
+        paddingTop: 3,
+        paddingBottom: 3,
+        paddingRight: 4,
+    },
+    productoNombre: {
+        fontWeight: "bold",
+        fontSize: 12,
+        color: "#000000",
+    },
+    productoDetalle: {
+        fontSize: 12,
+        marginTop: 1,
+        color: "#000000",
+    },
+    productoTotal: {
+        fontWeight: "bold",
+        fontSize: 10,
+        textAlign: "right",
+        marginTop: 1,
+        color: "#000000",
+    },
+    indicaciones: {
+        fontSize: 9,
+        fontStyle: "italic",
+        marginTop: 1,
+        borderTop: "1 solid #cccccc",
+        paddingTop: 1,
+        color: "#000000",
+    },
+    totales: {
+        borderTop: "1 dashed #000000",
+        paddingTop: 6,
+        marginTop: 4,
+    },
+    totalRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 2,
+        fontSize: 10,
+        color: "#000000",
+    },
+    granTotal: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        fontWeight: "bold",
+        fontSize: 14,
+        borderTop: "1 dashed #000000",
+        paddingTop: 4,
+        marginTop: 4,
+        color: "#000000",
+    },
+    faltaPagar: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        fontWeight: "bold",
+        fontSize: 11,
+        color: "#000000",
+        borderTop: "1 dashed #000000",
+        paddingTop: 3,
+        marginTop: 3,
+    },
+    notas: {
+        borderTop: "1 dashed #000000",
+        paddingTop: 4,
+        marginTop: 4,
+    },
+    rechazo: {
+        border: "1 dashed #000000",
+        padding: 6,
+        marginBottom: 4,
+        backgroundColor: "#ffffff",
     },
 })
 
@@ -212,7 +343,7 @@ const extraerTotalPagado = (notas: string | null): number => {
     return totalPagado
 }
 
-export function PedidoPDF({ pedido }: { pedido: PedidoData }) {
+export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; formato?: "ticket" | "a4" }) {
     const fecha = new Date(pedido.createdAt).toLocaleDateString("es-PE", {
         day: "numeric",
         month: "short",
@@ -246,6 +377,7 @@ export function PedidoPDF({ pedido }: { pedido: PedidoData }) {
             const totalCalculado = d.tipo === "pieza"
                 ? (sinEtiquetasAun ? 0 : metrajeTotal * Number(d.precio))
                 : Number(d.cantidad) * Number(d.precio)
+            const mostrarCalculo = !(d.tipo === "pieza" && pedido.estado === "metraje_en_proceso")
 
             return {
                 nombre: d.producto.nombre,
@@ -254,10 +386,183 @@ export function PedidoPDF({ pedido }: { pedido: PedidoData }) {
                 metraje: metrajeDisplay,
                 precio: precioDisplay,
                 total: totalCalculado,
+                mostrarCalculo,
                 indicaciones: d.indicacionesCorte,
             }
         })
         .filter(p => !(p.cantidad === "0 PZ(S)" && pedido.estado !== "metraje_en_proceso"))
+
+    if (formato === "ticket") {
+        const pagado = extraerTotalPagado(pedido.notas)
+        const falta = Number(pedido.total) - pagado
+
+        const L = 15
+        const CHARS_PER_LINE = 28
+        let ticketH = 0
+
+        ticketH += 52
+        ticketH += 28
+        ticketH += 32
+        if (pedido.metodoEnvio !== "agencia" && pedido.direccion) ticketH += L
+        if (pedido.numeroOperacion && pedido.numeroOperacion !== "012345678") ticketH += 28
+        ticketH += 28
+        if (pedido.metodoEnvio) {
+            ticketH += 28
+            if (pedido.metodoEnvio === "tienda" && pedido.tienda) ticketH += L * 2
+            if (pedido.direccion) ticketH += L
+            if (pedido.departamento || pedido.provincia || pedido.distrito) ticketH += L
+            if (pedido.nombreRecibe || pedido.celularRecibe) ticketH += L
+        }
+        if (pedido.motivoRechazo && pedido.estado === "rechazado") ticketH += 36
+        ticketH += 24
+        for (const p of productos) {
+            ticketH += 34
+            if (p.mostrarCalculo) ticketH += L
+            if (p.indicaciones) ticketH += 14
+        }
+        ticketH += 36
+        if (pedido.costoEnvio > 0) ticketH += L
+        ticketH += 20
+        if (falta > 0.01) ticketH += 16
+        if (pedido.notas) {
+            ticketH += 24
+            const notasLines = Math.max(1, Math.ceil((pedido.notas.length || 1) / CHARS_PER_LINE))
+            ticketH += notasLines * L
+        }
+        ticketH += 18
+
+        return (
+            <Document>
+                <Page size={[204, Math.max(Math.ceil(ticketH), 250)]} style={{ ...ticketStyles.page, margin: 0 }}>
+                    <View style={ticketStyles.header}>
+                        <Text style={ticketStyles.title}>PEDIDO</Text>
+                        <Text style={ticketStyles.orderNumber}>{pedido.numeroOrden.toUpperCase()}</Text>
+                        <Text style={ticketStyles.estado}>ESTADO: {pedido.estado.toUpperCase()}</Text>
+                    </View>
+
+                    <View style={ticketStyles.section}>
+                        <Text style={ticketStyles.label}>FECHA:</Text>
+                        <Text style={ticketStyles.value}>{fecha.toUpperCase()}</Text>
+                    </View>
+
+                    <View style={ticketStyles.section}>
+                        <Text style={ticketStyles.label}>CLIENTE:</Text>
+                        <Text style={ticketStyles.value}>{(pedido.nombreFactura || "").toUpperCase()}</Text>
+                        <Text style={ticketStyles.value}>{pedido.tipoDocumento?.toUpperCase() || ""}: {pedido.numeroDoc || ""}</Text>
+                        {pedido.metodoEnvio !== "agencia" && pedido.direccion && (
+                            <Text style={ticketStyles.value}>DIR: {pedido.direccion.toUpperCase()}</Text>
+                        )}
+                    </View>
+
+                    {pedido.numeroOperacion && pedido.numeroOperacion !== "012345678" && (
+                        <View style={ticketStyles.section}>
+                            <Text style={ticketStyles.label}>NRO. OPERACIÓN:</Text>
+                            <Text style={ticketStyles.value}>{pedido.numeroOperacion.toUpperCase()}</Text>
+                        </View>
+                    )}
+
+                    <View style={ticketStyles.section}>
+                        <Text style={ticketStyles.label}>COLABORADOR(ES):</Text>
+                        <Text style={ticketStyles.value}>{colaboradores.toUpperCase()}</Text>
+                    </View>
+
+                    {pedido.metodoEnvio && (
+                        <View style={ticketStyles.section}>
+                            <Text style={ticketStyles.label}>MÉTODO DE ENVÍO:</Text>
+                            <Text style={ticketStyles.value}>{metodoEnvioLabel.toUpperCase()}</Text>
+                            {pedido.metodoEnvio === "tienda" && pedido.tienda && (
+                                <>
+                                    <Text style={ticketStyles.value}>TIENDA: {(pedido.tienda.nombre || "").toUpperCase()}</Text>
+                                    <Text style={ticketStyles.value}>DIR: {(pedido.tienda.direccion || "").toUpperCase()}</Text>
+                                </>
+                            )}
+                            {pedido.direccion && <Text style={ticketStyles.value}>DIR: {pedido.direccion.toUpperCase()}</Text>}
+                            {(pedido.departamento || pedido.provincia || pedido.distrito) && (
+                                <Text style={ticketStyles.value}>UBI: {[pedido.departamento, pedido.provincia, pedido.distrito].filter(Boolean).join(" - ").toUpperCase()}</Text>
+                            )}
+                            {pedido.nombreRecibe && (
+                                <Text style={ticketStyles.value}>
+                                    RECIBE: {pedido.nombreRecibe.toUpperCase()}
+                                    {pedido.dniRecibe && pedido.celularRecibe
+                                        ? ` (DNI: ${pedido.dniRecibe}, CEL: ${pedido.celularRecibe})`
+                                        : pedido.dniRecibe
+                                            ? ` (DNI: ${pedido.dniRecibe})`
+                                            : pedido.celularRecibe
+                                                ? ` (CEL: ${pedido.celularRecibe})`
+                                                : ""}
+                                </Text>
+                            )}
+                        </View>
+                    )}
+
+                    {pedido.motivoRechazo && pedido.estado === "rechazado" && (
+                        <View style={ticketStyles.rechazo}>
+                            <Text style={{ fontWeight: "bold", color: "#000000", fontSize: 10 }}>PEDIDO RECHAZADO:</Text>
+                            <Text style={{ color: "#000000", fontSize: 10, marginTop: 2 }}>{pedido.motivoRechazo}</Text>
+                        </View>
+                    )}
+
+                    <View style={ticketStyles.section}>
+                        <Text style={ticketStyles.productosLabel}>ARTÍCULOS:</Text>
+                        {productos.map((p, i) => {
+                            const cUpper = p.cantidad.toUpperCase()
+                            const cMatch = cUpper.match(/^([\d.]+)\s+(.+)$/)
+                            const cNum = cMatch ? cMatch[1] : cUpper
+                            const cUnit = cMatch ? ` ${cMatch[2]}` : ""
+                            const mUpper = p.metraje?.toUpperCase() || ""
+                            const mMatch = mUpper.match(/^([\d.]+)\s+(.+)$/)
+                            const mVal = mMatch ? ` ${mMatch[1]}` : ""
+                            const mUnit = mMatch ? ` ${mMatch[2]}` : mUpper ? ` ${mUpper}` : ""
+                            return (
+                                <View key={i} style={ticketStyles.producto}>
+                                    <Text style={ticketStyles.productoNombre}>{p.nombre.toUpperCase()} {p.categoria ? <Text style={{ fontSize: 10 }}>({p.categoria.toUpperCase()})</Text> : null}</Text>
+                                    <Text style={ticketStyles.productoDetalle}>
+                                        <Text>{cNum}</Text>
+                                        {cUnit && <Text style={{ fontSize: 10 }}>{cUnit}</Text>}
+                                        {mVal && <Text style={{ fontSize: 10 }}>{mVal}</Text>}
+                                        {mUnit && <Text style={{ fontSize: 10 }}>{mUnit}</Text>}
+                                        <Text style={{ fontSize: 10 }}> X {p.precio.toUpperCase()}</Text>
+                                    </Text>
+                                    {p.mostrarCalculo && <Text style={ticketStyles.productoTotal}>= S/ {p.total.toFixed(2)}</Text>}
+                                    {p.indicaciones && <Text style={ticketStyles.indicaciones}>"{p.indicaciones.toUpperCase()}"</Text>}
+                                </View>
+                            )
+                        })}
+                    </View>
+
+                    <View style={ticketStyles.totales}>
+                        <View style={ticketStyles.totalRow}>
+                            <Text>SUBTOTAL:</Text>
+                            <Text>S/ {(pedido.total - pedido.costoEnvio).toFixed(2)}</Text>
+                        </View>
+                        {pedido.costoEnvio > 0 && (
+                            <View style={ticketStyles.totalRow}>
+                                <Text>ENVÍO:</Text>
+                                <Text>S/ {pedido.costoEnvio.toFixed(2)}</Text>
+                            </View>
+                        )}
+                        <View style={ticketStyles.granTotal}>
+                            <Text>TOTAL:</Text>
+                            <Text>S/ {pedido.total.toFixed(2)}</Text>
+                        </View>
+                        {falta > 0.01 && (
+                            <View style={ticketStyles.faltaPagar}>
+                                <Text>FALTA PAGAR:</Text>
+                                <Text>S/ {falta.toFixed(2)}</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {pedido.notas && (
+                        <View style={ticketStyles.notas}>
+                            <Text style={ticketStyles.label}>OBSERVACIONES:</Text>
+                            <Text style={ticketStyles.value}>{pedido.notas.toUpperCase()}</Text>
+                        </View>
+                    )}
+                </Page>
+            </Document>
+        )
+    }
 
     return (
         <Document>
@@ -320,8 +625,8 @@ export function PedidoPDF({ pedido }: { pedido: PedidoData }) {
 
                 {pedido.motivoRechazo && pedido.estado === "rechazado" && (
                     <View style={styles.rechazoBox}>
-                        <Text style={{ ...styles.infoLabel, color: "#cc0000" }}>PEDIDO RECHAZADO</Text>
-                        <Text style={{ ...styles.infoValue, color: "#cc0000" }}>{pedido.motivoRechazo}</Text>
+                        <Text style={{ ...styles.infoLabel, color: "#000000" }}>PEDIDO RECHAZADO</Text>
+                        <Text style={{ ...styles.infoValue, color: "#000000" }}>{pedido.motivoRechazo}</Text>
                     </View>
                 )}
 
@@ -374,8 +679,8 @@ export function PedidoPDF({ pedido }: { pedido: PedidoData }) {
                         if (falta > 0.01) {
                             return (
                                 <View style={{ ...styles.totalRow, borderTop: "1 dashed #cc0000", marginTop: 4, paddingTop: 4 }}>
-                                    <Text style={{ color: "#cc0000", fontWeight: "bold", fontSize: 13 }}>FALTA PAGAR:</Text>
-                                    <Text style={{ color: "#cc0000", fontWeight: "bold", fontSize: 13 }}>S/ {falta.toFixed(2)}</Text>
+                                    <Text style={{ color: "#000000", fontWeight: "bold", fontSize: 13 }}>FALTA PAGAR:</Text>
+                                    <Text style={{ color: "#000000", fontWeight: "bold", fontSize: 13 }}>S/ {falta.toFixed(2)}</Text>
                                 </View>
                             )
                         }

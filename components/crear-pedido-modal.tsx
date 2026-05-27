@@ -1242,14 +1242,14 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             }`}
                                         >
                                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                            RECIBI OTRA PERSONA
+                                            RECIBE OTRA PERSONA
                                         </button>
                                     </div>
                                     {mostrarRecibe && (
-                                        <div className="sm:col-span-2 space-y-3">
-                                            <div className="flex gap-2 items-end">
+                                        <div className="flex-1 sm:col-span-2 space-y-3">
+                                            <label className={labelBase}>DNI</label>
+                                            <div className="flex gap-2 ">
                                                 <div className="w-full">
-                                                    <label className={labelBase}>DNI</label>
                                                     <input
                                                         type="text"
                                                         placeholder="DNI (8 dígitos)"
@@ -1263,7 +1263,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                     type="button"
                                                     onClick={buscarDocRecibe}
                                                     disabled={buscandoDocRecibe || dniRecibe.length < 8}
-                                                    className="px-3 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                                                    className="flex-1 px-3 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                                                 >
                                                     {buscandoDocRecibe ? (
                                                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1469,7 +1469,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             <span className="font-medium text-slate-900">S/ {calcularSubtotal().toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-end text-sm items-center gap-2">
-                                            <span className="text-amber-500">COSTO DE ENVIO</span>
+                                            <span className="font-semibold text-amber-500">COSTO DE ENVIO</span>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-xs text-slate-400">S/</span>
                                                 <input
@@ -1511,7 +1511,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                     onClick={() => setShowPagoModal(true)}
                                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-10"
                                 >
-                                    <DollarSign className="h-4 w-4 mr-2" /> Pagar Pedido
+                                    <DollarSign className="h-4 w-4 mr-2" /> COBRAR
                                 </Button>
                             </div>
                         )}
@@ -1602,13 +1602,13 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                             </div>
                         </div>
                         <div className="flex flex-col gap-2 mt-6">
-                            <Button onClick={async () => { await guardarBorrador(); resetForm(); setShowConfirmClose(false); onClose() }} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm h-9">
+                            <Button onClick={async () => { await guardarBorrador(); resetForm(); setShowConfirmClose(false); onClose() }} className="w-full bg-blue-600 border-blue-800 border-2 hover:bg-blue-700 text-white text-sm h-9">
                                 <Save className="h-4 w-4 mr-1" /> Guardar borrador y salir
                             </Button>
-                            <Button onClick={async () => { await limpiarBorrador(); setShowConfirmClose(false); onClose() }} className="w-full bg-amber-600 hover:bg-amber-700 text-white text-sm h-9">
+                            <Button onClick={async () => { await limpiarBorrador(); setShowConfirmClose(false); onClose() }} className="w-full bg-slate-200 border-slate-500 border-2 hover:bg-slate-300 text-black text-sm h-9">
                                 Salir sin guardar
                             </Button>
-                            <Button onClick={() => setShowConfirmClose(false)} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9">
+                            <Button onClick={() => setShowConfirmClose(false)} className="w-full bg-green-700 hover:bg-green-800 border-green-900 border-2 text-white text-sm h-9">
                                 Continuar editando
                             </Button>
                         </div>

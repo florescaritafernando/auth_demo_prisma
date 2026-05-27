@@ -386,13 +386,6 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
         return regs.reduce((sum, r) => sum + (Number(r.value) || 0), 0)
     }
 
-    const calcularTotal = () => {
-        return piezaDetails.reduce((sum, d) => {
-            const total = getMetrajeTotal(d.id)
-            return sum + (Number(d.precio) * total)
-        }, 0)
-    }
-
     return (
         <div className="space-y-4">
             {faltaPagar > 0.01 && (
@@ -400,7 +393,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                     onClick={() => setShowPagoPedidoModal(true)}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-10"
                 >
-                    <DollarSign className="h-4 w-4 mr-2" /> Pagar Pedido (S/ {faltaPagar.toFixed(2)})
+                    <DollarSign className="h-4 w-4 mr-2" /> COBRAR (S/ {faltaPagar.toFixed(2)})
                 </Button>
             )}
 

@@ -4,10 +4,10 @@ import { PedidoPDF } from "@/components/pdf/PedidoPDF"
 
 export async function POST(request: NextRequest) {
     try {
-        const pedido = await request.json()
+        const { formato, ...pedido } = await request.json()
 
         const pdfBuffer = await renderToBuffer(
-            <PedidoPDF pedido={pedido} />
+            <PedidoPDF pedido={pedido} formato={formato} />
         )
 
         const pdfBytes = new Uint8Array(pdfBuffer)

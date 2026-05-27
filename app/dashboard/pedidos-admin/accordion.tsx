@@ -484,6 +484,12 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                         </span>
                                                     </div>
                                                 )}
+                                                {pedido.celularRecibe && (
+                                                    <>
+                                                        <p className="text-slate-600 mt-3">Celular:</p>
+                                                        <p className="font-bold text-slate-900">{pedido.celularRecibe}</p>
+                                                    </>
+                                                )}
                                             </div>
 
                                             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
@@ -521,12 +527,6 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 <p className="text-slate-600">Creado por:</p>
                                                 <p className="font-bold text-slate-900">{pedido.user?.name || pedido.user?.email || "N/A"}</p>
                                                 <p className="text-xs text-slate-500">{pedido.user?.email}</p>
-                                                {pedido.celularRecibe && (
-                                                    <>
-                                                        <p className="text-slate-600 mt-3">Celular:</p>
-                                                        <p className="font-bold text-slate-900">{pedido.celularRecibe}</p>
-                                                    </>
-                                                )}
                                             </div>
                                         </div>
                                     </div>

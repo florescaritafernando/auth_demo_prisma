@@ -14,11 +14,11 @@ const AGENCIA_LABELS: Record<string, string> = {
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string }> = {
     metraje_en_proceso: { label: "Metraje en proceso", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
     metraje_confirmado: { label: "Metraje confirmado", color: "bg-green-100", colorTexto: "text-green-800" },
-    pendiente: { label: "Pago en revisión", color: "bg-blue-100", colorTexto: "text-blue-800" },
-    confirmado: { label: "Pago confirmado", color: "bg-emerald-200", colorTexto: "text-emerald-900" },
-    pedido_enviado: { label: "En tránsito", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
-    rechazado: { label: "Rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
-    completado: { label: "Completado", color: "bg-green-100", colorTexto: "text-green-800" },
+    pendiente: { label: "Pago en revisión", color: "bg-amber-100", colorTexto: "text-amber-800" },
+    confirmado: { label: "Pago confirmado", color: "bg-green-200", colorTexto: "text-green-900" },
+    pedido_enviado: { label: "Pedido enviado", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
+    rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
+    completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800" },
 }
 
 const ESTADOS_FILTRO = [
@@ -667,16 +667,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             const valorDivisor = divisor || divisorPersonalizado
                                             if (!valorDivisor || Number(valorDivisor) <= 0) return null
                                             const resultado = Number(pedido.total) / Number(valorDivisor)
+                                            const decimales = Number(valorDivisor) === 20 ? 2 : 4
                                             return (
                                                 <div className="flex items-center justify-between bg-white rounded-lg p-2.5 border border-slate-200">
                                                     <div>
                                                         <span className="text-xs text-slate-500">S/ {Number(pedido.total).toFixed(2)} ÷ {valorDivisor} =</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-slate-900 text-lg">{resultado.toFixed(2)}</span>
+                                                        <span className="font-bold text-slate-900 text-lg">{resultado.toFixed(decimales)}</span>
                                                         <span className="text-xs text-slate-400">mts</span>
                                                         <button
-                                                            onClick={() => copiarAlPortapapeles(resultado.toFixed(2), `dividir_${valorDivisor}`)}
+                                                            onClick={() => copiarAlPortapapeles(resultado.toFixed(decimales), `dividir_${valorDivisor}`)}
                                                             className="p-1.5 rounded hover:bg-slate-100 transition-colors"
                                                             title="Copiar resultado"
                                                         >
