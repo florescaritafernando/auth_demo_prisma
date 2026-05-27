@@ -678,9 +678,9 @@ export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; form
                         const falta = Number(pedido.total) - pagado
                         if (falta > 0.01) {
                             return (
-                                <View style={{ ...styles.totalRow, borderTop: "1 dashed #cc0000", marginTop: 4, paddingTop: 4 }}>
-                                    <Text style={{ color: "#000000", fontWeight: "bold", fontSize: 13 }}>FALTA PAGAR:</Text>
-                                    <Text style={{ color: "#000000", fontWeight: "bold", fontSize: 13 }}>S/ {falta.toFixed(2)}</Text>
+                                <View style={{ ...styles.totalRow, borderTop: "1 dashed rgb(151, 3, 3)", marginTop: 4, paddingTop: 4 }}>
+                                    <Text style={{ color: "rgb(151, 3, 3)", fontWeight: "bold", fontSize: 13 }}>FALTA PAGAR:</Text>
+                                    <Text style={{ color: "rgb(151, 3, 3)", fontWeight: "bold", fontSize: 13 }}>S/ {falta.toFixed(2)}</Text>
                                 </View>
                             )
                         }

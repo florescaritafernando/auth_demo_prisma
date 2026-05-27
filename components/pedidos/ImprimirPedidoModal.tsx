@@ -130,7 +130,60 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
 
     const { fecha, metodoEnvioLabel, productos, empleadoNames: colaboradores } = generarContenido()
 
-    const handleImprimir = () => {
+    const abrirPDFMovil = async (formato: "ticket" | "a4") => {
+        const pedidoData = {
+            numeroOrden: pedido.numeroOrden,
+            estado: pedido.estado,
+            createdAt: pedido.createdAt,
+            nombreFactura: pedido.nombreFactura,
+            tipoDocumento: pedido.tipoDocumento,
+            numeroDoc: pedido.numeroDoc,
+            numeroOperacion: pedido.numeroOperacion,
+            metodoEnvio: pedido.metodoEnvio,
+            tienda: pedido.tienda,
+            agencia: pedido.agencia,
+            agenciaOtro: pedido.agenciaOtro,
+            delivery: pedido.delivery,
+            deliveryOtro: pedido.deliveryOtro,
+            direccion: pedido.direccion,
+            departamento: pedido.departamento,
+            provincia: pedido.provincia,
+            distrito: pedido.distrito,
+            nombreRecibe: pedido.nombreRecibe,
+            dniRecibe: pedido.dniRecibe,
+            celularRecibe: pedido.celularRecibe,
+            costoEnvio: pedido.costoEnvio,
+            total: pedido.total,
+            notas: pedido.notas,
+            motivoRechazo: pedido.motivoRechazo,
+            delegados: pedido.delegados,
+            pedidoDetalle: pedido.pedidoDetalle.map(d => ({
+                producto: d.producto,
+                cantidad: d.cantidad,
+                tipo: d.tipo,
+                precio: d.precio,
+                metraje: d.metraje,
+                etiquetas: d.etiquetas,
+                indicacionesCorte: d.indicacionesCorte,
+            })),
+            formato,
+        }
+        const response = await fetch("/api/pedido-pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pedidoData),
+        })
+        if (!response.ok) {
+            alert("Error al generar PDF")
+            return
+        }
+        const pdfBlob = await response.blob()
+        const url = URL.createObjectURL(pdfBlob)
+        window.open(url, '_blank')
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+    }
+
+    const handleImprimir = async () => {
         const esMovil = /Mobi|Android|iPad|iPhone|iPod|Tablet/i.test(navigator.userAgent) || ('ontouchstart' in window) || window.innerWidth <= 1024
 
         const estilos = formato === "ticket"
@@ -377,10 +430,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
 </html>`
 
             if (esMovil) {
-                const blob = new Blob([htmlCompleto], { type: 'text/html;charset=utf-8' })
-                const url = URL.createObjectURL(blob)
-                window.open(url, '_blank')
-                setTimeout(() => URL.revokeObjectURL(url), 60000)
+                await abrirPDFMovil("ticket")
             } else {
                 const printWindow = window.open("", "_blank", "width=800,height=600")
                 if (!printWindow) return
@@ -400,10 +450,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
 </html>`
 
             if (esMovil) {
-                const blob = new Blob([htmlCompletoA4], { type: 'text/html;charset=utf-8' })
-                const url = URL.createObjectURL(blob)
-                window.open(url, '_blank')
-                setTimeout(() => URL.revokeObjectURL(url), 60000)
+                await abrirPDFMovil("a4")
             } else {
                 const printWindow = window.open("", "_blank", "width=800,height=600")
                 if (!printWindow) return
@@ -514,7 +561,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     const pagado = extraerTotalPagado(pedido.notas)
                     const falta = Number(pedido.total) - pagado
                     if (falta > 0.01) {
-                        return `<div class="totales-row" style="color:#c00;font-weight:bold;border-top:1px dashed rgb(99, 5, 5);padding-top:8px;margin-top:4px;font-size:16px">
+                        return `<div class="totales-row" style="color:rgb(151, 3, 3);font-weight:bold;border-top:1px dashed rgb(151, 3, 3);padding-top:8px;margin-top:4px;font-size:16px">
                             <span>FALTA PAGAR:</span>
                             <span>S/ ${falta.toFixed(2)}</span>
                         </div>`
