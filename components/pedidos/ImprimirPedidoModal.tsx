@@ -131,7 +131,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
     const { fecha, metodoEnvioLabel, productos, empleadoNames: colaboradores } = generarContenido()
 
     const handleImprimir = () => {
-        const esMovil = window.innerWidth <= 768
+        const esMovil = /Mobi|Android|iPad|iPhone|iPod|Tablet/i.test(navigator.userAgent) || ('ontouchstart' in window) || window.innerWidth <= 1024
 
         const estilos = formato === "ticket"
             ? `
