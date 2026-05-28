@@ -334,11 +334,15 @@ interface PedidoData {
 const extraerTotalPagado = (notas: string | null): number => {
     if (!notas) return 0
     let totalPagado = 0
-    for (const linea of notas.split("\n")) {
+    for (const rawLine of notas.split("\n")) {
+        const linea = rawLine.trim()
+        if (!linea) continue
         const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
         if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
         const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
-        if (mDividido) totalPagado += Number(mDividido[1])
+        if (mDividido) { totalPagado += Number(mDividido[1]); continue }
+        const mParcial = linea.match(/^PAGO: Parcial - S\/\s*([\d.]+)/)
+        if (mParcial) totalPagado += Number(mParcial[1])
     }
     return totalPagado
 }
@@ -545,18 +549,19 @@ export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; form
                             <Text>TOTAL:</Text>
                             <Text>S/ {pedido.total.toFixed(2)}</Text>
                         </View>
-                        {falta > 0.01 && (
-                            <View style={ticketStyles.faltaPagar}>
-                                <Text>FALTA PAGAR:</Text>
-                                <Text>S/ {falta.toFixed(2)}</Text>
-                            </View>
-                        )}
                     </View>
 
                     {pedido.notas && (
                         <View style={ticketStyles.notas}>
                             <Text style={ticketStyles.label}>OBSERVACIONES:</Text>
                             <Text style={ticketStyles.value}>{pedido.notas.toUpperCase()}</Text>
+                        </View>
+                    )}
+
+                    {falta > 0.01 && (
+                        <View style={ticketStyles.faltaPagar}>
+                            <Text>FALTA PAGAR:</Text>
+                            <Text>S/ {falta.toFixed(2)}</Text>
                         </View>
                     )}
                 </Page>
@@ -673,19 +678,6 @@ export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; form
                         <Text>TOTAL A PAGAR:</Text>
                         <Text>S/ {pedido.total.toFixed(2)}</Text>
                     </View>
-                    {(() => {
-                        const pagado = extraerTotalPagado(pedido.notas)
-                        const falta = Number(pedido.total) - pagado
-                        if (falta > 0.01) {
-                            return (
-                                <View style={{ ...styles.totalRow, borderTop: "1 dashed rgb(151, 3, 3)", marginTop: 4, paddingTop: 4 }}>
-                                    <Text style={{ color: "rgb(151, 3, 3)", fontWeight: "bold", fontSize: 13 }}>FALTA PAGAR:</Text>
-                                    <Text style={{ color: "rgb(151, 3, 3)", fontWeight: "bold", fontSize: 13 }}>S/ {falta.toFixed(2)}</Text>
-                                </View>
-                            )
-                        }
-                        return null
-                    })()}
                 </View>
 
                 {pedido.notas && (
@@ -694,6 +686,20 @@ export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; form
                         <Text style={styles.infoValue}>{pedido.notas.toUpperCase()}</Text>
                     </View>
                 )}
+
+                {(() => {
+                    const pagado = extraerTotalPagado(pedido.notas)
+                    const falta = Number(pedido.total) - pagado
+                    if (falta > 0.01) {
+                        return (
+                            <View style={{ ...styles.totalRow, borderTop: "1 dashed rgb(151, 3, 3)", marginTop: 4, paddingTop: 4 }}>
+                                <Text style={{ color: "rgb(151, 3, 3)", fontWeight: "bold", fontSize: 13 }}>FALTA PAGAR:</Text>
+                                <Text style={{ color: "rgb(151, 3, 3)", fontWeight: "bold", fontSize: 13 }}>S/ {falta.toFixed(2)}</Text>
+                            </View>
+                        )
+                    }
+                    return null
+                })()}
 
                 <Text style={styles.footer} render={({ pageNumber, totalPages }) => (
                     `Pedido ${pedido.numeroOrden} — Página ${pageNumber} de ${totalPages}`

@@ -43,10 +43,12 @@ model User {
   tiendas                Tienda[]
   almacenes              Almacen[]
   pedidosDelegados       PedidoDelegado[]
+  movimientosCreados     CarteraMovimiento[]
   favoritos              Favorito[]
   datosFacturacion       DatosFacturacion[]
   datosDireccionEnvios   DatosDireccionEnvios[]
   borradoresPedido       BorradorPedido[]
+  cartera                Cartera?
 
   @@unique([email])
   @@map("user")
@@ -233,6 +235,7 @@ model Pedido {
   pedidoDetalle  PedidoDetalle[]
   reclamos       Reclamo[]
   notificaciones Notificacion[]
+  movimientosCartera CarteraMovimiento[]
 
   @@index([userId])
   @@map("pedido")
@@ -474,8 +477,52 @@ model ClientePedido {
   updatedAt       DateTime @updatedAt
 
   pedidos         Pedido[]
+  cartera          Cartera?
 
   @@unique([nombre, numeroDoc])
   @@index([numeroDoc])
   @@map("cliente_pedido")
+}
+
+model Cartera {
+  id              String   @id @default(cuid())
+  clientePedidoId String?  @unique
+  userId          String?  @unique
+  saldo           Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clientePedido ClientePedido?  @relation(fields: [clientePedidoId], references: [id], onDelete: Cascade)
+  user          User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movimientos   CarteraMovimiento[]
+
+  @@index([clientePedidoId])
+  @@index([userId])
+  @@map("cartera")
+}
+
+model CarteraMovimiento {
+  id            String   @id @default(cuid())
+  carteraId     String
+  tipo          String   // "abono" | "cargo"
+  monto         Float
+  saldoAnterior Float
+  saldoNuevo    Float
+  concepto      String?
+  referencia    String?
+  metodoPago    String?  // EFECTIVO, TRANSFERENCIA, YAPE, PLIN, BBVA, DEPOSITO
+  empresa       String?  // FLORES CARITAS, TEXTILES MANCHESTER, etc
+  comprobante   String?  // URL Cloudinary
+  pedidoId      String?
+  creadoPorId   String
+  createdAt     DateTime @default(now())
+
+  cartera   Cartera @relation(fields: [carteraId], references: [id], onDelete: Cascade)
+  pedido    Pedido? @relation(fields: [pedidoId], references: [id])
+  creadoPor User    @relation(fields: [creadoPorId], references: [id])
+
+  @@index([carteraId])
+  @@index([pedidoId])
+  @@index([creadoPorId])
+  @@map("cartera_movimiento")
 }

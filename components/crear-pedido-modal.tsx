@@ -54,7 +54,7 @@ interface Props {
 }
 
 const EMPRESAS = ["FLORES CARITAS", "TEXTILES MANCHESTER", "MANCHESTERTEX", "TEXTILES MEGO", "YAPE CARLOS", "YAPE ANGEL"]
-const METODOS_PAGO = ["TRASNFERENCIA", "DEPOSITO", "EFECTIVO", "YAPE","PLIN", "BBVA"]
+const METODOS_PAGO = ["TRANSFERENCIA", "DEPOSITO", "EFECTIVO", "YAPE","PLIN", "BBVA"]
 const AGENCIAS = [
     { value: "antezana", label: "ANTEZANA" },
     { value: "shalom", label: "SHALOM" },
@@ -129,7 +129,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const [showAgregarArticulo, setShowAgregarArticulo] = useState(false)
     const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
     const [showPagoModal, setShowPagoModal] = useState(false)
-    const [tipoPago, setTipoPago] = useState<"completo" | "dividido" | "">("")
+    const [tipoPago, setTipoPago] = useState<"completo" | "dividido" | "parcial" | "">("")
     const [detallesPago, setDetallesPago] = useState<{ monto: string; empresa: string; metodoPago: string }[]>([
         { monto: "", empresa: "", metodoPago: "" },
         { monto: "", empresa: "", metodoPago: "" }
@@ -137,6 +137,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const [showDetallePagoModal, setShowDetallePagoModal] = useState(false)
     const [detalleEditandoIdx, setDetalleEditandoIdx] = useState<number | null>(null)
     const [pagoConfirmado, setPagoConfirmado] = useState(false)
+    const [pagoParcialTexto, setPagoParcialTexto] = useState("")
+    const [guardandoPago, setGuardandoPago] = useState(false)
 
     useEffect(() => {
         setIsMounted(true)
@@ -1835,14 +1837,14 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             {/* Sub-modal pago */}
             {showPagoModal && (
                 <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => { setShowPagoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} />
+                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => { setShowPagoModal(false); setTipoPago(""); setPagoParcialTexto(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} />
                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
                         {/* Header */}
                         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">Total a pagar: S/ {calcularTotal().toFixed(2)}</h3>
                             </div>
-                            <button onClick={() => { setShowPagoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                            <button onClick={() => { setShowPagoModal(false); setTipoPago(""); setPagoParcialTexto(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
@@ -1872,18 +1874,28 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                     >
                                         DIVIDIR PAGO
                                     </button>
+                                    <button
+                                        onClick={() => { setTipoPago("parcial"); setPagoParcialTexto("") }}
+                                        className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${
+                                            tipoPago === "parcial"
+                                                ? "bg-amber-600 border-amber-600 text-white shadow-sm"
+                                                : "border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50"
+                                        }`}
+                                    >
+                                        PAGO PARCIAL
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Montos divididos */}
-                            {(tipoPago === "completo" || tipoPago === "dividido") && (
+                            {/* Montos */}
+                            {(tipoPago === "completo" || tipoPago === "dividido" || tipoPago === "parcial") && (
                                 <div>
                                     <p className="text-sm font-medium text-slate-700 mb-2">
-                                        {tipoPago === "completo" ? "Detalle del pago" : "Montos"}
+                                        {tipoPago === "completo" ? "Detalle del pago" : tipoPago === "parcial" ? "Monto del pago parcial" : "Montos"}
                                     </p>
                                     <div className="space-y-2">
-                                        {(tipoPago === "completo"
-                                            ? [{ monto: calcularTotal().toFixed(2), empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
+                                        {(tipoPago === "completo" || tipoPago === "parcial"
+                                            ? [{ monto: tipoPago === "completo" ? calcularTotal().toFixed(2) : detallesPago[0]?.monto || "", empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
                                             : detallesPago
                                         ).map((det, idx) => (
                                             <div key={idx} className="flex items-center gap-2">
@@ -1893,7 +1905,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                     inputMode="decimal"
                                                     value={det.monto}
                                                     onChange={(e) => {
-                                                        if (tipoPago === "dividido") {
+                                                        if (tipoPago === "dividido" || tipoPago === "parcial") {
                                                             const val = e.target.value
                                                             if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
                                                                 const nuevo = [...detallesPago]
@@ -1904,17 +1916,12 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                     }}
                                                     readOnly={tipoPago === "completo"}
                                                     placeholder="0.00"
-                                                    className={`w-24 px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white ${tipoPago === "completo" ? "border-emerald-300 bg-emerald-50" : "border-slate-200"}`}
+                                                    className={`w-24 px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white ${tipoPago === "completo" ? "border-emerald-300 bg-emerald-50" : tipoPago === "parcial" ? "border-amber-300" : "border-slate-200"}`}
                                                 />
                                                 <button
                                                     onClick={() => {
-                                                        if (tipoPago === "completo") {
-                                                            setDetalleEditandoIdx(0);
-                                                            setShowDetallePagoModal(true)
-                                                        } else {
-                                                            setDetalleEditandoIdx(idx);
-                                                            setShowDetallePagoModal(true)
-                                                        }
+                                                        setDetalleEditandoIdx(0);
+                                                        setShowDetallePagoModal(true)
                                                     }}
                                                     className={`px-2 py-1.5 text-xs border-2 font-bold rounded-lg transition-all uppercase ${
                                                         det.empresa || det.metodoPago
@@ -1948,6 +1955,18 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             + Agregar
                                         </button>
                                     )}
+                                    {tipoPago === "parcial" && (
+                                        <div className="mt-3">
+                                            <p className="text-sm font-medium text-slate-700 mb-1">Detalle (opcional)</p>
+                                            <input
+                                                type="text"
+                                                value={pagoParcialTexto}
+                                                onChange={(e) => setPagoParcialTexto(e.target.value)}
+                                                placeholder="ej. abono de prueba"
+                                                className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all bg-white"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -1977,20 +1996,36 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                     )
                                 })()
                             )}
+                            {tipoPago === "parcial" && (
+                                (() => {
+                                    const monto = Number(detallesPago[0]?.monto) || 0
+                                    const total = calcularTotal()
+                                    const saldoPorPagar = Math.max(0, total - monto)
+                                    return monto > 0 ? (
+                                        <div className="p-3 rounded-lg border text-sm font-medium bg-amber-50 border-amber-200 text-amber-800">
+                                            <p>
+                                                Pago parcial: <span className="font-bold">S/ {monto.toFixed(2)}</span>
+                                                {" | "}Saldo por pagar: <span className="font-bold">S/ {saldoPorPagar.toFixed(2)}</span>
+                                            </p>
+                                        </div>
+                                    ) : null
+                                })()
+                            )}
                         </div>
 
                         {/* Footer */}
                         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 shrink-0">
                             <button
                                 type="button"
-                                onClick={() => { setShowPagoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }}
+                                onClick={() => { setShowPagoModal(false); setTipoPago(""); setPagoParcialTexto(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }}
                                 className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
                             >
                                 Cancelar
                             </button>
                             <Button
                                 onClick={() => {
-                                    if (!tipoPago) return
+                                    if (!tipoPago || guardandoPago) return
+                                    setGuardandoPago(true)
                                     if (tipoPago === "completo") {
                                         const total = calcularTotal().toFixed(2)
                                         const det = detallesPago[0]
@@ -2006,11 +2041,34 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                         }
                                         setObservaciones(prev => (prev ? prev + "\n" : "") + texto)
                                         setToastMessage({ show: true, message: "Pago registrado en Observaciones", type: "success" })
+                                        setPagoConfirmado(true)
+                                    } else if (tipoPago === "parcial") {
+                                        const monto = Number(detallesPago[0]?.monto) || 0
+                                        const det = detallesPago[0]
+                                        const d = new Date()
+                                        const fecha = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`
+                                        let texto = `PAGO: Parcial - S/ ${monto.toFixed(2)}`
+                                        if (det?.empresa) {
+                                            if (det.empresa === "YAPE CARLOS" || det.empresa === "YAPE ANGEL") {
+                                                texto += ` (${det.empresa})`
+                                            } else {
+                                                texto += ` (${det.empresa} / ${det.metodoPago})`
+                                            }
+                                        } else if (det?.metodoPago === "EFECTIVO") {
+                                            texto += ` (EFECTIVO)`
+                                        }
+                                        texto += ` - ${fecha}`
+                                        if (pagoParcialTexto.trim()) {
+                                            texto += ` ${pagoParcialTexto.trim()}`
+                                        }
+                                        setObservaciones(prev => (prev ? prev + "\n" : "") + texto)
+                                        setToastMessage({ show: true, message: "Pago parcial registrado en Observaciones", type: "success" })
                                     } else {
                                         const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
                                         const total = calcularTotal()
                                         if (Math.abs(suma - total) >= 0.01) {
                                             setToastMessage({ show: true, message: "La suma de los montos no coincide con el total", type: "error" })
+                                            setGuardandoPago(false)
                                             return
                                         }
                                         const detallesStr = detallesPago
@@ -2031,13 +2089,15 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             .join(" + ")
                                         setObservaciones(prev => (prev ? prev + "\n" : "") + `PAGO: Dividido - ${detallesStr} = S/ ${suma.toFixed(2)}`)
                                         setToastMessage({ show: true, message: "Pago registrado en Observaciones", type: "success" })
+                                        setPagoConfirmado(true)
                                     }
-                                    setPagoConfirmado(true)
                                     setShowPagoModal(false)
                                     setTipoPago("")
+                                    setPagoParcialTexto("")
                                     setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }])
+                                    setGuardandoPago(false)
                                 }}
-                                disabled={!tipoPago || (tipoPago !== "completo" && tipoPago !== "dividido") || (tipoPago === "completo" && !detallesPago[0]?.metodoPago) || (tipoPago === "dividido" && !detallesPago.every(d => {
+                                disabled={guardandoPago || !tipoPago || (tipoPago !== "completo" && tipoPago !== "dividido" && tipoPago !== "parcial") || (tipoPago === "completo" && !detallesPago[0]?.metodoPago) || (tipoPago === "parcial" && (!detallesPago[0]?.monto || !detallesPago[0]?.metodoPago || (detallesPago[0]?.metodoPago !== "EFECTIVO" && !detallesPago[0]?.empresa))) || (tipoPago === "dividido" && !detallesPago.every(d => {
                                     if (!d.monto) return false
                                     if (d.metodoPago === "EFECTIVO") return true
                                     return d.empresa && d.metodoPago

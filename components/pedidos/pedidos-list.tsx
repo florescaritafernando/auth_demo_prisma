@@ -124,11 +124,15 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
     const extraerTotalPagado = (notas: string | null): number => {
         if (!notas) return 0
         let totalPagado = 0
-        for (const linea of notas.split("\n")) {
+        for (const rawLine of notas.split("\n")) {
+            const linea = rawLine.trim()
+            if (!linea) continue
             const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
             if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
             const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
-            if (mDividido) totalPagado += Number(mDividido[1])
+            if (mDividido) { totalPagado += Number(mDividido[1]); continue }
+            const mParcial = linea.match(/^PAGO: Parcial - S\/\s*([\d.]+)/)
+            if (mParcial) totalPagado += Number(mParcial[1])
         }
         return totalPagado
     }

@@ -62,11 +62,15 @@ interface Props {
 const extraerTotalPagado = (notas: string | null): number => {
     if (!notas) return 0
     let totalPagado = 0
-    for (const linea of notas.split("\n")) {
+    for (const rawLine of notas.split("\n")) {
+        const linea = rawLine.trim()
+        if (!linea) continue
         const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
         if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
         const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
-        if (mDividido) totalPagado += Number(mDividido[1])
+        if (mDividido) { totalPagado += Number(mDividido[1]); continue }
+        const mParcial = linea.match(/^PAGO: Parcial - S\/\s*([\d.]+)/)
+        if (mParcial) totalPagado += Number(mParcial[1])
     }
     return totalPagado
 }
@@ -379,17 +383,6 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                             <span>TOTAL:</span>
                             <span>S/ ${pedido.total.toFixed(2)}</span>
                         </div>
-                        ${(() => {
-                            const pagado = extraerTotalPagado(pedido.notas)
-                            const falta = Number(pedido.total) - pagado
-                            if (falta > 0.01) {
-                                return `<div class="falta-pagar">
-                                    <span>FALTA PAGAR:</span>
-                                    <span>S/ ${falta.toFixed(2)}</span>
-                                </div>`
-                            }
-                            return ""
-                        })()}
                     </div>
                     
                     ${pedido.notas ? `
@@ -397,7 +390,18 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         <div class="label">OBSERVACIONES:</div>
                         <div class="value">${pedido.notas}</div>
                     </div>
-                    ` : ""}`
+                    ` : ""}
+                    ${(() => {
+                        const pagado = extraerTotalPagado(pedido.notas)
+                        const falta = Number(pedido.total) - pagado
+                        if (falta > 0.01) {
+                            return `<div class="falta-pagar">
+                                <span>FALTA PAGAR:</span>
+                                <span>S/ ${falta.toFixed(2)}</span>
+                            </div>`
+                        }
+                        return ""
+                    })()}`
 
             const estilosFinal = esMovil
                 ? (() => {
@@ -557,17 +561,6 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     <span>TOTAL A PAGAR:</span>
                     <span>S/ ${pedido.total.toFixed(2)}</span>
                 </div>
-                ${(() => {
-                    const pagado = extraerTotalPagado(pedido.notas)
-                    const falta = Number(pedido.total) - pagado
-                    if (falta > 0.01) {
-                        return `<div class="totales-row" style="color:rgb(151, 3, 3);font-weight:bold;border-top:1px dashed rgb(151, 3, 3);padding-top:8px;margin-top:4px;font-size:16px">
-                            <span>FALTA PAGAR:</span>
-                            <span>S/ ${falta.toFixed(2)}</span>
-                        </div>`
-                    }
-                    return ""
-                })()}
             </div>
             
             ${pedido.notas ? `
@@ -576,6 +569,17 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                 <div class="info-value">${pedido.notas}</div>
             </div>
             ` : ""}
+            ${(() => {
+                const pagado = extraerTotalPagado(pedido.notas)
+                const falta = Number(pedido.total) - pagado
+                if (falta > 0.01) {
+                    return `<div class="totales-row" style="color:rgb(151, 3, 3);font-weight:bold;border-top:1px dashed rgb(151, 3, 3);padding-top:8px;margin-top:4px;font-size:16px">
+                        <span>FALTA PAGAR:</span>
+                        <span>S/ ${falta.toFixed(2)}</span>
+                    </div>`
+                }
+                return ""
+            })()}
         `
     }
 

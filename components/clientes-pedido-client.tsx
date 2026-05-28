@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Search } from "lucide-react"
 import { BotonNuevoClientePedido, BotonEliminarClientePedido } from "@/components/nuevo-cliente-pedido-button"
 import { BotonEditarClientePedido } from "@/components/editar-cliente-pedido-button"
+import { VerClienteButton } from "@/components/clientes-pedido/ver-cliente-button"
+import { DetalleClienteModal } from "@/components/clientes-pedido/detalle-cliente-modal"
 import { Pagination } from "@/components/ui/pagination"
 
 interface ClientePedido {
@@ -44,6 +46,7 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
     const [search, setSearch] = useState("")
     const [filtroAgencia, setFiltroAgencia] = useState("")
     const [filtroTipoDoc, setFiltroTipoDoc] = useState("")
+    const [detalleClienteId, setDetalleClienteId] = useState<string | null>(null)
 
     const filtered = initialClientes.filter(c => {
         const matchSearch =
@@ -166,6 +169,7 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                                             </td>
                                             <td className="px-3 py-3 text-right">
                                                 <div className="flex justify-end gap-2">
+                                                    <VerClienteButton onClick={() => setDetalleClienteId(cli.id)} />
                                                     <BotonEditarClientePedido cliente={cli as any} />
                                                     <BotonEliminarClientePedido id={cli.id} />
                                                 </div>
@@ -191,6 +195,12 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                     itemLabel="clientes"
                 />
             </div>
+
+            <DetalleClienteModal
+                clienteId={detalleClienteId || ""}
+                open={!!detalleClienteId}
+                onClose={() => setDetalleClienteId(null)}
+            />
         </div>
     )
 }

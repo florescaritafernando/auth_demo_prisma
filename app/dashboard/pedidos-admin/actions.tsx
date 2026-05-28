@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus, RefreshCw, DollarSign } from "lucide-react"
+import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus, RefreshCw, DollarSign, Wallet } from "lucide-react"
 import { RechazarPedidoModal } from "@/components/pedidos/RechazarPedidoModal"
 import { ConfirmarMetrajeModal } from "@/components/pedidos/ConfirmarMetrajeModal"
 
@@ -36,6 +36,7 @@ interface Pedido {
     costoEnvio: number
     metodoEnvio: string | null
     total: number
+    clientePedidoId: string | null
     pedidoDetalle: DetalleItem[]
     delegados: { id: string; userId: string; user: { id: string; name: string | null; email: string | null } }[]
 }
@@ -74,13 +75,20 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const [costoEnvioManual, setCostoEnvioManual] = useState<string>(String(pedido.costoEnvio || 0))
     const [guardandoCosto, setGuardandoCosto] = useState(false)
     const [showPagoPedidoModal, setShowPagoPedidoModal] = useState(false)
-    const [tipoPago, setTipoPago] = useState<"completo" | "dividido" | "">("")
+    const [tipoPago, setTipoPago] = useState<"completo" | "dividido" | "parcial" | "">("")
     const [detallesPago, setDetallesPago] = useState<{ monto: string; empresa: string; metodoPago: string }[]>([
         { monto: "", empresa: "", metodoPago: "" },
         { monto: "", empresa: "", metodoPago: "" }
     ])
     const [showDetallePagoModal, setShowDetallePagoModal] = useState(false)
     const [detalleEditandoIdx, setDetalleEditandoIdx] = useState<number | null>(null)
+    const [pagoParcialTexto, setPagoParcialTexto] = useState("")
+    const [guardandoPago, setGuardandoPago] = useState(false)
+    const [saldoCartera, setSaldoCartera] = useState(0)
+    const [carteraMovimientosCount, setCarteraMovimientosCount] = useState(0)
+    const [usarSaldoCartera, setUsarSaldoCartera] = useState(false)
+    const [carteraMontoCustom, setCarteraMontoCustom] = useState(0)
+    const [cargandoCartera, setCargandoCartera] = useState(false)
 
     const EMPRESAS = ["FLORES CARITAS", "TEXTILES MANCHESTER", "MANCHESTERTEX", "TEXTILES MEGO", "YAPE CARLOS", "YAPE ANGEL"]
     const METODOS_PAGO = ["TRASNFERENCIA", "DEPOSITO", "EFECTIVO", "YAPE","PLIN", "BBVA"]
@@ -88,17 +96,45 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const extraerTotalPagado = (notas: string | null): number => {
         if (!notas) return 0
         let totalPagado = 0
-        for (const linea of notas.split("\n")) {
+        for (const rawLine of notas.split("\n")) {
+            const linea = rawLine.trim()
+            if (!linea) continue
             const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
             if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
             const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
-            if (mDividido) totalPagado += Number(mDividido[1])
+            if (mDividido) { totalPagado += Number(mDividido[1]); continue }
+            const mParcial = linea.match(/^PAGO: Parcial - S\/\s*([\d.]+)/)
+            if (mParcial) totalPagado += Number(mParcial[1])
         }
         return totalPagado
     }
 
     const totalPagado = extraerTotalPagado((pedido as any).notas)
     const faltaPagar = Math.max(0, Number(pedido.total) - totalPagado)
+
+    useEffect(() => {
+        if (!showPagoPedidoModal || !pedido.clientePedidoId) return
+        setUsarSaldoCartera(false)
+        setCargandoCartera(true)
+        fetch(`/api/clientes-pedido/${pedido.clientePedidoId}/cartera`, { credentials: "include" })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.cartera) {
+                    setSaldoCartera(data.cartera.saldo || 0)
+                    setCarteraMovimientosCount(data.cartera.movimientos?.length || 0)
+                } else {
+                    setSaldoCartera(0)
+                    setCarteraMovimientosCount(0)
+                }
+            })
+            .catch(() => { setSaldoCartera(0); setCarteraMovimientosCount(0) })
+            .finally(() => setCargandoCartera(false))
+    }, [showPagoPedidoModal, pedido.clientePedidoId])
+
+    const carteraActiva = usarSaldoCartera && saldoCartera > 0 && (tipoPago === "completo" || tipoPago === "dividido")
+    const carteraUsada = carteraActiva ? Math.min(carteraMontoCustom, saldoCartera, faltaPagar) : 0
+    const faltaPagarEfectiva = Math.max(0, faltaPagar - carteraUsada)
+    const mostrarCarteraCheckbox = saldoCartera > 0 && carteraMovimientosCount > 1
 
     const estaAsignado = pedido.delegados?.some(d => d.userId === userId)
     const puedeEditar = role === "admin" || (role === "empleado" && estaAsignado && pedido.estado !== "metraje_confirmado")
@@ -750,7 +786,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
             {/* Sub-modal pago */}
             {showPagoPedidoModal && (
                 <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} />
+                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setPagoParcialTexto(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]); setUsarSaldoCartera(false); setCarteraMontoCustom(0) }} />
                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
                         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
                             <div>
@@ -761,35 +797,91 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                     {" | "}<span className="text-red-600 font-bold">Falta: S/ {faltaPagar.toFixed(2)}</span>
                                 </p>
                             </div>
-                            <button onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                            <button onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setPagoParcialTexto(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]); setCarteraMontoCustom(0) }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
                         <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                            {pedido.clientePedidoId && (
+                                <div className="p-3 rounded-lg border border-blue-200 bg-blue-50">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Wallet className="h-4 w-4 text-blue-600" />
+                                            <p className="text-sm font-medium text-blue-800">
+                                                Saldo a favor: <span className="font-bold">S/ {saldoCartera.toFixed(2)}</span>
+                                                {cargandoCartera && <span className="text-xs text-blue-500 ml-2">Cargando...</span>}
+                                            </p>
+                                        </div>
+                                        {mostrarCarteraCheckbox && (
+                                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                <input type="checkbox" checked={usarSaldoCartera} onChange={(e) => { setUsarSaldoCartera(e.target.checked); if (!e.target.checked) setCarteraMontoCustom(0) }} className="sr-only" />
+                                                <div className={`w-10 h-5 rounded-full transition-colors duration-200 ${usarSaldoCartera ? "bg-blue-600" : "bg-slate-300"}`}>
+                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ${usarSaldoCartera ? "translate-x-5" : "translate-x-0.5"} mt-0.5`} />
+                                                </div>
+                                                <span className="text-sm font-medium text-blue-700">Usar saldo</span>
+                                            </label>
+                                        )}
+                                    </div>
+                                    {usarSaldoCartera && (
+                                        <div className="mt-3 flex items-center gap-2">
+                                            <span className="text-sm font-medium text-slate-600 whitespace-nowrap">Saldo a usar:</span>
+                                            <span className="text-sm font-medium text-slate-500">S/</span>
+                                            <input
+                                                type="text" inputMode="decimal"
+                                                value={carteraMontoCustom > 0 ? carteraMontoCustom.toFixed(2) : ""}
+                                                onChange={(e) => {
+                                                    const val = e.target.value
+                                                    if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                                                        setCarteraMontoCustom(val === "" ? 0 : Math.min(Number(val), saldoCartera, faltaPagar))
+                                                    }
+                                                }}
+                                                placeholder="0.00"
+                                                className="w-24 px-3 py-1.5 border-2 border-blue-300 rounded-lg text-sm text-blue-800 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                            />
+                                            {carteraMontoCustom > 0 && (
+                                                <span className="text-xs text-blue-600">
+                                                    {carteraUsada >= faltaPagar ? "Cubre el total" : `Restan S/ ${faltaPagarEfectiva.toFixed(2)}`}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => setTipoPago("completo")}
+                                        onClick={() => { setTipoPago("completo"); if (usarSaldoCartera) setCarteraMontoCustom(0) }}
                                         className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${tipoPago === "completo" ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
                                     >
                                         PAGO COMPLETO
                                     </button>
                                     <button
-                                        onClick={() => setTipoPago("dividido")}
+                                        onClick={() => { setTipoPago("dividido"); if (usarSaldoCartera) setCarteraMontoCustom(0) }}
                                         className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${tipoPago === "dividido" ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
                                     >
                                         DIVIDIR PAGO
                                     </button>
+                                    <button
+                                        onClick={() => { setTipoPago("parcial"); setPagoParcialTexto(""); setCarteraMontoCustom(0) }}
+                                        className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${tipoPago === "parcial" ? "bg-amber-600 border-amber-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50"}`}
+                                    >
+                                        PAGO PARCIAL
+                                    </button>
                                 </div>
                             </div>
-                            {(tipoPago === "completo" || tipoPago === "dividido") && (
+                            {(tipoPago === "completo" || tipoPago === "dividido" || tipoPago === "parcial") && (
                                 <div>
                                     <p className="text-sm font-medium text-slate-700 mb-2">
-                                        {tipoPago === "completo" ? "Detalle del pago" : "Montos"}
+                                        {tipoPago === "completo" ? "Detalle del pago" : tipoPago === "parcial" ? "Monto del pago parcial" : "Montos"}
                                     </p>
+                                    {tipoPago === "completo" && carteraActiva && carteraUsada >= faltaPagar ? (
+                                        <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 text-blue-800 text-sm font-medium">
+                                            <CheckCircle className="h-4 w-4 inline mr-1" /> Cubierto por saldo cartera
+                                        </div>
+                                    ) : (
                                     <div className="space-y-2">
-                                        {(tipoPago === "completo"
-                                            ? [{ monto: faltaPagar.toFixed(2), empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
+                                        {(tipoPago === "completo" || tipoPago === "parcial"
+                                            ? [{ monto: faltaPagarEfectiva.toFixed(2), empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
                                             : detallesPago
                                         ).map((det, idx) => (
                                             <div key={idx} className="flex items-center gap-2">
@@ -798,7 +890,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                     type="text" inputMode="decimal"
                                                     value={det.monto}
                                                     onChange={(e) => {
-                                                        if (tipoPago === "dividido") {
+                                                        if (tipoPago === "dividido" || tipoPago === "parcial") {
                                                             const val = e.target.value
                                                             if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
                                                                 const nuevo = [...detallesPago]
@@ -809,14 +901,20 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                     }}
                                                     readOnly={tipoPago === "completo"}
                                                     placeholder="0.00"
-                                                    className={`w-24 px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white ${tipoPago === "completo" ? "border-emerald-300 bg-emerald-50" : "border-slate-200"}`}
+                                                    className={`w-24 px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white ${tipoPago === "completo" ? "border-emerald-300 bg-emerald-50" : tipoPago === "parcial" ? "border-amber-300" : "border-slate-200"}`}
                                                 />
                                                 <button
-                                                    onClick={() => { setDetalleEditandoIdx(tipoPago === "completo" ? 0 : idx); setShowDetallePagoModal(true) }}
-                                                    className={`px-2 py-1.5 text-xs font-bold border-2 rounded-lg transition-all uppercase ${det.empresa || det.metodoPago ? 
-                                                        "bg-emerald-600 border-emerald-600 text-white" : "bg-red-600 border-red-600 text-white"}`}
+                                                    onClick={() => { setDetalleEditandoIdx(idx); setShowDetallePagoModal(true) }}
+                                                    className={`px-2 py-1.5 text-xs font-bold border-2 rounded-lg transition-all uppercase ${
+                                                        det.empresa || det.metodoPago
+                                                            ? "bg-emerald-600 border-emerald-600 text-white"
+                                                            : "bg-red-600 border-red-600 text-white"
+                                                    }`}
                                                 >
-                                                    {det.empresa ? `${det.empresa} / ${det.metodoPago}` : det.metodoPago || "Seleccionar Detalle"}
+                                                    {det.empresa
+                                                        ? `${det.empresa} / ${det.metodoPago}`
+                                                        : det.metodoPago || "Seleccionar Detalle"
+                                                    }
                                                 </button>
                                                 {tipoPago === "dividido" && (
                                                     <button
@@ -830,6 +928,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                             </div>
                                         ))}
                                     </div>
+                                    )}
                                     {tipoPago === "dividido" && (
                                         <button
                                             onClick={() => setDetallesPago([...detallesPago, { monto: "", empresa: "", metodoPago: "" }])}
@@ -838,21 +937,33 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                             + Agregar
                                         </button>
                                     )}
+                                    {tipoPago === "parcial" && (
+                                        <div className="mt-3">
+                                            <p className="text-sm font-medium text-slate-700 mb-1">Detalle (opcional)</p>
+                                            <input
+                                                type="text"
+                                                value={pagoParcialTexto}
+                                                onChange={(e) => setPagoParcialTexto(e.target.value)}
+                                                placeholder="ej. abono de prueba"
+                                                className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all bg-white"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {tipoPago === "dividido" && (
                                 (() => {
                                     const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
-                                    const coincide = Math.abs(suma - faltaPagar) < 0.01
+                                    const coincide = Math.abs(suma - faltaPagarEfectiva) < 0.01
                                     return (
                                         <div className={`p-3 rounded-lg border text-sm font-medium ${coincide ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"}`}>
                                             <p>
-                                                Total ingresado: <span className="font-bold">S/ {suma.toFixed(2)}</span> / <span className="font-bold">Falta: S/ {faltaPagar.toFixed(2)}</span>
+                                                Total ingresado: <span className="font-bold">S/ {suma.toFixed(2)}</span> / <span className="font-bold">Falta: S/ {faltaPagarEfectiva.toFixed(2)}</span>
                                                 {coincide ? (
                                                     <span className="ml-2 inline-flex items-center gap-1"><CheckCircle className="h-4 w-4" /> Coincide con la deuda</span>
                                                 ) : (
                                                     detallesPago.some(d => d.monto !== "") && (
-                                                        <span className="ml-2">(Diferencia: S/ {Math.abs(faltaPagar - suma).toFixed(2)})</span>
+                                                        <span className="ml-2">(Diferencia: S/ {Math.abs(faltaPagarEfectiva - suma).toFixed(2)})</span>
                                                     )
                                                 )}
                                             </p>
@@ -860,22 +971,56 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                     )
                                 })()
                             )}
+                            {tipoPago === "parcial" && (
+                                (() => {
+                                    const monto = Number(detallesPago[0]?.monto) || 0
+                                    const saldoPorPagar = Math.max(0, faltaPagarEfectiva - monto)
+                                    return monto > 0 ? (
+                                        <div className="p-3 rounded-lg border text-sm font-medium bg-amber-50 border-amber-200 text-amber-800">
+                                            <p>
+                                                Pago parcial: <span className="font-bold">S/ {monto.toFixed(2)}</span>
+                                                {" | "}Saldo por pagar: <span className="font-bold">S/ {saldoPorPagar.toFixed(2)}</span>
+                                            </p>
+                                        </div>
+                                    ) : null
+                                })()
+                            )}
                         </div>
                         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 shrink-0">
                             <button
                                 type="button"
-                                onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }}
+                                onClick={() => { setShowPagoPedidoModal(false); setTipoPago(""); setPagoParcialTexto(""); setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]); setUsarSaldoCartera(false); setCarteraMontoCustom(0) }}
                                 className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
                             >
                                 Cancelar
                             </button>
                             <Button
                                 onClick={async () => {
-                                    if (!tipoPago) return
+                                    if (!tipoPago || guardandoPago) return
+                                    setGuardandoPago(true)
                                     let textoPago = ""
+                                    let cambiarEstado = true
                                     if (tipoPago === "completo") {
                                         textoPago = `PAGO: Completo - S/ ${faltaPagar.toFixed(2)}`
                                         const det = detallesPago[0]
+                                        if (carteraActiva) {
+                                            textoPago += ` (CARTERA S/ ${carteraUsada.toFixed(2)})`
+                                        } else if (det?.empresa) {
+                                            if (det.empresa === "YAPE CARLOS" || det.empresa === "YAPE ANGEL") {
+                                                textoPago += ` (${det.empresa})`
+                                            } else {
+                                                textoPago += ` (${det.empresa} / ${det.metodoPago})`
+                                            }
+                                        } else if (det?.metodoPago === "EFECTIVO") {
+                                            textoPago += ` (EFECTIVO)`
+                                        }
+                                    } else if (tipoPago === "parcial") {
+                                        cambiarEstado = false
+                                        const monto = Number(detallesPago[0]?.monto) || 0
+                                        const det = detallesPago[0]
+                                        const d = new Date()
+                                        const fecha = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`
+                                        textoPago = `PAGO: Parcial - S/ ${monto.toFixed(2)}`
                                         if (det?.empresa) {
                                             if (det.empresa === "YAPE CARLOS" || det.empresa === "YAPE ANGEL") {
                                                 textoPago += ` (${det.empresa})`
@@ -885,9 +1030,14 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                         } else if (det?.metodoPago === "EFECTIVO") {
                                             textoPago += ` (EFECTIVO)`
                                         }
+                                        textoPago += ` - ${fecha}`
+                                        if (pagoParcialTexto.trim()) {
+                                            textoPago += ` ${pagoParcialTexto.trim()}`
+                                        }
                                     } else {
                                         const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
-                                        if (Math.abs(suma - faltaPagar) >= 0.01) {
+                                        if (Math.abs(suma - faltaPagarEfectiva) >= 0.01) {
+                                            setGuardandoPago(false)
                                             return
                                         }
                                         const detallesStr = detallesPago
@@ -906,7 +1056,10 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                 return s
                                             })
                                             .join(" + ")
-                                        textoPago = `PAGO: Dividido - ${detallesStr} = S/ ${suma.toFixed(2)}`
+                                        const totalPagado = suma + carteraUsada
+                                        textoPago = carteraActiva
+                                            ? `PAGO: Dividido - SALDO CARTERA S/ ${carteraUsada.toFixed(2)}${suma > 0 ? ` + ${detallesStr}` : ""} = S/ ${totalPagado.toFixed(2)}`
+                                            : `PAGO: Dividido - ${detallesStr} = S/ ${suma.toFixed(2)}`
                                     }
                                     const currentNotas = (pedido as any).notas || ""
                                     const newNotas = currentNotas ? currentNotas + "\n" + textoPago : textoPago
@@ -914,17 +1067,40 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                         await fetch(`/api/pedidos/${pedido.id}`, {
                                             method: "PATCH",
                                             headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({ notas: newNotas, estado: "confirmado" })
+                                            body: JSON.stringify(cambiarEstado ? { notas: newNotas, estado: "confirmado" } : { notas: newNotas })
                                         })
                                     } catch (e) {
                                         console.error("Error guardando pago:", e)
                                     }
+                                    if (carteraUsada > 0 && pedido.clientePedidoId) {
+                                        try {
+                                            await fetch(`/api/clientes-pedido/${pedido.clientePedidoId}/cartera/movimientos`, {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({
+                                                    tipo: "cargo",
+                                                    monto: carteraUsada,
+                                                    concepto: `Pago aplicado a pedido ${pedido.numeroOrden}`,
+                                                    referencia: pedido.numeroOrden,
+                                                    pedidoId: pedido.id,
+                                                }),
+                                                credentials: "include",
+                                            })
+                                        } catch (e) {
+                                            console.error("Error registrando movimiento de cartera:", e)
+                                        }
+                                    }
                                     setShowPagoPedidoModal(false)
                                     setTipoPago("")
+                                    setPagoParcialTexto("")
                                     setDetallesPago([{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }])
+        setUsarSaldoCartera(false)
+        setCarteraMontoCustom(0)
+                                    setGuardandoPago(false)
+                                    try { new BroadcastChannel("notificaciones").postMessage("refresh") } catch {}
                                     window.location.reload()
                                 }}
-                                disabled={!tipoPago || (tipoPago !== "completo" && tipoPago !== "dividido") || (tipoPago === "completo" && !detallesPago[0]?.metodoPago) || (tipoPago === "dividido" && !detallesPago.every(d => {
+                                disabled={guardandoPago || !tipoPago || (tipoPago !== "completo" && tipoPago !== "dividido" && tipoPago !== "parcial") || (tipoPago === "completo" && !(carteraActiva && faltaPagarEfectiva === 0) && !detallesPago[0]?.metodoPago) || (tipoPago === "parcial" && (!detallesPago[0]?.monto || !detallesPago[0]?.metodoPago || (detallesPago[0]?.metodoPago !== "EFECTIVO" && !detallesPago[0]?.empresa))) || (tipoPago === "dividido" && !(carteraActiva && faltaPagarEfectiva === 0) && !detallesPago.every(d => {
                                     if (!d.monto) return false
                                     if (d.metodoPago === "EFECTIVO") return true
                                     return d.empresa && d.metodoPago
