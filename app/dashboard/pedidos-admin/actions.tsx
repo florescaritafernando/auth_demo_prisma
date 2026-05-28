@@ -8,13 +8,13 @@ import { RechazarPedidoModal } from "@/components/pedidos/RechazarPedidoModal"
 import { ConfirmarMetrajeModal } from "@/components/pedidos/ConfirmarMetrajeModal"
 
 const ESTADOS_DISPONIBLES = [
-    { value: "metraje_en_proceso", label: "Metraje en proceso", color: "bg-yellow-100 text-yellow-800" },
-    { value: "metraje_confirmado", label: "Metraje confirmado", color: "bg-green-100 text-green-800" },
-    { value: "pendiente", label: "Pago en revisión", color: "bg-blue-100 text-blue-800" },
-    { value: "confirmado", label: "Pago confirmado", color: "bg-blue-200 text-blue-900" },
-    { value: "pedido_enviado", label: "Pedido enviado", color: "bg-yellow-100 text-yellow-800" },
-    { value: "rechazado", label: "Rechazar pedido", color: "bg-red-100 text-red-800" },
-    { value: "completado", label: "Pedido completado", color: "bg-green-100 text-green-800" },
+    { value: "metraje_en_proceso", label: "Metraje en proceso", color: "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-600 hover:text-white hover:border-yellow-600", icon: Clock },
+    { value: "metraje_confirmado", label: "Metraje confirmado", color: "bg-green-100 text-green-800 border-green-300 hover:bg-green-600 hover:text-white hover:border-green-600", icon: CheckCircle },
+    { value: "pendiente", label: "Pago en revisión", color: "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600", icon: Clock },
+    { value: "confirmado", label: "Pago confirmado", color: "bg-blue-200 text-blue-900 border-blue-400 hover:bg-blue-700 hover:text-white hover:border-blue-700", icon: CheckCircle },
+    { value: "pedido_enviado", label: "Pedido enviado", color: "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-600 hover:text-white hover:border-amber-600", icon: Clock },
+    { value: "rechazado", label: "Rechazar pedido", color: "bg-red-100 text-red-800 border-red-300 hover:bg-red-600 hover:text-white hover:border-red-600", icon: XCircle },
+    { value: "completado", label: "Pedido completado", color: "bg-green-100 text-green-800 border-green-300 hover:bg-green-600 hover:text-white hover:border-green-600", icon: CheckCircle },
 ]
 
 interface DetalleItem {
@@ -467,27 +467,27 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                         if (e.value === "rechazado" && (pedido.estado === "confirmado" || pedido.estado === "completado" || pedido.estado === "pedido_enviado")) return false
                         if (e.value === "pedido_enviado" && pedido.estado !== "confirmado") return false
                         return true
-                    }).map(estado => (
-                        <Button
-                            key={estado.value}
-                            size="sm"
-                            variant="outline"
-                            onClick={() => cambiarEstado(estado.value)}
-                            disabled={loading}
-                            className={`text-xs ${estado.color}`}
-                        >
-                            {estado.value === "metraje_confirmado" && <CheckCircle className="h-3 w-3 mr-1" />}
-                            {estado.value === "metraje_en_proceso" && <Clock className="h-3 w-3 mr-1" />}
-                            {estado.value === "rechazado" && <XCircle className="h-3 w-3 mr-1" />}
-                            {estado.label}
-                        </Button>
-                    ))}
+                    }).map(estado => {
+                        const Icon = estado.icon
+                        return (
+                            <Button
+                                key={estado.value}
+                                size="sm"
+                                onClick={() => cambiarEstado(estado.value)}
+                                disabled={loading}
+                                className={`text-xs font-semibold border-2 shadow-sm hover:shadow-lg active:scale-[0.95] transition-all duration-200 ${estado.color}`}
+                            >
+                                <Icon className="h-3.5 w-3.5 mr-1.5" />
+                                {estado.label}
+                            </Button>
+                        )
+                    })}
                 </div>
             </div>
             )}
 
             {(role === "admin" || (role === "empleado" && pedido.estado !== "pedido_enviado" && pedido.estado !== "completado" && pedido.estado !== "confirmado")) && (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <div className="bg-gradient-to-r from-slate-50 to-white border-2 border-slate-200 rounded-xl p-4 shadow-sm">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="flex-1">
                             {role === "empleado" && (() => {
@@ -514,9 +514,9 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                 alert("Error al tomar pedido")
                                             }
                                         }}
-                                        className={`mb-2 ${yaAsignado 
-                                            ? "bg-green-500 text-white cursor-not-allowed" 
-                                            : "bg-blue-600 hover:bg-blue-700 text-white"}`}
+                                        className={`border-2 font-semibold transition-all duration-150 active:scale-[0.97] ${yaAsignado 
+                                            ? "bg-green-500 text-white border-green-600 cursor-not-allowed" 
+                                            : "bg-blue-600 hover:bg-blue-700 text-white border-blue-700 hover:shadow-lg"}`}
                                     >
                                         <UserPlus className="h-4 w-4 mr-1" />
                                         {yaAsignado ? "Asignado" : "Tomar Pedido"}
@@ -531,16 +531,16 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                 variant="outline"
                                 onClick={recalcularPedido}
                                 disabled={loading}
-                                className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                                className="border-2 border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 hover:shadow-md active:scale-[0.97] transition-all duration-150 font-semibold"
                             >
-                                <RefreshCw className="h-4 w-4 mr-1" />
+                                <RefreshCw className="h-4 w-4 mr-1.5" />
                                 Recalcular
                             </Button>
                             <input
                                 type="number"
                                 value={costoEnvioManual}
                                 onChange={(e) => setCostoEnvioManual(e.target.value)}
-                                className="w-24 px-3 py-2 border border-slate-300 rounded-lg text-right font-medium text-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="w-24 px-3 py-2 border-2 border-slate-300 rounded-lg text-right font-semibold text-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                                 min="0"
                                 step="0.01"
                             />
@@ -548,7 +548,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                 size="sm"
                                 onClick={guardarCostoEnvio}
                                 disabled={guardandoCosto || parseFloat(costoEnvioManual || "0") === pedido.costoEnvio}
-                                className="bg-blue-600 hover:bg-blue-700"
+                                className="bg-blue-600 hover:bg-blue-700 hover:shadow-lg active:scale-[0.97] transition-all duration-150 font-semibold border-2 border-blue-700"
                             >
                                 {guardandoCosto ? "Guardando..." : "Guardar"}
                             </Button>
@@ -575,111 +575,125 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                 size="sm"
                                 onClick={guardarMetraje}
                                 disabled={loading}
-                                className="bg-green-600 hover:bg-green-700 text-lg px-6 py-2"
+                                className="bg-green-600 hover:bg-green-700 hover:shadow-lg active:scale-[0.97] transition-all duration-150 font-semibold border-2 border-green-700 px-5"
                             >
-                                <Save className="h-4 w-4 mr-2" />
+                                <Save className="h-4 w-4 mr-1.5" />
                                 Guardar
                             </Button>
                         )}
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {piezaDetails.map((detalle) => {
                             const registros = metrajeData[detalle.id] || []
                             const metrajeTotal = getMetrajeTotal(detalle.id)
                             const precioTotal = Number(detalle.precio) * metrajeTotal
+                            const cantidadPiezas = Number(detalle.cantidad) || 0
+                            const etiquetasCount = detalle.etiquetas?.length || 0
+                            const faltantes = cantidadPiezas - etiquetasCount
 
                             return (
-                                <div key={detalle.id} className="bg-white rounded-lg p-3 border border-yellow-200">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex-1">
-                                            <p className="font-bold text-slate-900 text-lg">{detalle.producto.nombre}</p>
-                                                <span className="ml-2 px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-medium text-slate-600 shrink-0">{detalle.producto.categoria}</span>
-                                            {detalle.etiquetas && detalle.etiquetas.length > 0 && (
-                                                <p className="text-sm font-bold text-slate-600 mt-1">
-                                                    {detalle.etiquetas.length} de {Number(detalle.cantidad)} piezas con metraje
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-lg font-bold text-slate-700">
-                                                Cliente pidió: <span className="text-yellow-700">{detalle.cantidad} pieza(s)</span>
-                                            </p>
-                                            {(() => {
-                                                const cantidadPiezas = Number(detalle.cantidad) || 0
-                                                const etiquetasCount = detalle.etiquetas?.length || 0
-                                                const faltantes = cantidadPiezas - etiquetasCount
-                                                return (
-                                                    <>
-                                                        {faltantes > 0 ? (
-                                                            <p className="text-sm font-bold text-orange-600">Faltan {faltantes}</p>
-                                                        ) : (
-                                                            <p className="text-sm font-bold text-green-600">✓ Completo</p>
-                                                        )}
-                                                    </>
-                                                )
-                                            })()}
-                                            <p className="text-xl font-bold text-green-700">S/ {precioTotal.toFixed(2)}</p>
+                                <div key={detalle.id} className="bg-white rounded-xl border border-yellow-200 shadow-sm overflow-hidden">
+                                    {/* Header */}
+                                    <div className="bg-gradient-to-r from-yellow-50 to-white px-4 py-3 border-b border-yellow-100">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="font-bold text-slate-900 text-base truncate">{detalle.producto.nombre}</p>
+                                                    <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-[11px] font-medium shrink-0">{detalle.producto.categoria}</span>
+                                                </div>
+                                                {detalle.etiquetas && detalle.etiquetas.length > 0 && (
+                                                    <p className="text-xs text-slate-500 mt-1">
+                                                        {etiquetasCount} de {cantidadPiezas} piezas con metraje
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <p className="text-xs text-slate-500">Precio</p>
+                                                <p className="text-lg font-bold text-green-700 leading-tight">S/ {precioTotal.toFixed(2)}</p>
+                                            </div>
                                         </div>
                                     </div>
 
+                                    {/* Metraje chips */}
                                     {registros.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mb-3">
-                                            {registros.map((reg) => {
-                                                const isNew = reg.isNew === true
-                                                return (
-                                                    <div key={reg.id} className="flex items-center gap-1 bg-yellow-100 border border-yellow-300 rounded-full pl-2 pr-1 py-1">
-                                                        <Tag className="h-4 w-4 text-yellow-600 ml-1" />
-                                                        {isNew ? (
-                                                            <input
-                                                                type="text"
-                                                                inputMode="decimal"
-                                                                autoFocus
-                                                                value={reg.value || ""}
-                                                                onChange={e => actualizarMetraje(detalle.id, reg.id, e.target.value)}
-                                                                onKeyDown={e => {
-                                                                    if (e.key === "Enter") {
-                                                                        const newRegs = metrajeData[detalle.id].map(r =>
-                                                                            r.id === reg.id ? { ...r, isNew: false } : r
-                                                                        )
-                                                                        setMetrajeData(prev => ({
-                                                                            ...prev,
-                                                                            [detalle.id]: newRegs
-                                                                        }))
-                                                                    }
-                                                                }}
-                                                                className="w-16 border border-yellow-400 rounded px-2 py-1 text-lg font-bold text-yellow-800 bg-white"
-                                                                placeholder="0"
-                                                            />
-                                                        ) : (
-                                                            <>
-                                                                <span className="text-lg font-bold text-yellow-800">{reg.value}m</span>
-                                                                {puedeEditar && (
-                                                                    <button
-                                                                        onClick={() => eliminarMetraje(detalle.id, reg.id, !reg.isNew)}
-                                                                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100"
-                                                                    >
-                                                                        <X className="h-4 w-4" />
-                                                                    </button>
-                                                                )}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                )
-                                            })}
+                                        <div className="px-4 py-3">
+                                            <div className="flex flex-wrap gap-2">
+                                                {registros.map((reg) => {
+                                                    const isNew = reg.isNew === true
+                                                    return (
+                                                        <div key={reg.id} className={`flex items-center gap-1 rounded-lg px-3 py-1.5 ${isNew ? 'bg-amber-50 border border-amber-300' : 'bg-yellow-50 border border-yellow-200'}`}>
+                                                            <Tag className={`h-3.5 w-3.5 ${isNew ? 'text-amber-500' : 'text-yellow-600'}`} />
+                                                            {isNew ? (
+                                                                <input
+                                                                    type="text"
+                                                                    inputMode="decimal"
+                                                                    autoFocus
+                                                                    value={reg.value || ""}
+                                                                    onChange={e => actualizarMetraje(detalle.id, reg.id, e.target.value)}
+                                                                    onKeyDown={e => {
+                                                                        if (e.key === "Enter") {
+                                                                            const newRegs = metrajeData[detalle.id].map(r =>
+                                                                                r.id === reg.id ? { ...r, isNew: false } : r
+                                                                            )
+                                                                            setMetrajeData(prev => ({
+                                                                                ...prev,
+                                                                                [detalle.id]: newRegs
+                                                                            }))
+                                                                        }
+                                                                    }}
+                                                                    className="w-14 border-0 bg-transparent text-lg font-bold text-amber-800 focus:outline-none focus:ring-0 p-0"
+                                                                    placeholder="0"
+                                                                />
+                                                            ) : (
+                                                                <>
+                                                                    <span className="text-base font-bold text-yellow-800">{reg.value}m</span>
+                                                                </>
+                                                            )}
+                                                            {puedeEditar && (
+                                                                <button
+                                                                    onClick={() => eliminarMetraje(detalle.id, reg.id, !reg.isNew)}
+                                                                    className="text-red-400 hover:text-red-600 p-0.5 rounded-full hover:bg-red-50 transition-colors"
+                                                                >
+                                                                    <X className="h-3.5 w-3.5" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
                                         </div>
                                     )}
 
-                                    <div className="flex items-center justify-between pt-2 border-t border-yellow-100">
-                                        <div className="flex gap-2">
+                                    {/* Info bar */}
+                                    <div className="px-4 py-2 bg-slate-50 border-t border-yellow-100 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <span className="text-slate-600">Pedido: <strong>{cantidadPiezas}</strong> pieza(s)</span>
+                                            <span className="text-slate-300">|</span>
+                                            {faltantes > 0 ? (
+                                                <span className="text-orange-600 font-medium">Faltan {faltantes}</span>
+                                            ) : (
+                                                <span className="text-green-600 font-medium">✓ Completo</span>
+                                            )}
+                                        </div>
+                                        {metrajeTotal > 0 && (
+                                            <p className="text-xs text-slate-400">
+                                                Metraje total: <strong className="text-slate-600">{metrajeTotal.toFixed(2)}m</strong>
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-4 py-3 border-t border-yellow-100">
+                                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                                             {puedeEditar && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() => agregarMetraje(detalle.id)}
-                                                    className="text-yellow-700 border-yellow-400 hover:bg-yellow-100"
+                                                    className="border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-500 hover:shadow-md active:scale-[0.97] transition-all duration-150 w-full sm:w-auto font-semibold"
                                                 >
-                                                    <Plus className="h-3 w-3 mr-1" />
+                                                    <Plus className="h-4 w-4 mr-1.5" />
                                                     Añadir metraje
                                                 </Button>
                                             )}
@@ -688,9 +702,9 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() => setDeleteConfirm(detalle.id)}
-                                                    className="text-red-600 border-red-300 hover:bg-red-50"
+                                                    className="border-2 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 hover:shadow-md active:scale-[0.97] transition-all duration-150 w-full sm:w-auto font-semibold"
                                                 >
-                                                    <Trash2 className="h-3 w-3 mr-1" />
+                                                    <Trash2 className="h-4 w-4 mr-1.5" />
                                                     Limpiar
                                                 </Button>
                                             )}
@@ -700,9 +714,9 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                 size="sm"
                                                 onClick={guardarMetraje}
                                                 disabled={loading || registros.length === 0}
-                                                className="bg-green-600 hover:bg-green-700"
+                                                className="bg-green-600 hover:bg-green-700 hover:shadow-lg active:scale-[0.97] transition-all duration-150 w-full sm:w-auto font-semibold border-2 border-green-700"
                                             >
-                                                <Save className="h-3 w-3 mr-1" />
+                                                <Save className="h-4 w-4 mr-1.5" />
                                                 Guardar
                                             </Button>
                                         )}

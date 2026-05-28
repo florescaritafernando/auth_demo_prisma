@@ -69,7 +69,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 userImage={userData?.image || null}
             />
             <main className="w-full flex-1 min-h-0 bg-slate-50 overflow-y-auto scrollable-content">
-                <div className="p-3 md:p-4 border-b bg-white flex items-center justify-between gap-2 shadow-sm sticky top-0">
+                <div className="p-3 md:p-4 border-b bg-white flex items-center justify-between gap-2 shadow-sm sticky top-0 z-10">
                     <div className="flex items-center gap-2 min-w-0">
                         <SidebarTrigger />
                         <span className="ml-2 md:ml-4 font-semibold text-slate-800 text-sm md:text-base truncate">{titulo}</span>

@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
     const tipo = formData.get("tipo") as string // "producto" | "perfil" | "comprobante"
     const file = formData.get("file") as File
     const nombreProducto = formData.get("nombreProducto") as string | null
+    const categoriaProducto = formData.get("categoriaProducto") as string | null
 
     console.log("Upload - tipo:", tipo, "nombreProducto:", nombreProducto, "file:", file?.name)
 
@@ -49,7 +50,11 @@ export async function POST(request: NextRequest) {
 
         // Usar nombre del producto o nombre original del archivo como public_id
         let publicId: string
-        if (nombreProducto) {
+        if (nombreProducto && categoriaProducto) {
+            const nameSlug = nombreProducto.replace(/[^a-zA-Z0-9_-]/g, '-')
+            const catSlug = categoriaProducto.replace(/[^a-zA-Z0-9_-]/g, '-')
+            publicId = `${nameSlug}-${catSlug}`
+        } else if (nombreProducto) {
             publicId = nombreProducto.replace(/[^a-zA-Z0-9_-]/g, '-')
         } else {
             publicId = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, '-')

@@ -17,11 +17,12 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import Autoplay from "embla-carousel-autoplay"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 /* Iconos de Lucide */
-import { Award, CircleDollarSign, Scissors, ArrowRight, Search, Menu, X, ImageOff, ZoomIn, ZoomOut, MessageCircle, ChevronDown } from "lucide-react"
+import { Award, CircleDollarSign, Scissors, ArrowRight, Search, Menu, X, ImageOff, ZoomIn, ZoomOut, MessageCircle, ChevronDown, Info } from "lucide-react"
 
 const RESENAS_CLIENTES = [
   {
@@ -133,8 +134,39 @@ export default function Home() {
   const [colorSeleccionado, setColorSeleccionado] = useState<string | null>(null);
   const [tipoDisenoSeleccionado, setTipoDisenoSeleccionado] = useState<string>("todos");
   const [productosRandom, setProductosRandom] = useState<any[]>([]);
+  const [productosShuffled, setProductosShuffled] = useState<any[]>([]);
   const [visibleCount, setVisibleCount] = useState(20);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [showSearchHint, setShowSearchHint] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const imageContainerRef = useRef<HTMLDivElement>(null);
   const LOAD_MORE = 20;
+  const autoplayPlugin = useRef(Autoplay({ delay: 6000, jump: false, stopOnInteraction: true }));
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    let timeout: ReturnType<typeof setTimeout>;
+    const reenable = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        const autoplay = carouselApi.plugins()?.autoplay as any;
+        if (autoplay && !autoplay.isPlaying()) autoplay.play();
+      }, 5000);
+    };
+    carouselApi.on("select", reenable);
+    return () => {
+      clearTimeout(timeout);
+      carouselApi.off("select", reenable);
+    };
+  }, [carouselApi]);
+
+  useEffect(() => {
+    if (!showSearchHint) return;
+    const close = () => setShowSearchHint(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [showSearchHint]);
 
   const shuffleArray = (array: any[]) => {
     const shuffled = [...array];
@@ -171,21 +203,23 @@ export default function Home() {
     fetch('/api/productos?activo=true')
       .then(res => res.json())
       .then(data => {
-        setProductos(data.productos || [])
+        const prods = data.productos || []
+        setProductos(prods)
+        setProductosShuffled(shuffleArray(prods))
         setLoading(false)
       })
       .catch(() => setLoading(false))
   }, []);
 
-  useEffect(() => {
-    if (!carouselApi || searchTerm !== "" || categoriaSeleccionada !== "todas") return;
-    const interval = setInterval(() => {
-      carouselApi.scrollNext();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [carouselApi, searchTerm, categoriaSeleccionada]);
+  const filtrosNoSearch = (categoriaSeleccionada !== "todas" ? 1 : 0) +
+    (colorSeleccionado !== null ? 1 : 0) +
+    (tipoDisenoSeleccionado !== "todos" ? 1 : 0);
 
-  const productosOrdenados = [...productos]
+  const sourceProductos = searchTerm === "" && filtrosNoSearch < 2 && productosShuffled.length > 0
+    ? productosShuffled
+    : productos;
+
+  const productosFiltrados = [...sourceProductos]
     .filter(p => categoriaSeleccionada === "todas" || p.categoria === categoriaSeleccionada)
     .filter(p => {
       if (colorSeleccionado) {
@@ -205,6 +239,10 @@ export default function Home() {
       (p.categoria && p.categoria.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (p.descripcion && p.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
     );
+
+  const productosOrdenados = searchTerm !== "" || filtrosNoSearch >= 2
+    ? [...productosFiltrados].sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""))
+    : productosFiltrados;
 
   const productosCarrusel = categoriaSeleccionada === "todas" && searchTerm === "" && !colorSeleccionado && tipoDisenoSeleccionado === "todos"
     ? productosRandom
@@ -273,7 +311,7 @@ export default function Home() {
             <div className={`w-full lg:flex lg:items-center lg:justify-end gap-6 transition-all duration-300 ${isMobileMenuOpen ? 'block' : 'hidden lg:flex'}`}>
 
               {/* Barra de busqueda + Filtro por diseño (Desktop) */}
-              <div className="flex w-full lg:w-[450px] xl:w-[520px] items-center mt-4 lg:mt-0 gap-2">
+              <div className="hidden lg:flex w-full lg:w-[450px] xl:w-[520px] items-center mt-4 lg:mt-0 gap-2">
                 <form onSubmit={(e) => e.preventDefault()} className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
@@ -281,8 +319,11 @@ export default function Home() {
                     placeholder="Buscar por código"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-3 lg:py-2.5 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm placeholder:text-slate-400 shadow-sm"
+                    className="w-full pl-9 pr-10 py-3 lg:py-2.5 rounded-full border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm placeholder:text-slate-400 shadow-sm"
                   />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex">
+                    <Info className="h-4 w-4 text-blue-500 cursor-pointer" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowSearchHint(!showSearchHint); }} />
+                  </span>
                 </form>
                 <div className="relative flex-1">
                   <select
@@ -337,11 +378,14 @@ export default function Home() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Buscar por código"
+                placeholder="Buscar código"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm"
+                className="w-full pl-9 pr-8 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm"
               />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex">
+                <Info className="h-3.5 w-3.5 text-blue-500 cursor-pointer" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowSearchHint(!showSearchHint); }} />
+              </span>
             </form>
             <div className="relative">
               <select
@@ -358,6 +402,15 @@ export default function Home() {
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             </div>
           </div>
+        </div>
+
+        <div className="relative">
+          {showSearchHint && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-3 text-xs text-slate-600 z-50" onClick={(e) => e.stopPropagation()}>
+              Ejemplo de búsqueda por código de artículo: <strong>D-10-001</strong><br />
+              <strong>D-10</strong> es el diseño y <strong>001</strong> es el color
+            </div>
+          )}
         </div>
 
         {/* Filtro de categorías - scroll horizontal */}
@@ -452,26 +505,30 @@ export default function Home() {
             {/* Carrusel para desktop - solo cuando no hay filtros activos */}
             {searchTerm.trim() === "" && !colorSeleccionado && tipoDisenoSeleccionado === "todos" && categoriaSeleccionada === "todas" && (
               <Carousel
-                className="w-full max-w-[90rem] mx-auto p-4 md:py-10 hidden md:block h-[calc(100vh-200px)]"
+                className="w-full max-w-[90rem] mx-auto px-4 md:py-10 hidden md:block"
                 opts={{
                   loop: true,
-                  duration: 120,
+                  duration: 800,
+                  watchDrag: true,
                 }}
+                plugins={[autoplayPlugin.current]}
                 setApi={setCarouselApi}
-                onMouseEnter={() => { }}
-                onMouseLeave={() => { }}
               >
                 <CarouselContent className="-ml-6 items-stretch [transition-timing-function:cubic-bezier(0.25,0.1,0.25,1)]">
                   {productosCarrusel.map((prod, idx) => (
-                    <CarouselItem key={prod.id || prod.nombre} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
+                    <CarouselItem key={prod.id || prod.nombre} className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                       <ProductCard prod={prod} onClick={() => setProductoSeleccionado(prod)} priority={idx < 6} />
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="hidden md:flex -left-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
-                <CarouselNext className="hidden md:flex -right-6 h-12 w-12 border-slate-200 shadow-lg bg-white text-slate-900 hover:bg-slate-50" />
+                <CarouselPrevious className="hidden md:flex -left-[35px] h-12 w-12 border-slate-300 shadow-lg bg-white text-slate-900 hover:!bg-slate-800 hover:text-white hover:shadow-xl transition-all duration-500" />
+                <CarouselNext className="hidden md:flex -right-[35px] h-12 w-12 border-slate-300 shadow-lg bg-white text-slate-900 hover:!bg-slate-800 hover:text-white hover:shadow-xl transition-all duration-500" />
               </Carousel>
             )}
+            <div className="text-center px-4 py-6 md:py-5 hidden md:block">
+              <h2 className="text-xl md:text-2xl font-bold text-slate-800">Descubre más diseños y colores de la línea Manchester y más</h2>
+              <div className="w-16 h-1 bg-slate-800 mx-auto mt-3 rounded-full" />
+            </div>
             {/* Grid para móvil - resultados paginados */}
             <div className="grid grid-cols-2 gap-2 px-2 md:hidden">
               {productosOrdenados.slice(0, visibleCount).map((prod, idx) => (
@@ -760,24 +817,55 @@ export default function Home() {
       {productoSeleccionado && (
         <div
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => { setProductoSeleccionado(null); setZoomLevel(1); }}
+          onClick={() => { setProductoSeleccionado(null); setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }}
         >
           <div
-            className="bg-white rounded-xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200"
+            className="bg-white rounded-xl max-w-xl w-full overflow-hidden shadow-2xl border border-slate-200"
             onClick={e => e.stopPropagation()}
           >
             {/* Header con imagen y controles */}
-            <div className="relative h-64 bg-slate-100 overflow-hidden">
+            <div className="relative h-80 bg-slate-100 overflow-hidden p-4 select-none">
               <div
-                className="absolute inset-0 flex items-center justify-center"
-                style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.3s ease' }}
+                ref={imageContainerRef}
+                className={`absolute inset-2 flex items-center justify-center ${zoomLevel > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
+                style={{
+                  transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                  transition: isDragging ? 'none' : 'transform 0.3s ease',
+                  touchAction: zoomLevel > 1 ? 'none' : 'auto',
+                }}
+                onPointerDown={(e) => {
+                  if (zoomLevel <= 1) return;
+                  e.preventDefault();
+                  (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                  setIsDragging(true);
+                  dragStart.current = { x: e.clientX, y: e.clientY, panX: panOffset.x, panY: panOffset.y };
+                }}
+                onPointerMove={(e) => {
+                  if (!isDragging || zoomLevel <= 1) return;
+                  const dx = e.clientX - dragStart.current.x;
+                  const dy = e.clientY - dragStart.current.y;
+                  const container = imageContainerRef.current;
+                  if (!container) return;
+                  const maxPanX = (container.offsetWidth * (zoomLevel - 1)) / 2;
+                  const maxPanY = (container.offsetHeight * (zoomLevel - 1)) / 2;
+                  setPanOffset({
+                    x: Math.max(-maxPanX, Math.min(maxPanX, dragStart.current.panX + dx)),
+                    y: Math.max(-maxPanY, Math.min(maxPanY, dragStart.current.panY + dy)),
+                  });
+                }}
+                onPointerUp={() => setIsDragging(false)}
+                onPointerLeave={() => setIsDragging(false)}
+                onWheel={(e) => {
+                  e.preventDefault();
+                  setZoomLevel(prev => Math.max(0.5, Math.min(3, prev - e.deltaY * 0.002)));
+                }}
               >
                 {productoSeleccionado.imagen ? (
                   <Image
                     src={productoSeleccionado.imagen}
                     alt={productoSeleccionado.nombre}
-                    width={250}
-                    height={250}
+                    width={500}
+                    height={500}
                     className="object-contain max-w-full max-h-full"
                     style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%' }}
                   />
@@ -805,7 +893,7 @@ export default function Home() {
 
               {/* Botón cerrar */}
               <button
-                onClick={() => { setProductoSeleccionado(null); setZoomLevel(1); }}
+                onClick={() => { setProductoSeleccionado(null); setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }}
                 className="absolute top-3 right-3 bg-white/80 hover:bg-white p-1.5 rounded-full shadow-sm border border-slate-200 transition-colors"
               >
                 <X className="w-4 h-4 text-slate-600" />
