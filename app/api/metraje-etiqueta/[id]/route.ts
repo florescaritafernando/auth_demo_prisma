@@ -48,8 +48,7 @@ export async function DELETE(
         await prisma.pedidoDetalle.update({
             where: { id: detalleId },
             data: {
-                metraje: metrajeTotal > 0 ? metrajeTotal : 0,
-                cantidad: Math.ceil(metrajeTotal / 50) || 1
+                metraje: metrajeTotal > 0 ? metrajeTotal : 0
             }
         })
 

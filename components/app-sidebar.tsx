@@ -100,6 +100,7 @@ export function AppSidebar({ role = "cliente", userName = "Usuario", userImage =
                                 src="/favicon.ico"
                                 alt="Logo"
                                 fill
+                                sizes="32px"
                                 className="object-contain rounded-lg"
                             />
                         </div>
