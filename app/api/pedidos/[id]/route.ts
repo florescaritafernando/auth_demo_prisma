@@ -164,10 +164,45 @@ export async function PUT(
             })
         }
 
+        // Find or create ClientePedido from client data
+        let clientePedidoId = pedido.clientePedidoId
+        if (cliente?.nombre?.trim() || cliente?.numeroDoc) {
+            const match = await prisma.clientePedido.upsert({
+                where: {
+                    nombre_numeroDoc: {
+                        nombre: cliente.nombre?.trim() || "",
+                        numeroDoc: cliente.numeroDoc || ""
+                    }
+                },
+                update: {
+                    tipoDoc: cliente.tipoDoc || "dni",
+                    razonSocial: cliente.razonSocial || null,
+                    direccion: cliente.direccion || null,
+                    telefono: cliente.telefono || null,
+                    departamento: cliente.departamento || null,
+                    provincia: cliente.provincia || null,
+                    distrito: cliente.distrito || null,
+                },
+                create: {
+                    nombre: cliente.nombre?.trim() || "",
+                    tipoDoc: cliente.tipoDoc || "dni",
+                    numeroDoc: cliente.numeroDoc || "",
+                    razonSocial: cliente.razonSocial || null,
+                    direccion: cliente.direccion || null,
+                    telefono: cliente.telefono || null,
+                    departamento: cliente.departamento || null,
+                    provincia: cliente.provincia || null,
+                    distrito: cliente.distrito || null,
+                }
+            })
+            clientePedidoId = match.id
+        }
+
         const updated = await prisma.pedido.update({
             where: { id },
             data: {
                 total,
+                clientePedidoId,
                 tipoDocumento: cliente?.tipoDoc || pedido.tipoDocumento,
                 numeroDoc: cliente?.numeroDoc || pedido.numeroDoc,
                 nombreFactura: cliente?.nombre || pedido.nombreFactura,

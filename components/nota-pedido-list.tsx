@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList, Search, X, Copy, Divide, Calendar, SlidersHorizontal } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
+import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList, Search, X, Copy, Divide, Calendar, SlidersHorizontal, Printer } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
 
 const AGENCIA_LABELS: Record<string, string> = {
@@ -70,6 +70,7 @@ interface PedidoItem {
         metodoPago: string | null
         telefono: string | null
         guiaRemision: boolean
+        envioComprobante: string | null
     } | null
     clientePedido?: {
         nombre: string
@@ -107,6 +108,22 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
     const [divisor, setDivisor] = useState<string>("")
     const [divisorPersonalizado, setDivisorPersonalizado] = useState("")
     const [copiedField, setCopiedField] = useState<string | null>(null)
+    const [telefonoColaborador, setTelefonoColaborador] = useState<Record<string, string>>({})
+
+    useEffect(() => {
+        fetch("/api/empleados-telefonos", { credentials: "include" })
+            .then(r => r.json())
+            .then(json => {
+                if (json.success) {
+                    const map: Record<string, string> = {}
+                    for (const emp of json.empleados) {
+                        if (emp.celular) map[emp.celular] = emp.nombre
+                    }
+                    setTelefonoColaborador(map)
+                }
+            })
+            .catch(() => {})
+    }, [])
 
     const copiarAlPortapapeles = async (texto: string, field: string) => {
         try {
@@ -297,7 +314,12 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                         <FileText className="h-5 w-5 text-slate-600" />
                                     </div>
                                     <div>
-                                        <p className="font-bold text-slate-900">{pedido.numeroOrden}</p>
+                                        <p className="font-bold text-slate-900">
+                                            {pedido.numeroOrden}
+                                            {pedido.clientePedido?.nombre && (
+                                                <span className="font-normal text-slate-500 ml-2">— {pedido.clientePedido.nombre.toUpperCase()}</span>
+                                            )}
+                                        </p>
                                         <p className="text-xs text-slate-500">
                                             {new Date(pedido.createdAt).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" })}
                                             {pedido.user && ` • por ${pedido.user.name}`}
@@ -351,34 +373,18 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         </div>
                                                     </div>
                                                 )}
-                                                {pedido.pedidoEmpleadoInfo.telefono && (
-                                                    <div className="flex items-start gap-2">
-                                                        <Phone className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                                                        <div>
-                                                            <p className="text-slate-500 text-xs">Teléfono</p>
-                                                            <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.telefono}</p>
-                                                            {pedido.user?.name && (
-                                                                <p className="text-xs text-slate-400">({pedido.user.name})</p>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            onClick={() => copiarAlPortapapeles(pedido.pedidoEmpleadoInfo?.telefono || "", "telEmpleado")}
-                                                            className="p-1.5 rounded hover:bg-slate-200 transition-colors shrink-0"
-                                                            title="Copiar teléfono"
-                                                        >
-                                                            {copiedField === "telEmpleado" ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
-                                                            ) : (
-                                                                <Copy className="h-3.5 w-3.5 text-slate-400" />
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                )}
                                                 <div className="flex items-start gap-2">
                                                     <FileCheck className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
                                                     <div>
                                                         <p className="text-slate-500 text-xs">Guía de remisión</p>
                                                         <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.guiaRemision ? "Sí" : "No"}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-2">
+                                                    <Printer className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                                                    <div>
+                                                        <p className="text-slate-500 text-xs">Envío comprobante</p>
+                                                        <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.envioComprobante || "No imprimir"}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -414,7 +420,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
                                                     <FileText className="h-4 w-4 text-slate-400 shrink-0" />
                                                     <span className="text-slate-500 text-xs w-16 shrink-0">{c.tipoDoc?.toUpperCase() || "DOC"}:</span>
-                                                    <span className="font-medium text-slate-800 flex-1">{c.numeroDoc}</span>
+                                                    <span className="font-medium text-slate-800 flex-1">{c.numeroDoc?.toUpperCase()}</span>
                                                     <button
                                                         onClick={() => copiarAlPortapapeles(c.numeroDoc, "ruc")}
                                                         className="p-1.5 rounded hover:bg-slate-200 transition-colors"
@@ -427,11 +433,11 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         )}
                                                     </button>
                                                 </div>
-                                                {c.razonSocial && (
+                                                {c.razonSocial && c.razonSocial !== c.nombre && (
                                                     <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
                                                         <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
                                                         <span className="text-slate-500 text-xs w-16 shrink-0">R. Social:</span>
-                                                        <span className="font-medium text-slate-800 flex-1">{c.razonSocial}</span>
+                                                        <span className="font-medium text-slate-800 flex-1">{c.razonSocial?.toUpperCase()}</span>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(c.razonSocial || "", "razonSocial")}
                                                             className="p-1.5 rounded hover:bg-slate-200 transition-colors"
@@ -472,7 +478,11 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
                                                         <Phone className="h-4 w-4 text-slate-400 shrink-0" />
                                                         <span className="text-slate-500 text-xs w-16 shrink-0">Teléfono:</span>
-                                                        <span className="font-medium text-slate-800 flex-1">{c.telefono}</span>
+                                                        <span className="font-medium text-slate-800">{c.telefono}</span>
+                                                        {telefonoColaborador[c.telefono] && (
+                                                            <span className="text-xs text-slate-400">({telefonoColaborador[c.telefono].toUpperCase()})</span>
+                                                        )}
+                                                        <div className="flex-1" />
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(c.telefono || "", "telefono")}
                                                             className="p-1.5 rounded hover:bg-slate-200 transition-colors"
@@ -487,7 +497,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     </div>
                                                 )}
                                                 {c.agencia && (() => {
-                                                    const textoAgencia = c.agencia === "otros" ? (c.agenciaOtro || "OTROS") : (AGENCIA_LABELS[c.agencia] || c.agencia)
+                                                    const textoAgencia = (c.agencia === "otros" ? (c.agenciaOtro || "OTROS") : (AGENCIA_LABELS[c.agencia] || c.agencia)).toUpperCase()
                                                     return (
                                                     <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
                                                         <Truck className="h-4 w-4 text-slate-400 shrink-0" />
@@ -644,7 +654,10 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             {["18", "20"].map((num) => (
                                                 <button
                                                     key={num}
-                                                    onClick={() => setDivisor(num)}
+                                                    onClick={() => {
+                                                        setDivisor(num)
+                                                        setDivisorPersonalizado("")
+                                                    }}
                                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${divisor === num ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
                                                 >
                                                     {num}
@@ -669,9 +682,14 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             const resultado = Number(pedido.total) / Number(valorDivisor)
                                             const decimales = Number(valorDivisor) === 20 ? 2 : 4
                                             return (
-                                                <div className="flex items-center justify-between bg-white rounded-lg p-2.5 border border-slate-200">
-                                                    <div>
-                                                        <span className="text-xs text-slate-500">S/ {Number(pedido.total).toFixed(2)} ÷ {valorDivisor} =</span>
+                                                <div className="flex items-center justify-between bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+                                                    <div className="flex items-baseline gap-1.5">
+                                                        <span className="text-sm font-semibold text-indigo-900">
+                                                            S/ <span className="text-lg">{Number(pedido.total).toFixed(2)}</span>
+                                                        </span>
+                                                        <span className="text-indigo-400 text-lg font-light">÷</span>
+                                                        <span className="text-lg font-semibold text-indigo-900">{valorDivisor}</span>
+                                                        <span className="text-indigo-400 text-lg font-light">=</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-bold text-slate-900 text-lg">{resultado.toFixed(decimales)}</span>
