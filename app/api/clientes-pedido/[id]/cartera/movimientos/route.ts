@@ -21,7 +21,7 @@ export async function POST(
 
     const { id: clientePedidoId } = await params
     const body = await request.json()
-    const { tipo, monto, concepto, referencia, metodoPago, empresa, comprobante } = body
+    const { tipo, monto, concepto, referencia, metodoPago, empresa, comprobante, pedidoId } = body
 
     if (!tipo || !monto || monto <= 0) {
         return NextResponse.json({ success: false, error: "Tipo y monto requeridos" }, { status: 400 })
@@ -57,6 +57,7 @@ export async function POST(
                 metodoPago: metodoPago || null,
                 empresa: empresa || null,
                 comprobante: comprobante || null,
+                pedidoId: pedidoId || null,
                 creadoPorId: session.user.id
             }
         })

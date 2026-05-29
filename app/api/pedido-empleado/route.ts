@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
             costoEnvio,
             observaciones,
             items,
-            estado: estadoFromBody
+            estado: estadoFromBody,
+            cargoDeuda
         } = body
 
         if (!cliente?.nombre || !cliente?.numeroDoc) {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
         }, 0)
         const subtotal = Math.round(subtotalRaw * 100) / 100
 
-        const totalRaw = subtotal + (Number(costoEnvio) || 0)
+        const totalRaw = subtotal + (Number(costoEnvio) || 0) + (Number(cargoDeuda) || 0)
         const total = Math.round(totalRaw * 100) / 100
 
         // Determinar estado según tipo de artículos
@@ -121,6 +122,7 @@ export async function POST(request: NextRequest) {
                 agencia: agencia || null,
                 agenciaOtro: agencia === "otros" ? cliente.agenciaOtro : null,
                 costoEnvio: Number(costoEnvio) || 0,
+                cargoDeuda: Number(cargoDeuda) || 0,
                 notas: observaciones || null,
                 clientePedidoId: clientePedido.id,
                 departamento: cliente.departamento || null,

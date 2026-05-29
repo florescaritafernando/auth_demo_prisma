@@ -54,6 +54,13 @@ export default async function PedidosAdminPage() {
 
     const [pedidos, empleados] = await Promise.all([getPedidos(), getEmpleados()])
 
+    const pedidoIds = pedidos.map(p => p.id)
+    const movimientosCartera = await prisma.carteraMovimiento.findMany({
+        where: { pedidoId: { in: pedidoIds }, tipo: "cargo" },
+        select: { pedidoId: true }
+    })
+    const pedidosConCargo: Set<string> = new Set(movimientosCartera.map(m => m.pedidoId).filter((id): id is string => !!id))
+
     const stats = {
         metraje_en_proceso: pedidos.filter(p => p.estado === "metraje_en_proceso").length,
         metraje_confirmado: pedidos.filter(p => p.estado === "metraje_confirmado").length,
@@ -117,6 +124,7 @@ export default async function PedidosAdminPage() {
                     empleados={empleados as any}
                     role={role}
                     userId={userId}
+                    pedidosConCargo={pedidosConCargo}
                 />
             </div>
         </div>

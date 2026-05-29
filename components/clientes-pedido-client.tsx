@@ -13,7 +13,6 @@ interface ClientePedido {
     nombre: string
     tipoDoc: string
     numeroDoc: string
-    razonSocial: string | null
     direccion: string | null
     telefono: string | null
     agencia: string | null
@@ -52,7 +51,6 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
         const matchSearch =
             c.nombre.toLowerCase().includes(search.toLowerCase()) ||
             c.numeroDoc.toLowerCase().includes(search.toLowerCase()) ||
-            (c.razonSocial && c.razonSocial.toLowerCase().includes(search.toLowerCase())) ||
             (c.telefono && c.telefono.toLowerCase().includes(search.toLowerCase()))
         const matchAgencia = !filtroAgencia || c.agencia === filtroAgencia
         const matchTipoDoc = !filtroTipoDoc || c.tipoDoc === filtroTipoDoc
@@ -96,7 +94,7 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                             <input
                                 type="text"
-                                placeholder="Buscar por nombre, documento, razon social o telefono..."
+                                placeholder="Buscar por nombre, documento o telefono..."
                                 className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm text-slate-800 placeholder:text-slate-400"
                                 value={search}
                                 onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
@@ -131,7 +129,6 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                                 <tr>
                                     <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Nombre</th>
                                     <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Documento</th>
-                                    <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Razon Social</th>
                                     <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Telefono</th>
                                     <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Agencia</th>
                                     <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Ubicacion</th>
@@ -142,24 +139,23 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                             <tbody className="divide-y divide-slate-200">
                                 {paginatedData.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                                             {search || filtroAgencia || filtroTipoDoc ? "No se encontraron resultados." : "No hay clientes registrados."}
                                         </td>
                                     </tr>
                                 ) : (
                                     paginatedData.map((cli) => (
                                         <tr key={cli.id} className="hover:bg-slate-50">
-                                            <td className="px-3 py-3 text-sm font-medium text-slate-900">{cli.nombre}</td>
-                                            <td className="px-3 py-3 text-sm text-slate-600">
+                                            <td className="px-3 py-3 text-sm font-medium text-slate-900 uppercase">{cli.nombre}</td>
+                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">
                                                 <span className="inline-flex items-center gap-1">
                                                     <span className="px-1.5 py-0.5 bg-slate-100 rounded text-xs font-medium">{getTipoDocLabel(cli.tipoDoc)}</span>
                                                     {cli.numeroDoc}
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-3 text-sm text-slate-600">{cli.razonSocial || "-"}</td>
-                                            <td className="px-3 py-3 text-sm text-slate-600">{cli.telefono || "-"}</td>
-                                            <td className="px-3 py-3 text-sm text-slate-600">{getAgenciaLabel(cli.agencia, cli.agenciaOtro)}</td>
-                                            <td className="px-3 py-3 text-sm text-slate-600">
+                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">{cli.telefono || "-"}</td>
+                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">{getAgenciaLabel(cli.agencia, cli.agenciaOtro)}</td>
+                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">
                                                 {[cli.departamento, cli.provincia, cli.distrito].filter(Boolean).join(" - ") || "-"}
                                             </td>
                                             <td className="px-3 py-3 text-center">

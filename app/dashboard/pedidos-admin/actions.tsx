@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus, RefreshCw, DollarSign, Wallet } from "lucide-react"
+import { Clock, CheckCircle, XCircle, Pencil, Save, RotateCcw, Plus, Trash2, Edit3, X, Tag, UserPlus, RefreshCw, DollarSign, Wallet, AlertTriangle } from "lucide-react"
 import { RechazarPedidoModal } from "@/components/pedidos/RechazarPedidoModal"
 import { ConfirmarMetrajeModal } from "@/components/pedidos/ConfirmarMetrajeModal"
 
@@ -92,7 +92,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const [cargandoCartera, setCargandoCartera] = useState(false)
 
     const EMPRESAS = ["FLORES CARITAS", "TEXTILES MANCHESTER", "MANCHESTERTEX", "TEXTILES MEGO", "YAPE CARLOS", "YAPE ANGEL"]
-    const METODOS_PAGO = ["TRASNFERENCIA", "DEPOSITO", "EFECTIVO", "YAPE","PLIN", "BBVA"]
+    const METODOS_PAGO = ["TRANSFERENCIA", "DEPOSITO", "EFECTIVO", "YAPE","PLIN", "BBVA"]
 
     const extraerTotalPagado = (notas: string | null): number => {
         if (!notas) return 0
@@ -121,7 +121,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
             .then(r => r.json())
             .then(data => {
                 if (data.success && data.cartera) {
-                    setSaldoCartera(data.cartera.saldo || 0)
+                    setSaldoCartera(Math.round((data.cartera.saldo || 0) * 100) / 100)
                     setCarteraMovimientosCount(data.cartera.movimientos?.length || 0)
                 } else {
                     setSaldoCartera(0)
@@ -132,7 +132,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
             .finally(() => setCargandoCartera(false))
     }, [showPagoPedidoModal, pedido.clientePedidoId])
 
-    const carteraActiva = usarSaldoCartera && saldoCartera > 0 && (tipoPago === "completo" || tipoPago === "dividido")
+    const carteraActiva = usarSaldoCartera && saldoCartera > 0 && (tipoPago === "completo" || tipoPago === "dividido" || tipoPago === "parcial")
     const carteraUsada = carteraActiva ? Math.min(carteraMontoCustom, saldoCartera, faltaPagar) : 0
     const faltaPagarEfectiva = Math.max(0, faltaPagar - carteraUsada)
     const mostrarCarteraCheckbox = saldoCartera > 0 && carteraMovimientosCount > 1
@@ -813,7 +813,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                             </button>
                         </div>
                         <div className="p-5 overflow-y-auto flex-1 space-y-4">
-                            {pedido.clientePedidoId && (
+                            {pedido.clientePedidoId && saldoCartera > 0 && (
                                 <div className="p-3 rounded-lg border border-blue-200 bg-blue-50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
@@ -848,7 +848,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                             </label>
                                         )}
                                     </div>
-                                    {usarSaldoCartera && (
+                                    {usarSaldoCartera && tipoPago !== "completo" && (
                                         <div className="mt-3 flex items-center gap-2">
                                             <span className="text-sm font-medium text-slate-600 whitespace-nowrap">Saldo a usar:</span>
                                             <span className="text-sm font-medium text-slate-500">S/</span>
@@ -877,13 +877,13 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                             <div>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => { setTipoPago("completo") }}
+                                        onClick={() => { setTipoPago("completo"); if (usarSaldoCartera) { setCarteraMontoCustom(Math.min(saldoCartera, faltaPagar)); setCarteraInputText("") } }}
                                         className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${tipoPago === "completo" ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
                                     >
                                         PAGO COMPLETO
                                     </button>
                                     <button
-                                        onClick={() => { setTipoPago("dividido"); setDetallesPago(usarSaldoCartera ? [{ monto: "", empresa: "", metodoPago: "" }] : [{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }}
+                                        onClick={() => { setTipoPago("dividido"); setCarteraMontoCustom(0); setDetallesPago(usarSaldoCartera ? [{ monto: "", empresa: "", metodoPago: "" }] : [{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }}
                                         className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${tipoPago === "dividido" ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
                                     >
                                         DIVIDIR PAGO
@@ -901,14 +901,18 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                     <p className="text-sm font-medium text-slate-700 mb-2">
                                         {tipoPago === "completo" ? "Detalle del pago" : tipoPago === "parcial" ? "Monto del pago parcial" : "Montos"}
                                     </p>
-                                    {tipoPago === "completo" && carteraActiva && carteraUsada >= faltaPagar ? (
+                                    {tipoPago === "completo" && carteraActiva && saldoCartera >= faltaPagar ? (
                                         <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 text-blue-800 text-sm font-medium">
                                             <CheckCircle className="h-4 w-4 inline mr-1" /> Cubierto por saldo cartera
+                                        </div>
+                                    ) : tipoPago === "completo" && carteraActiva && saldoCartera < faltaPagar ? (
+                                        <div className="p-3 rounded-lg border bg-amber-50 border-amber-300 text-amber-800 text-sm font-medium">
+                                            <AlertTriangle className="h-4 w-4 inline mr-1" /> Saldo no cubre el pago completo, selecciona otra opción
                                         </div>
                                     ) : (
                                     <div className="space-y-2">
                                         {(tipoPago === "completo" || tipoPago === "parcial"
-                                            ? [{ monto: faltaPagarEfectiva.toFixed(2), empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
+                                            ? [{ monto: tipoPago === "completo" ? faltaPagarEfectiva.toFixed(2) : detallesPago[0]?.monto || "", empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
                                             : detallesPago
                                         ).map((det, idx) => (
                                             <div key={idx} className="flex items-center gap-2">
@@ -931,7 +935,15 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                     className={`w-24 px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white ${tipoPago === "completo" ? "border-emerald-300 bg-emerald-50" : tipoPago === "parcial" ? "border-amber-300" : "border-slate-200"}`}
                                                 />
                                                 <button
-                                                    onClick={() => { setDetalleEditandoIdx(idx); setShowDetallePagoModal(true) }}
+                                                    onClick={() => {
+                                                        if (det.empresa || det.metodoPago) {
+                                                            const nuevo = [...detallesPago]
+                                                            nuevo[idx] = { ...nuevo[idx], empresa: "", metodoPago: "" }
+                                                            setDetallesPago(nuevo)
+                                                        } else {
+                                                            setDetalleEditandoIdx(idx); setShowDetallePagoModal(true)
+                                                        }
+                                                    }}
                                                     className={`px-2 py-1.5 text-xs font-bold border-2 rounded-lg transition-all uppercase ${
                                                         det.empresa || det.metodoPago
                                                             ? "bg-emerald-600 border-emerald-600 text-white"
@@ -990,7 +1002,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                 {carteraActiva && carteraUsada > 0 && (
                                                     <span>| Saldo a usar: <strong>S/ {carteraUsada.toFixed(2)}</strong></span>
                                                 )}
-                                                <span>| {carteraActiva ? "Restan" : "Total ingresado"}: <strong>S/ {suma.toFixed(2)}</strong></span>
+                                                <span>| {carteraActiva ? `Restan S/ ` : `Total ingresado: S/ `}<strong>{carteraActiva ? Math.max(0, faltaPagarEfectiva - suma).toFixed(2) : suma.toFixed(2)}</strong></span>
                                                 {coincide ? (
                                                     <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle className="h-4 w-4" /> Coincide con la deuda</span>
                                                 ) : (
@@ -1005,12 +1017,13 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                             )}
                             {tipoPago === "parcial" && (
                                 (() => {
-                                    const monto = Number(detallesPago[0]?.monto) || 0
-                                    const saldoPorPagar = Math.max(0, faltaPagarEfectiva - monto)
-                                    return monto > 0 ? (
+                                    const montoLinea = Number(detallesPago[0]?.monto) || 0
+                                    const totalPagando = montoLinea + (carteraActiva ? carteraUsada : 0)
+                                    const saldoPorPagar = Math.max(0, faltaPagar - totalPagando)
+                                    return totalPagando > 0 ? (
                                         <div className="p-3 rounded-lg border text-sm font-medium bg-amber-50 border-amber-200 text-amber-800">
                                             <p>
-                                                Pago parcial: <span className="font-bold">S/ {monto.toFixed(2)}</span>
+                                                Pago parcial{carteraActiva && carteraUsada > 0 ? ` (Cartera: S/ ${carteraUsada.toFixed(2)}${montoLinea > 0 ? ` + S/ ${montoLinea.toFixed(2)}` : ""})` : ""}: <span className="font-bold">S/ {totalPagando.toFixed(2)}</span>
                                                 {" | "}Saldo por pagar: <span className="font-bold">S/ {saldoPorPagar.toFixed(2)}</span>
                                             </p>
                                         </div>
@@ -1036,7 +1049,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                         textoPago = `PAGO: Completo - S/ ${faltaPagar.toFixed(2)}`
                                         const det = detallesPago[0]
                                         if (carteraActiva) {
-                                            textoPago += ` (CARTERA S/ ${carteraUsada.toFixed(2)})`
+                                            textoPago += ` (SALDO CARTERA)`
                                         } else if (det?.empresa) {
                                             if (det.empresa === "YAPE CARLOS" || det.empresa === "YAPE ANGEL") {
                                                 textoPago += ` (${det.empresa})`
@@ -1050,19 +1063,28 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                         cambiarEstado = false
                                         const monto = Number(detallesPago[0]?.monto) || 0
                                         const det = detallesPago[0]
+                                        const totalPagado = monto + (carteraActiva ? carteraUsada : 0)
                                         const d = new Date()
                                         const fecha = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`
-                                        textoPago = `PAGO: Parcial - S/ ${monto.toFixed(2)}`
-                                        if (det?.empresa) {
-                                            if (det.empresa === "YAPE CARLOS" || det.empresa === "YAPE ANGEL") {
-                                                textoPago += ` (${det.empresa})`
-                                            } else {
-                                                textoPago += ` (${det.empresa} / ${det.metodoPago})`
-                                            }
-                                        } else if (det?.metodoPago === "EFECTIVO") {
-                                            textoPago += ` (EFECTIVO)`
+                                        let detalleStr = ""
+                                        if (carteraActiva && carteraUsada > 0) {
+                                            detalleStr = `SALDO CARTERA S/ ${carteraUsada.toFixed(2)}`
                                         }
-                                        textoPago += ` - ${fecha}`
+                                        if (monto > 0) {
+                                            if (detalleStr) detalleStr += ` + `
+                                            if (det?.empresa) {
+                                                if (det.empresa === "YAPE CARLOS" || det.empresa === "YAPE ANGEL") {
+                                                    detalleStr += `${det.empresa}`
+                                                } else {
+                                                    detalleStr += `${det.empresa} / ${det.metodoPago}`
+                                                }
+                                            } else if (det?.metodoPago === "EFECTIVO") {
+                                                detalleStr += `EFECTIVO`
+                                            } else {
+                                                detalleStr
+                                            }
+                                        }
+                                        textoPago = `PAGO: Parcial - S/ ${totalPagado.toFixed(2)} (${detalleStr}) - ${fecha}`
                                         if (pagoParcialTexto.trim()) {
                                             textoPago += ` ${pagoParcialTexto.trim()}`
                                         }
@@ -1122,6 +1144,23 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                             console.error("Error registrando movimiento de cartera:", e)
                                         }
                                     }
+                                    if ((pedido as any).cargoDeuda > 0 && pedido.clientePedidoId) {
+                                        try {
+                                            await fetch(`/api/clientes-pedido/${pedido.clientePedidoId}/cartera/movimientos`, {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({
+                                                    tipo: "abono",
+                                                    monto: (pedido as any).cargoDeuda,
+                                                    concepto: `Pago de deuda incluido en pedido ${pedido.numeroOrden}`,
+                                                    pedidoId: pedido.id,
+                                                }),
+                                                credentials: "include",
+                                            })
+                                        } catch (e) {
+                                            console.error("Error abonando deuda en cartera:", e)
+                                        }
+                                    }
                                     setShowPagoPedidoModal(false)
                                     setTipoPago("")
                                     setPagoParcialTexto("")
@@ -1133,7 +1172,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                     try { new BroadcastChannel("notificaciones").postMessage("refresh") } catch {}
                                     window.location.reload()
                                 }}
-                                disabled={guardandoPago || !tipoPago || (tipoPago !== "completo" && tipoPago !== "dividido" && tipoPago !== "parcial") || (tipoPago === "completo" && !(carteraActiva && faltaPagarEfectiva === 0) && !detallesPago[0]?.metodoPago) || (tipoPago === "parcial" && (!detallesPago[0]?.monto || !detallesPago[0]?.metodoPago || (detallesPago[0]?.metodoPago !== "EFECTIVO" && !detallesPago[0]?.empresa))) || (tipoPago === "dividido" && !(carteraActiva && faltaPagarEfectiva === 0) && !detallesPago.every(d => {
+                                disabled={guardandoPago || !tipoPago || (tipoPago !== "completo" && tipoPago !== "dividido" && tipoPago !== "parcial") || (tipoPago === "completo" && !(carteraActiva && saldoCartera >= faltaPagar) && !detallesPago[0]?.metodoPago) || (tipoPago === "parcial" && ((detallesPago[0]?.monto && (!detallesPago[0]?.metodoPago || (detallesPago[0]?.metodoPago !== "EFECTIVO" && !detallesPago[0]?.empresa))) || (!detallesPago[0]?.monto && !carteraActiva))) || (tipoPago === "dividido" && !(carteraActiva && faltaPagarEfectiva === 0) && !detallesPago.every(d => {
                                     if (!d.monto) return false
                                     if (d.metodoPago === "EFECTIVO") return true
                                     return d.empresa && d.metodoPago
@@ -1188,7 +1227,8 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                             key={mp}
                                             onClick={() => {
                                                 const nuevo = [...detallesPago]
-                                                nuevo[detalleEditandoIdx] = { ...nuevo[detalleEditandoIdx], metodoPago: mp }
+                                                const mpActual = nuevo[detalleEditandoIdx].metodoPago
+                                                nuevo[detalleEditandoIdx] = { ...nuevo[detalleEditandoIdx], metodoPago: mpActual === mp ? "" : mp }
                                                 setDetallesPago(nuevo)
                                             }}
                                             className={`px-3 py-1.5 border-2 rounded-lg text-sm font-medium transition-all ${detallesPago[detalleEditandoIdx].metodoPago === mp ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}

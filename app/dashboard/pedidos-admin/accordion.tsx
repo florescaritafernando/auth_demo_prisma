@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { ChevronDown, ChevronUp, FileText, UserCheck, ExternalLink, UserPlus, Printer, X, File } from "lucide-react"
+import { ChevronDown, ChevronUp, FileText, UserCheck, ExternalLink, UserPlus, Printer, X, File, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AdminPedidoActions } from "./actions"
 import { ImprimirPedidoModal } from "@/components/pedidos/ImprimirPedidoModal"
@@ -96,9 +96,10 @@ interface Props {
     userId: string
     expandedIds?: Set<string>
     onToggleExpand?: (id: string) => void
+    pedidosConCargo?: Set<string>
 }
 
-export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleExpand }: Props) {
+export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleExpand, pedidosConCargo }: Props) {
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [pedidoImprimir, setPedidoImprimir] = useState<any>(null)
     const [comprobantePreview, setComprobantePreview] = useState<string | null>(null)
@@ -189,9 +190,17 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                 <Printer className="h-3.5 w-3.5" />
                                             </button>
                                             {pedido.estado === "completado" ? (
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
-                                                    {config.label}
-                                                </span>
+                                                <>
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
+                                                        {config.label}
+                                                    </span>
+                                                    {pedidosConCargo?.has(pedido.id) && (
+                                                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 flex items-center gap-1">
+                                                            <Wallet className="h-3 w-3" />
+                                                            Cargado a cartera
+                                                        </span>
+                                                    )}
+                                                </>
                                             ) : (
                                                 <>
                                                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
@@ -205,6 +214,12 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                     {tienePiezasCompletas && pedido.estado !== "confirmado" && pedido.estado !== "pedido_enviado" && (
                                                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700">
                                                             Metraje completado
+                                                        </span>
+                                                    )}
+                                                    {pedidosConCargo?.has(pedido.id) && (
+                                                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 flex items-center gap-1">
+                                                            <Wallet className="h-3 w-3" />
+                                                            Cargado a cartera
                                                         </span>
                                                     )}
                                                 </>

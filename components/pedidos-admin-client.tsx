@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Search, X, Calendar, SlidersHorizontal } from "lucide-react"
+import { Search, X, Calendar, SlidersHorizontal, Wallet } from "lucide-react"
 import { PedidoAccordion } from "@/app/dashboard/pedidos-admin/accordion"
 import { Pagination } from "@/components/ui/pagination"
 
@@ -26,6 +26,7 @@ interface Props {
     empleados: User[]
     role: string
     userId: string
+    pedidosConCargo: Set<string>
 }
 
 const ESTADOS = [
@@ -37,7 +38,7 @@ const ESTADOS = [
     { value: "completado", label: "Pedido completado" },
 ]
 
-export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) {
+export function PedidosAdminClient({ pedidos, empleados, role, userId, pedidosConCargo }: Props) {
     const [busqueda, setBusqueda] = useState("")
     const [estadoFiltro, setEstadoFiltro] = useState("")
     const [colaboradorFiltro, setColaboradorFiltro] = useState("")
@@ -45,6 +46,7 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
     const [fechaFin, setFechaFin] = useState("")
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
     const [showFiltros, setShowFiltros] = useState(false)
+    const [filtroDeudores, setFiltroDeudores] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
 
@@ -77,6 +79,10 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
                 }
             }
 
+            if (filtroDeudores && !pedidosConCargo.has(pedido.id)) {
+                return false
+            }
+
             if (estadoFiltro && pedido.estado !== estadoFiltro) {
                 return false
             }
@@ -106,7 +112,7 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
 
             return true
         })
-    }, [pedidos, busqueda, estadoFiltro, colaboradorFiltro, fechaInicio, fechaFin])
+    }, [pedidos, busqueda, estadoFiltro, colaboradorFiltro, fechaInicio, fechaFin, filtroDeudores])
 
     const limpiarFiltros = () => {
         setBusqueda("")
@@ -114,10 +120,11 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
         setColaboradorFiltro("")
         setFechaInicio("")
         setFechaFin("")
+        setFiltroDeudores(false)
         setCurrentPage(1)
     }
 
-    const tieneFiltros = estadoFiltro || colaboradorFiltro || fechaInicio || fechaFin
+    const tieneFiltros = estadoFiltro || colaboradorFiltro || fechaInicio || fechaFin || filtroDeudores
 
     const totalPages = Math.ceil(filteredPedidos.length / itemsPerPage)
     const startIdx = (currentPage - 1) * itemsPerPage
@@ -136,6 +143,18 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
                         className="w-full h-10 pl-10 pr-4 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-900 transition-all"
                     />
                 </div>
+                <button
+                    onClick={() => setFiltroDeudores(!filtroDeudores)}
+                    className={`h-10 px-3 border rounded-xl flex items-center gap-1.5 text-sm font-medium transition-all shrink-0 ${
+                        filtroDeudores
+                            ? 'border-red-400 bg-red-50 text-red-700'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                >
+                    <Wallet className="h-4 w-4" />
+                    <span className="hidden sm:inline">Cobrar deudores</span>
+                    {filtroDeudores && <span className="w-2 h-2 bg-red-500 rounded-full" />}
+                </button>
                 <button
                     onClick={() => setShowFiltros(!showFiltros)}
                     className={`h-10 px-3 border rounded-xl flex items-center gap-1.5 text-sm font-medium transition-all shrink-0 ${
@@ -229,6 +248,7 @@ export function PedidosAdminClient({ pedidos, empleados, role, userId }: Props) 
                         userId={userId}
                         expandedIds={expandedIds}
                         onToggleExpand={handleToggleExpand}
+                        pedidosConCargo={pedidosConCargo}
                     />
                     <Pagination
                         currentPage={currentPage}

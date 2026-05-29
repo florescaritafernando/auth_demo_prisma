@@ -62,12 +62,15 @@ export async function POST(request: NextRequest) {
 
         // Determinar el mime type correcto
         let mimeType = file.type
-        if (!mimeType) {
-            if (fileExt === 'pdf') mimeType = 'application/pdf'
-            else if (fileExt === 'jpg' || fileExt === 'jpeg') mimeType = 'image/jpeg'
-            else if (fileExt === 'png') mimeType = 'image/png'
-            else if (fileExt === 'gif') mimeType = 'image/gif'
-            else if (fileExt === 'webp') mimeType = 'image/webp'
+        if (!mimeType || mimeType === 'application/octet-stream') {
+            const mimeMap: Record<string, string> = {
+                pdf: 'application/pdf',
+                jpg: 'image/jpeg', jpeg: 'image/jpeg',
+                png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+                svg: 'image/svg+xml', bmp: 'image/bmp',
+                heic: 'image/heic', heif: 'image/heif',
+            }
+            mimeType = mimeMap[fileExt] || 'application/octet-stream'
         }
 
         const uploadOptions: any = {

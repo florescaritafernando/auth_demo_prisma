@@ -113,6 +113,9 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const [mostrarUbicacion, setMostrarUbicacion] = useState(false)
     const clienteSeleccionadoRef = useRef(false)
     const productoSeleccionadoRef = useRef(false)
+    const [clientePedidoId, setClientePedidoId] = useState("")
+    const [saldoCartera, setSaldoCartera] = useState<number | null>(null)
+    const [adjuntarDeuda, setAdjuntarDeuda] = useState(false)
 
     const [items, setItems] = useState<ItemPedido[]>([])
     const [editandoArticuloId, setEditandoArticuloId] = useState<string | null>(null)
@@ -470,6 +473,19 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setGuiaRemision(c.guiaRemision || false)
         if (c.departamento) setMostrarUbicacion(true)
         setMostrarDropdown(false)
+        if (c.id) {
+            setClientePedidoId(c.id)
+            fetch(`/api/clientes-pedido/${c.id}/cartera`, { credentials: "include" })
+                .then(r => r.json())
+                .then(data => {
+                    const saldo = Math.round((data.cartera?.saldo || 0) * 100) / 100
+                    setSaldoCartera(saldo)
+                })
+                .catch(() => setSaldoCartera(null))
+        } else {
+            setClientePedidoId("")
+            setSaldoCartera(null)
+        }
     }
 
     const resetArticuloForm = () => {
@@ -673,6 +689,10 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                         precio: i.productoPrecio,
                         indicacionesCorte: i.indicacionesCorte
                     }))
+                }
+                if (adjuntarDeuda && saldoCartera !== null && saldoCartera < 0) {
+                    bodyData.cargoDeuda = Math.abs(saldoCartera)
+                    bodyData.observaciones = (bodyData.observaciones || "") + `\n[Cargo por deuda: S/ ${Math.abs(saldoCartera).toFixed(2)}]`
                 }
                 if (pagoConfirmado) bodyData.estado = "confirmado"
                 const res = await fetch("/api/pedido-empleado", {
@@ -1024,11 +1044,31 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                 setGuiaRemision(false)
                                                 setEnvioComprobante("Imprimir")
                                                 setMostrarUbicacion(false)
+                                                setClientePedidoId("")
+                                                setSaldoCartera(null)
+                                                setAdjuntarDeuda(false)
                                             }}
                                             className="mt-2 text-xs text-slate-500 hover:text-slate-700 underline flex items-center gap-1"
                                         >
                                             Limpiar todo
                                         </button>
+                                    )}
+
+                                    {saldoCartera !== null && saldoCartera < 0 && (
+                                        <div className="mt-3 px-4 py-3 bg-amber-50 border border-amber-300 rounded-lg flex items-center gap-3">
+                                            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                                            <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={adjuntarDeuda}
+                                                    onChange={(e) => setAdjuntarDeuda(e.target.checked)}
+                                                    className="rounded border-amber-400 text-amber-700 focus:ring-amber-500 h-4 w-4"
+                                                />
+                                                <span className="text-sm text-amber-900 font-medium">
+                                                    Deuda S/ {Math.abs(saldoCartera).toFixed(2)} — adjuntar cargo al pedido
+                                                </span>
+                                            </label>
+                                        </div>
                                     )}
                                 </div>
 

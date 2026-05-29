@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Upload } from "lucide-react"
 
@@ -22,6 +22,30 @@ const METODOS_PAGO = [
     "BBVA",
 ]
 
+function extraerTotalPagado(notas: string | null): number {
+    if (!notas) return 0
+    let totalPagado = 0
+    for (const rawLine of notas.split("\n")) {
+        const linea = rawLine.trim()
+        if (!linea) continue
+        const mCompleto = linea.match(/^PAGO: Completo - S\/\s*([\d.]+)/)
+        if (mCompleto) { totalPagado += Number(mCompleto[1]); continue }
+        const mDividido = linea.match(/^PAGO: Dividido.*=\s*S\/\s*([\d.]+)/)
+        if (mDividido) { totalPagado += Number(mDividido[1]); continue }
+        const mParcial = linea.match(/^PAGO: Parcial - S\/\s*([\d.]+)/)
+        if (mParcial) totalPagado += Number(mParcial[1])
+    }
+    return totalPagado
+}
+
+interface PedidoOption {
+    id: string
+    numeroOrden: string
+    total: number
+    notas: string | null
+    restante: number
+}
+
 interface Props {
     clienteId: string
     open: boolean
@@ -40,6 +64,78 @@ export function NuevoMovimientoModal({ clienteId, open, onClose }: Props) {
     const [empresa, setEmpresa] = useState("")
     const [file, setFile] = useState<File | null>(null)
     const [uploading, setUploading] = useState(false)
+    const [pedidos, setPedidos] = useState<PedidoOption[]>([])
+    const [pedidoId, setPedidoId] = useState("")
+    const [cargandoPedidos, setCargandoPedidos] = useState(false)
+
+    const resetForm = () => {
+        setTipo("abono")
+        setMonto("")
+        setConcepto("")
+        setReferencia("")
+        setMetodoPago("")
+        setEmpresa("")
+        setFile(null)
+        setPedidoId("")
+        setError("")
+        setLoading(false)
+        setUploading(false)
+    }
+
+    useEffect(() => {
+        if (open) resetForm()
+    }, [open])
+
+    useEffect(() => {
+        if (!open || tipo !== "cargo") {
+            setPedidos([])
+            setPedidoId("")
+            return
+        }
+        setCargandoPedidos(true)
+        Promise.all([
+            fetch("/api/pedidos-admin", { credentials: "include" }).then(r => r.json()),
+            fetch(`/api/clientes-pedido/${clienteId}/cartera`, { credentials: "include" }).then(r => r.json())
+        ])
+            .then(([pedidosData, carteraData]) => {
+                if (!pedidosData.success) return
+                const cargosPorPedido: Record<string, number> = {}
+                if (carteraData.success && carteraData.cartera?.movimientos) {
+                    for (const mov of carteraData.cartera.movimientos) {
+                        if (mov.tipo === "cargo" && mov.pedidoId) {
+                            cargosPorPedido[mov.pedidoId] = (cargosPorPedido[mov.pedidoId] || 0) + mov.monto
+                        }
+                    }
+                }
+                const filtrados = pedidosData.pedidos
+                    .filter((p: any) => p.clientePedidoId === clienteId)
+                    .map((p: any) => {
+                        const pagado = extraerTotalPagado(p.notas)
+                        const cargado = cargosPorPedido[p.id] || 0
+                        const restante = Math.max(0, Number(p.total) - pagado - cargado)
+                        return {
+                            id: p.id,
+                            numeroOrden: p.numeroOrden,
+                            total: Number(p.total),
+                            notas: p.notas,
+                            restante,
+                        }
+                    })
+                    .filter((p: PedidoOption) => p.restante > 0)
+                setPedidos(filtrados)
+            })
+            .catch(() => {})
+            .finally(() => setCargandoPedidos(false))
+    }, [open, tipo, clienteId])
+
+    const handlePedidoSelect = (pedidoId: string) => {
+        setPedidoId(pedidoId)
+        const pedido = pedidos.find(p => p.id === pedidoId)
+        if (pedido) {
+            setMonto(pedido.restante.toFixed(2))
+            setConcepto(`Cargo por pedido ${pedido.numeroOrden}`)
+        }
+    }
 
     if (!open) return null
 
@@ -97,6 +193,7 @@ export function NuevoMovimientoModal({ clienteId, open, onClose }: Props) {
                     metodoPago: metodoPago || null,
                     empresa: empresa || null,
                     comprobante: comprobanteUrl,
+                    pedidoId: pedidoId || null,
                 }),
                 credentials: "include",
             })
@@ -157,6 +254,30 @@ export function NuevoMovimientoModal({ clienteId, open, onClose }: Props) {
                             </button>
                         </div>
                     </div>
+
+                    {tipo === "cargo" && (
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-slate-700">Enlazar Pedido</label>
+                            {cargandoPedidos ? (
+                                <p className="text-sm text-slate-500">Cargando pedidos...</p>
+                            ) : pedidos.length === 0 ? (
+                                <p className="text-sm text-slate-500">No hay pedidos pendientes</p>
+                            ) : (
+                                <select
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900"
+                                    value={pedidoId}
+                                    onChange={(e) => handlePedidoSelect(e.target.value)}
+                                >
+                                    <option value="">Seleccionar pedido (monto auto)</option>
+                                    {pedidos.map(p => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.numeroOrden} - S/ {p.restante.toFixed(2)}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+                    )}
 
                     <div>
                         <label className="block text-sm font-medium mb-1 text-slate-700">Monto *</label>

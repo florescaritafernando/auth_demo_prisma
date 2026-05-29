@@ -449,6 +449,37 @@ export async function PATCH(
         }
 
         if (estado === "confirmado") {
+            // Abonar deuda en cartera si el pedido incluye cargoDeuda
+            const pedidoActual = await prisma.pedido.findUnique({
+                where: { id },
+                select: { cargoDeuda: true, clientePedidoId: true, numeroOrden: true, userId: true }
+            })
+            if (pedidoActual && pedidoActual.cargoDeuda > 0 && pedidoActual.clientePedidoId) {
+                const cartera = await prisma.cartera.upsert({
+                    where: { clientePedidoId: pedidoActual.clientePedidoId },
+                    create: { clientePedidoId: pedidoActual.clientePedidoId, saldo: 0, userId: pedidoActual.userId },
+                    update: {}
+                })
+                const saldoAnterior = cartera.saldo
+                const saldoNuevo = saldoAnterior + pedidoActual.cargoDeuda
+                await prisma.carteraMovimiento.create({
+                    data: {
+                        carteraId: cartera.id,
+                        tipo: "abono",
+                        monto: pedidoActual.cargoDeuda,
+                        saldoAnterior,
+                        saldoNuevo,
+                        concepto: `Pago de deuda incluido en pedido ${pedidoActual.numeroOrden}`,
+                        pedidoId: id,
+                        creadoPorId: session.user.id
+                    }
+                })
+                await prisma.cartera.update({
+                    where: { id: cartera.id },
+                    data: { saldo: { increment: pedidoActual.cargoDeuda } }
+                })
+            }
+
             await prisma.notificacion.create({
                 data: {
                     userId: pedido.userId,
@@ -485,65 +516,48 @@ export async function PATCH(
                 })
             }
         }
-
-        if (estado === "pedido_enviado") {
-            await prisma.notificacion.create({
-                data: {
-                    userId: pedido.userId,
-                    tipo: "pedido_estado",
-                    titulo: "Pedido enviado",
-                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido enviado. Por favor, confirma cuando lo recibas.`,
-                    pedidoId: id
-                }
-            })
         }
 
-        if (estado === "rechazado") {
-            const mensajeRechazo = pedido.motivoRechazo
-                ? `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Motivo: ${pedido.motivoRechazo}`
-                : `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Por favor, contacta con nuestro equipo al WhatsApp para más información.`
-
-            await prisma.notificacion.create({
-                data: {
-                    userId: pedido.userId,
-                    tipo: "pedido_estado",
-                    titulo: "Pedido rechazado",
-                    mensaje: mensajeRechazo,
-                    pedidoId: id
-                }
+        // Liquidar cargos de cartera vinculados a este pedido al confirmar pago (todos los pedidos)
+        if (estado === "confirmado") {
+            const cargosCartera = await prisma.carteraMovimiento.findMany({
+                where: { pedidoId: id, tipo: "cargo" },
+                select: { carteraId: true, monto: true }
             })
 
-            const usuario = await prisma.user.findUnique({
-                where: { id: pedido.userId },
-                select: { email: true, name: true }
-            })
-
-            console.log("Intentando enviar correo a:", usuario?.email)
-
-            if (usuario?.email) {
-                const emailHtml = `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <h2 style="color: #dc2626;">Pedido Rechazado</h2>
-                        <p>Hola ${usuario.name || "cliente"},</p>
-                        <p>Lamentablemente tu pedido <strong>${pedido.numeroOrden}</strong> ha sido rechazado.</p>
-                        <p>Por favor, contacta con nuestro equipo al WhatsApp para más información:</p>
-                        <p style="background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center;">
-                            <strong>WhatsApp:</strong> 981-404-062
-                        </p>
-                        <p style="margin-top: 20px; color: #6b7280; font-size: 12px;">
-                            Manchester Collection - Tienda en línea
-                        </p>
-                    </div>
-                `
-                try {
-                    await enviarEmail(usuario.email, `Pedido ${pedido.numeroOrden} rechazado`, emailHtml)
-                    console.log("Correo enviado exitosamente")
-                } catch (err) {
-                    console.error("Error al enviar correo:", err)
+            if (cargosCartera.length > 0) {
+                const porCartera = new Map<string, number>()
+                for (const c of cargosCartera) {
+                    porCartera.set(c.carteraId, (porCartera.get(c.carteraId) || 0) + c.monto)
                 }
+
+                for (const [carteraId, totalCargo] of porCartera) {
+                    const cartera = await prisma.cartera.findUnique({ where: { id: carteraId } })
+                    if (cartera) {
+                        await prisma.carteraMovimiento.create({
+                            data: {
+                                carteraId,
+                                tipo: "abono",
+                                monto: totalCargo,
+                                saldoAnterior: cartera.saldo,
+                                saldoNuevo: cartera.saldo + totalCargo,
+                                concepto: `Cargo liquidado por pago de pedido`,
+                                pedidoId: id,
+                                creadoPorId: session.user.id
+                            }
+                        })
+
+                        await prisma.cartera.update({
+                            where: { id: carteraId },
+                            data: { saldo: { increment: totalCargo } }
+                        })
+                    }
+                }
+
+                await prisma.carteraMovimiento.deleteMany({
+                    where: { pedidoId: id, tipo: "cargo" }
+                })
             }
-        }
-
         }
 
         // Notificar a administradores cuando un pedido de empleado cambia a confirmado
@@ -738,6 +752,108 @@ export async function PATCH(
                             pedidoId: id
                         }
                     })
+                }
+            }
+        }
+
+        if (estado === "pedido_enviado") {
+            await prisma.notificacion.create({
+                data: {
+                    userId: pedido.userId,
+                    tipo: "pedido_estado",
+                    titulo: "Pedido enviado",
+                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido enviado. Por favor, confirma cuando lo recibas.`,
+                    pedidoId: id
+                }
+            })
+        }
+
+        if (estado === "completado") {
+            const cargos = await prisma.carteraMovimiento.findMany({
+                where: { pedidoId: id, tipo: "cargo" },
+                select: { carteraId: true, monto: true }
+            })
+
+            if (cargos.length > 0) {
+                const porCartera = new Map<string, number>()
+                for (const c of cargos) {
+                    porCartera.set(c.carteraId, (porCartera.get(c.carteraId) || 0) + c.monto)
+                }
+
+                for (const [carteraId, totalCargo] of porCartera) {
+                    const cartera = await prisma.cartera.findUnique({ where: { id: carteraId } })
+                    if (cartera) {
+                        const saldoAnterior = cartera.saldo
+                        const saldoNuevo = saldoAnterior + totalCargo
+
+                        await prisma.carteraMovimiento.create({
+                            data: {
+                                carteraId,
+                                tipo: "abono",
+                                monto: totalCargo,
+                                saldoAnterior,
+                                saldoNuevo,
+                                concepto: `Cargo liquidado por completación de pedido`,
+                                pedidoId: id,
+                                creadoPorId: session.user.id
+                            }
+                        })
+
+                        await prisma.cartera.update({
+                            where: { id: carteraId },
+                            data: { saldo: { increment: totalCargo } }
+                        })
+                    }
+                }
+
+                await prisma.carteraMovimiento.deleteMany({
+                    where: { pedidoId: id, tipo: "cargo" }
+                })
+            }
+        }
+
+        if (estado === "rechazado") {
+            const mensajeRechazo = pedido.motivoRechazo
+                ? `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Motivo: ${pedido.motivoRechazo}`
+                : `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Por favor, contacta con nuestro equipo al WhatsApp para más información.`
+
+            await prisma.notificacion.create({
+                data: {
+                    userId: pedido.userId,
+                    tipo: "pedido_estado",
+                    titulo: "Pedido rechazado",
+                    mensaje: mensajeRechazo,
+                    pedidoId: id
+                }
+            })
+
+            const usuario = await prisma.user.findUnique({
+                where: { id: pedido.userId },
+                select: { email: true, name: true }
+            })
+
+            console.log("Intentando enviar correo a:", usuario?.email)
+
+            if (usuario?.email) {
+                const emailHtml = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #dc2626;">Pedido Rechazado</h2>
+                        <p>Hola ${usuario.name || "cliente"},</p>
+                        <p>Lamentablemente tu pedido <strong>${pedido.numeroOrden}</strong> ha sido rechazado.</p>
+                        <p>Por favor, contacta con nuestro equipo al WhatsApp para más información:</p>
+                        <p style="background: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center;">
+                            <strong>WhatsApp:</strong> 981-404-062
+                        </p>
+                        <p style="margin-top: 20px; color: #6b7280; font-size: 12px;">
+                            Manchester Collection - Tienda en línea
+                        </p>
+                    </div>
+                `
+                try {
+                    await enviarEmail(usuario.email, `Pedido ${pedido.numeroOrden} rechazado`, emailHtml)
+                    console.log("Correo enviado exitosamente")
+                } catch (err) {
+                    console.error("Error al enviar correo:", err)
                 }
             }
         }
