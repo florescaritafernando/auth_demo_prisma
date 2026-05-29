@@ -20,7 +20,8 @@ export async function GET(
         where: { clientePedidoId: id },
         include: {
             movimientos: {
-                orderBy: { createdAt: "desc" }
+                orderBy: { createdAt: "desc" },
+                include: { creadoPor: { select: { name: true } } }
             }
         }
     })

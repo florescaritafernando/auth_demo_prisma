@@ -13,6 +13,9 @@ async function getClientes() {
             include: {
                 _count: {
                     select: { pedidos: true }
+                },
+                cartera: {
+                    select: { saldo: true }
                 }
             }
         })
@@ -30,9 +33,9 @@ export default async function ClientesPedidoPage() {
     if (!session) redirect("/login")
 
     const role = (session.user as any)?.role || "cliente"
-    if (role !== "admin") redirect("/dashboard")
+    if (role !== "admin" && role !== "empleado") redirect("/dashboard")
 
     const clientes = await getClientes()
 
-    return <ClientesPedidoClient initialClientes={clientes as any} />
+    return <ClientesPedidoClient initialClientes={clientes as any} userRole={role} />
 }

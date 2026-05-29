@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
     }
 
     const role = (session.user as any)?.role
-    if (role !== "admin") {
-        return NextResponse.json({ success: false, error: "Solo admins" }, { status: 403 })
+    if (role !== "admin" && role !== "empleado") {
+        return NextResponse.json({ success: false, error: "No autorizado" }, { status: 403 })
     }
 
     const body = await request.json()

@@ -42,7 +42,11 @@ export async function POST(request: NextRequest) {
 
             return NextResponse.json({
                 success: true,
-                nombre: nombreCompleto
+                nombre: nombreCompleto,
+                direccion: data.direccion || "",
+                departamento: data.departamento || "",
+                provincia: data.provincia || "",
+                distrito: data.distrito || ""
             })
         } else if (tipo === "ruc") {
             // Verificar si la respuesta tiene error

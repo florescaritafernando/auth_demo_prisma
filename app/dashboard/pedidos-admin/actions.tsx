@@ -432,7 +432,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
 
     return (
         <div className="space-y-4">
-            {faltaPagar > 0.01 && (
+            {faltaPagar > 0.01 && pedido.estado !== "metraje_en_proceso" && (
                 <Button
                     onClick={() => setShowPagoPedidoModal(true)}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-10"

@@ -68,6 +68,12 @@ export function NuevoMovimientoModal({ clienteId, open, onClose }: Props) {
     const [pedidoId, setPedidoId] = useState("")
     const [cargandoPedidos, setCargandoPedidos] = useState(false)
 
+    useEffect(() => {
+        if (empresa === "YAPE CARLOS" || empresa === "YAPE ANGEL") {
+            setMetodoPago("YAPE")
+        }
+    }, [empresa])
+
     const resetForm = () => {
         setTipo("abono")
         setMonto("")

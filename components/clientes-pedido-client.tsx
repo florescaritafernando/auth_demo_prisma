@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search } from "lucide-react"
+import { Search, Wallet } from "lucide-react"
 import { BotonNuevoClientePedido, BotonEliminarClientePedido } from "@/components/nuevo-cliente-pedido-button"
 import { BotonEditarClientePedido } from "@/components/editar-cliente-pedido-button"
 import { VerClienteButton } from "@/components/clientes-pedido/ver-cliente-button"
@@ -22,10 +22,12 @@ interface ClientePedido {
     provincia: string | null
     distrito: string | null
     _count: { pedidos: number }
+    cartera?: { saldo: number } | null
 }
 
 interface Props {
     initialClientes: ClientePedido[]
+    userRole?: string
 }
 
 const AGENCIAS = [
@@ -39,12 +41,11 @@ const AGENCIAS = [
     { value: "otros", label: "Otros" },
 ]
 
-export function ClientesPedidoClient({ initialClientes }: Props) {
+export function ClientesPedidoClient({ initialClientes, userRole }: Props) {
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [search, setSearch] = useState("")
-    const [filtroAgencia, setFiltroAgencia] = useState("")
-    const [filtroTipoDoc, setFiltroTipoDoc] = useState("")
+    const [filtroCartera, setFiltroCartera] = useState(false)
     const [detalleClienteId, setDetalleClienteId] = useState<string | null>(null)
 
     const filtered = initialClientes.filter(c => {
@@ -52,9 +53,8 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
             c.nombre.toLowerCase().includes(search.toLowerCase()) ||
             c.numeroDoc.toLowerCase().includes(search.toLowerCase()) ||
             (c.telefono && c.telefono.toLowerCase().includes(search.toLowerCase()))
-        const matchAgencia = !filtroAgencia || c.agencia === filtroAgencia
-        const matchTipoDoc = !filtroTipoDoc || c.tipoDoc === filtroTipoDoc
-        return matchSearch && matchAgencia && matchTipoDoc
+        const matchCartera = !filtroCartera || c.cartera !== null
+        return matchSearch && matchCartera
     })
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage)
@@ -89,36 +89,28 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                 </div>
 
                 <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                    <div className="flex flex-row gap-2 items-center">
+                        <div className="flex-1 min-w-0 relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <input
                                 type="text"
-                                placeholder="Buscar por nombre, documento o telefono..."
-                                className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm text-slate-800 placeholder:text-slate-400"
+                                placeholder="Buscar..."
+                                className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all bg-white"
                                 value={search}
                                 onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
                             />
                         </div>
-                        <select
-                            value={filtroTipoDoc}
-                            onChange={(e) => { setFiltroTipoDoc(e.target.value); setCurrentPage(1) }}
-                            className="text-sm border rounded-lg px-3 py-2 bg-white text-slate-700"
+                        <button
+                            onClick={() => { setFiltroCartera(!filtroCartera); setCurrentPage(1) }}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 border-2 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                                filtroCartera
+                                    ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                                    : "bg-white border-slate-300 text-slate-600 hover:text-blue-600"
+                            }`}
                         >
-                            <option value="">Todo tipo doc</option>
-                            <option value="dni">DNI</option>
-                            <option value="ruc">RUC</option>
-                            <option value="ce">CE</option>
-                        </select>
-                        <select
-                            value={filtroAgencia}
-                            onChange={(e) => { setFiltroAgencia(e.target.value); setCurrentPage(1) }}
-                            className="text-sm border rounded-lg px-3 py-2 bg-white text-slate-700"
-                        >
-                            {AGENCIAS.map(a => (
-                                <option key={a.value} value={a.value}>{a.label}</option>
-                            ))}
-                        </select>
+                            <Wallet className="h-4 w-4" />
+                            <span className="hidden sm:inline">Filtrar por </span>Cartera
+                        </button>
                     </div>
                 </div>
 
@@ -127,25 +119,34 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                         <table className="w-full min-w-[900px]">
                             <thead className="bg-slate-100 border-b border-slate-200">
                                 <tr>
+                                    <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Cartera</th>
                                     <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Nombre</th>
                                     <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Documento</th>
+                                    <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Direccion</th>
                                     <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Telefono</th>
-                                    <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Agencia</th>
-                                    <th className="px-3 py-3 text-left text-xs font-bold text-slate-700 uppercase">Ubicacion</th>
-                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-700 uppercase">Pedidos</th>
                                     <th className="px-3 py-3 text-right text-xs font-bold text-slate-700 uppercase">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
                                 {paginatedData.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                                            {search || filtroAgencia || filtroTipoDoc ? "No se encontraron resultados." : "No hay clientes registrados."}
+                                        <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                                            {search ? "No se encontraron resultados." : "No hay clientes registrados."}
                                         </td>
                                     </tr>
                                 ) : (
                                     paginatedData.map((cli) => (
                                         <tr key={cli.id} className="hover:bg-slate-50">
+                                            <td className="px-3 py-3 text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <VerClienteButton onClick={() => setDetalleClienteId(cli.id)} />
+                                                    {cli.cartera !== null && (
+                                                    <span className={`font-bold ${(cli.cartera?.saldo || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                                                        S/ {(cli.cartera?.saldo || 0).toFixed(2)}
+                                                    </span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-3 py-3 text-sm font-medium text-slate-900 uppercase">{cli.nombre}</td>
                                             <td className="px-3 py-3 text-sm text-slate-600 uppercase">
                                                 <span className="inline-flex items-center gap-1">
@@ -153,19 +154,10 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                                                     {cli.numeroDoc}
                                                 </span>
                                             </td>
+                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">{cli.direccion || "-"}</td>
                                             <td className="px-3 py-3 text-sm text-slate-600 uppercase">{cli.telefono || "-"}</td>
-                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">{getAgenciaLabel(cli.agencia, cli.agenciaOtro)}</td>
-                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">
-                                                {[cli.departamento, cli.provincia, cli.distrito].filter(Boolean).join(" - ") || "-"}
-                                            </td>
-                                            <td className="px-3 py-3 text-center">
-                                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-                                                    {cli._count.pedidos}
-                                                </span>
-                                            </td>
                                             <td className="px-3 py-3 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <VerClienteButton onClick={() => setDetalleClienteId(cli.id)} />
                                                     <BotonEditarClientePedido cliente={cli as any} />
                                                     <BotonEliminarClientePedido id={cli.id} />
                                                 </div>
@@ -196,6 +188,7 @@ export function ClientesPedidoClient({ initialClientes }: Props) {
                 clienteId={detalleClienteId || ""}
                 open={!!detalleClienteId}
                 onClose={() => setDetalleClienteId(null)}
+                userRole={userRole}
             />
         </div>
     )

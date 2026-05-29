@@ -46,6 +46,7 @@ const empleadoItems = [
     { title: "Ver Tiendas", url: "/dashboard/tiendas", icon: Warehouse },
     { title: "Ver Almacenes", url: "/dashboard/almacenes", icon: Warehouse },
     { title: "Atender Pedidos", url: "/dashboard/pedidos-admin", icon: ShoppingBag },
+    { title: "Gestion Clientes", url: "/dashboard/clientes-pedido", icon: Users },
     { title: "Reclamos de Clientes", url: "/dashboard/reclamos", icon: AlertTriangle },
     { title: "Notificaciones", url: "/dashboard/notificaciones", icon: BellRing, isNotificaciones: true },
 ]

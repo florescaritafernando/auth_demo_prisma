@@ -609,7 +609,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                             </div>
                         </button>
 
-                        {userRole === "admin" && (
+                        {(userRole === "admin" || userRole === "empleado") && (
                             <Link
                                 href="/dashboard/clientes-pedido"
                                 className="group relative overflow-hidden bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl p-5 text-left hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-purple-200/50"

@@ -589,7 +589,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     }
 
     const crearPedido = async () => {
-        if (!metodoPago || !cliente.nombre || !cliente.numeroDoc || items.length === 0) {
+        if (!cliente.nombre || !cliente.numeroDoc || items.length === 0) {
             setToastMessage({ show: true, message: "Complete todos los campos requeridos", type: "error" })
             return
         }
@@ -1549,12 +1549,14 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                 </div>
 
                                 {/* Pago */}
+                                {!items.some(i => i.tipo === "pieza") && (
                                 <Button
                                     onClick={() => setShowPagoModal(true)}
                                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-10"
                                 >
                                     <DollarSign className="h-4 w-4 mr-2" /> COBRAR
                                 </Button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -1835,10 +1837,10 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                     disabled
                                     className="w-full px-3 py-2.5 border border-slate-100 rounded-lg text-sm text-slate-500 bg-slate-100/50"
                                 />
-                                <label className={labelBase}>SubTotal</label>
+                                <label className={labelBase}>SubTotal {itemTipo === "pieza" && <span className="text-amber-600 font-normal">(precio aprox.)</span>}</label>
                                 <input
                                     type="text"
-                                    value={productoSeleccionado && itemCantidad ? `S/ ${(Number(itemCantidad) * Number(productoSeleccionado.precio)).toFixed(2)}` : "—"}
+                                    value={productoSeleccionado && itemCantidad ? `S/ ${(Number(itemCantidad) * (itemTipo === "pieza" ? 50 : 1) * Number(productoSeleccionado.precio)).toFixed(2)}` : "—"}
                                     disabled
                                     className="w-full px-3 py-2.5 border border-slate-100 rounded-lg text-sm text-slate-500 bg-slate-100/50"
                                 />

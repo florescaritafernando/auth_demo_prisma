@@ -29,9 +29,10 @@ interface Props {
     clienteId: string
     open: boolean
     onClose: () => void
+    userRole?: string
 }
 
-export function DetalleClienteModal({ clienteId, open, onClose }: Props) {
+export function DetalleClienteModal({ clienteId, open, onClose, userRole }: Props) {
     const [cartera, setCartera] = useState<CarteraData | null>(null)
     const [clienteNombre, setClienteNombre] = useState("")
     const [loading, setLoading] = useState(false)
@@ -89,6 +90,7 @@ export function DetalleClienteModal({ clienteId, open, onClose }: Props) {
                                 clientePedidoId={clienteId}
                                 onNuevoMovimiento={() => setNuevoMovimientoOpen(true)}
                                 onRefresh={() => setCarteraRefreshKey(k => k + 1)}
+                                userRole={userRole}
                             />
                         )}
                     </div>
