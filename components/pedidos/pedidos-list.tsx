@@ -386,7 +386,7 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                                         ? Number(detalle.precio) * metrajeTotal
                                                         : Number(detalle.precio) * detalle.cantidad
                                                     return (
-                                                        <div key={detalle.id} className="flex flex-col text-sm bg-white rounded p-2">
+                                                        <div key={detalle.id} className="flex flex-col text-sm bg-white rounded p-2 min-w-0">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <p className="font-bold text-slate-900">{detalle.producto?.nombre}</p>
                                                                 {detalle.producto?.categoria && (
@@ -420,9 +420,11 @@ function PedidoCard({ pedido, userRole, setFeedbackModal, setQuejaModal, isExpan
                                                                 <span className="text-sm font-bold text-slate-900">S/ {precioTotal.toFixed(2)}</span>
                                                             </div>
                                                             {detalle.indicacionesCorte && (
-                                                                <p className="text-xs text-amber-700 mt-1.5 italic break-words whitespace-normal leading-relaxed border-t border-amber-100 pt-1.5">
-                                                                    "{detalle.indicacionesCorte}"
-                                                                </p>
+                                                                <div className="mt-1.5 border border-amber-200 rounded bg-amber-50/50 px-2 py-1.5">
+                                                                    <p className="text-xs text-amber-700 italic break-words whitespace-normal leading-relaxed [word-break:break-word]">
+                                                                        "{detalle.indicacionesCorte}"
+                                                                    </p>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     )

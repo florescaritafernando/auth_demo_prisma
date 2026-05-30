@@ -80,13 +80,46 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
 
     const empleadoNames = pedido.delegados?.map(d => d.user?.name || "Sin nombre").join(", ") || "Sin asignar"
 
+    const clean = (t: string) => t.replace(/^\s*[\u2013\u2014\u2011\u2012\u2212-]+\s*/, '')
+    const fmt34 = (t: string) => {
+        if (!t) return t
+        t = clean(t)
+        const words = t.split(/\s+/)
+        const lines: string[] = []
+        let cur = ''
+        for (const w of words) {
+            if (!cur) { cur = w; continue }
+            if ((cur + ' ' + w).length > 34) { lines.push(cur); cur = w }
+            else { cur += ' ' + w }
+        }
+        if (cur) lines.push(cur)
+        return lines.join('\n')
+    }
+    const fmt70 = (t: string) => {
+        if (!t) return t
+        t = clean(t)
+        if (t.length <= 70) return t
+        const words = t.split(/\s+/)
+        const lines: string[] = []
+        let cur = ''
+        for (const w of words) {
+            const maxLen = lines.length === 0 ? 70 : 94
+            if (!cur) { cur = w; continue }
+            if ((cur + ' ' + w).length > maxLen) { lines.push(cur); cur = w }
+            else { cur += ' ' + w }
+        }
+        if (cur) lines.push(cur)
+        return lines.join('\n')
+    }
+
     const generarContenido = () => {
         const fecha = new Date(pedido.createdAt).toLocaleDateString("es-PE", {
             day: "numeric",
             month: "short",
             year: "numeric",
             hour: "2-digit",
-            minute: "2-digit"
+            minute: "2-digit",
+            timeZone: "America/Lima"
         })
 
         const metodoEnvioLabel = pedido.metodoEnvio === "tienda"
@@ -97,7 +130,11 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     ? `(DELIVERY) - ${(pedido.delivery === "otros" ? (pedido.deliveryOtro || "OTROS") : (pedido.delivery || "NO ESPECIFICADO")).toUpperCase()}`
                     : pedido.metodoEnvio ? pedido.metodoEnvio.toUpperCase() : ""
 
-        const productos = pedido.pedidoDetalle
+        const productos = [...pedido.pedidoDetalle]
+            .sort((a, b) => {
+                if (a.tipo !== b.tipo) return a.tipo === "metros" ? -1 : 1
+                return a.producto.nombre.localeCompare(b.producto.nombre)
+            })
             .map(d => {
                 const metrajeTotal = d.etiquetas?.reduce((sum, e) => sum + e.valor, 0) || Number(d.metraje || 0)
                 const piezasEsperadas = d.tipo === "pieza" ? Number(d.cantidad) : 0
@@ -161,7 +198,12 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
             notas: pedido.notas,
             motivoRechazo: pedido.motivoRechazo,
             delegados: pedido.delegados,
-            pedidoDetalle: pedido.pedidoDetalle.map(d => ({
+            pedidoDetalle: [...pedido.pedidoDetalle]
+                .sort((a, b) => {
+                    if (a.tipo !== b.tipo) return a.tipo === "metros" ? -1 : 1
+                    return a.producto.nombre.localeCompare(b.producto.nombre)
+                })
+                .map(d => ({
                 producto: d.producto,
                 cantidad: d.cantidad,
                 tipo: d.tipo,
@@ -205,9 +247,9 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     }
                     * {
                         box-sizing: border-box;
-                        max-width: 7.2cm;
                         margin: 0;
                         padding: 0;
+                        word-wrap: break-word;
                     }
                     html, body {
                         margin: 0;
@@ -243,7 +285,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                     .producto-nombre { font-weight: bold; font-size: 12pt; word-wrap: break-word; }
                     .producto-detalle { font-size: 12pt; margin-top: 1pt; }
                     .producto-total { font-weight: bold; font-size: 10pt; text-align: right; margin-top: 1pt; }
-                    .indicaciones { white-space: pre-wrap; word-wrap: break-word; font-size: 9pt; font-style: italic; margin-top: 1pt; border-top: 1px solid #ccc; padding-top: 1pt; }
+                    .indicaciones {width: 100%; max-width: 100%; font-size: 9pt; font-style: italic; margin-top: 1pt; border: 1px solid #ccc; border-radius: 2pt; padding: 2pt 3pt; }
                     .totales { border-top: 1px dashed #000; padding-top: 6pt; margin-top: 4pt; }
                     .total-row { display: flex; justify-content: space-between; font-size: 10pt; margin-bottom: 2pt; }
                     .gran-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 14pt; border-top: 1px dashed #000; padding-top: 4pt; margin-top: 4pt; }
@@ -363,7 +405,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                                     <span>${cNum}</span>${cUnit ? `<span style="font-size:10pt"> ${cUnit}</span>` : ''}${mVal ? `<span style="font-size:10pt"> ${mVal}</span>` : ''}${mUnit ? `<span style="font-size:10pt"> ${mUnit}</span>` : ''}<span style="font-size:10pt"> X ${p.precio.toUpperCase()}</span>
                                 </div>
                                 ${p.mostrarCalculo ? `<div class="producto-total">= S/ ${p.total.toFixed(2)}</div>` : ""}
-                                ${p.indicaciones ? `<div class="indicaciones">"${p.indicaciones.toUpperCase()}"</div>` : ""}
+                                ${p.indicaciones ? `<div class="indicaciones">INDICACIONES DE CORTE:${String.fromCharCode(10)}${fmt34(p.indicaciones).toUpperCase()}</div>` : ""}
                             </div>`
                         }).join("")}
                     </div>
@@ -403,26 +445,24 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                         return ""
                     })()}`
 
-            const estilosFinal = esMovil
-                ? (() => {
-                    const measurer = document.createElement("div")
-                    measurer.style.cssText = "position:fixed;left:-9999px;top:0;width:7.2cm;visibility:hidden;pointer-events:none"
-                    measurer.innerHTML = `<!DOCTYPE html><html><head>${estilos}</head><body>${ticketBodyHtml}</body></html>`
-                    document.body.appendChild(measurer)
+            const estilosFinal = (() => {
+                const measurer = document.createElement("div")
+                measurer.style.cssText = "position:fixed;left:-9999px;top:0;width:7.2cm;visibility:hidden;pointer-events:none"
+                measurer.innerHTML = `<!DOCTYPE html><html><head>${estilos}</head><body>${ticketBodyHtml}</body></html>`
+                document.body.appendChild(measurer)
 
-                    const scrollH = measurer.scrollHeight
-                    const widthPx = measurer.offsetWidth || (7.2 * 37.8)
-                    const pxPerCm = widthPx / 7.2
-                    const alturaCm = Math.max(Math.ceil((scrollH + 8) / pxPerCm), 5)
+                const scrollH = measurer.scrollHeight
+                const widthPx = measurer.offsetWidth || (7.2 * 37.8)
+                const pxPerCm = widthPx / 7.2
+                const alturaCm = Math.max(Math.ceil((scrollH + 8) / pxPerCm), 5)
 
-                    document.body.removeChild(measurer)
+                document.body.removeChild(measurer)
 
-                    return estilos.replace(
-                        "size: 7.2cm auto;",
-                        `size: 7.2cm ${alturaCm}cm;`
-                    )
-                })()
-                : estilos
+                return estilos.replace(
+                    "size: 7.2cm auto;",
+                    `size: 7.2cm ${alturaCm}cm;`
+                )
+            })()
 
             const htmlCompleto = `<!DOCTYPE html>
 <html>
@@ -540,7 +580,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                             <td>${p.precio}</td>
                             <td>S/ ${p.total.toFixed(2)}</td>
                         </tr>
-                        ${p.indicaciones ? `<tr><td colspan="6" style="font-style: italic; font-size: 10px; background: #fff8e1; padding-left: 12px; border-top: 1px solid #ddd;">L» INDICACIONES DE CORTE: ${p.indicaciones}</td></tr>` : ""}
+                        ${p.indicaciones ? `<tr><td colspan="6" style="font-style: italic; font-size: 10px; background: #fff8e1; padding: 6px 12px; border: 1px solid #f0d78a; overflow-wrap: break-word; white-space: pre-wrap;">L» INDICACIONES DE CORTE:'${fmt70(p.indicaciones).replace(/\n/g, '<br/>')}</td></tr>` : ""}
                     `).join("")}
                 </tbody>
             </table>
@@ -558,7 +598,7 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                 </div>
                 ` : ""}
                 <div class="totales-row gran-total font-size:20px">
-                    <span>TOTAL A PAGAR:</span>
+                    <span>TOTAL:</span>
                     <span>S/ ${pedido.total.toFixed(2)}</span>
                 </div>
             </div>
@@ -611,7 +651,12 @@ export function ImprimirPedidoModal({ pedido, onClose }: Props) {
                 notas: pedido.notas,
                 motivoRechazo: pedido.motivoRechazo,
                 delegados: pedido.delegados,
-                pedidoDetalle: pedido.pedidoDetalle.map((d: any) => ({
+                pedidoDetalle: [...pedido.pedidoDetalle]
+                    .sort((a: any, b: any) => {
+                        if (a.tipo !== b.tipo) return a.tipo === "metros" ? -1 : 1
+                        return a.producto.nombre.localeCompare(b.producto.nombre)
+                    })
+                    .map((d: any) => ({
                     producto: d.producto,
                     cantidad: d.cantidad,
                     tipo: d.tipo,

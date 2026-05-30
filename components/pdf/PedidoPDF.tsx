@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     infoBox: {
-        width: "48.5%",
+        width: "49.15%",
         border: "1 solid #dddddd",
         padding: 8,
         marginBottom: 8,
@@ -91,12 +91,14 @@ const styles = StyleSheet.create({
         fontSize: 10,
     },
     tableRowAlt: {
-        flexDirection: "row",
-        borderBottom: "1 solid #dddddd",
-        paddingVertical: 5,
+        width: "100%",
+        border: "1 solid #f0d78a",
+        paddingVertical: 4,
         paddingHorizontal: 6,
         fontSize: 9,
-        backgroundColor: "#ffffff",
+        fontStyle: "italic",
+        backgroundColor: "#fff8e1",
+        marginTop: 1,
     },
     colNum: { width: "4%" },
     colNombre: { width: "20%", fontWeight: "bold" },
@@ -228,12 +230,17 @@ const ticketStyles = StyleSheet.create({
         marginTop: 1,
         color: "#000000",
     },
-    indicaciones: {
+    indicacionesBox: {
+        width: "100%",
+        marginTop: 2,
+        border: "1 solid #cccccc",
+        paddingVertical: 2,
+        paddingHorizontal: 3,
+    },
+    indicacionesText: {
+        width: "100%",
         fontSize: 9,
         fontStyle: "italic",
-        marginTop: 1,
-        borderTop: "1 solid #cccccc",
-        paddingTop: 1,
         color: "#000000",
     },
     totales: {
@@ -347,6 +354,42 @@ const extraerTotalPagado = (notas: string | null): number => {
     return totalPagado
 }
 
+function clean(text: string): string {
+    return text.replace(/^\s*[\u2013\u2014\u2011\u2012\u2212-]+\s*/, '')
+}
+
+function formatTicketLines(text: string, lineLength = 34): string {
+    if (!text) return text
+    text = clean(text)
+    const words = text.split(/\s+/)
+    const lines: string[] = []
+    let cur = ''
+    for (const w of words) {
+        if (!cur) { cur = w; continue }
+        if ((cur + ' ' + w).length > lineLength) { lines.push(cur); cur = w }
+        else { cur += ' ' + w }
+    }
+    if (cur) lines.push(cur)
+    return lines.join('\n')
+}
+
+function formatA4Lines(text: string, firstMax = 70, restMax = 94): string {
+    if (!text) return text
+    text = clean(text)
+    if (text.length <= firstMax) return text
+    const words = text.split(/\s+/)
+    const lines: string[] = []
+    let cur = ''
+    for (const w of words) {
+        const maxLen = lines.length === 0 ? firstMax : restMax
+        if (!cur) { cur = w; continue }
+        if ((cur + ' ' + w).length > maxLen) { lines.push(cur); cur = w }
+        else { cur += ' ' + w }
+    }
+    if (cur) lines.push(cur)
+    return lines.join('\n')
+}
+
 export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; formato?: "ticket" | "a4" }) {
     const fecha = new Date(pedido.createdAt).toLocaleDateString("es-PE", {
         day: "numeric",
@@ -354,6 +397,7 @@ export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; form
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
+        timeZone: "America/Lima",
     })
 
     const metodoEnvioLabel = pedido.metodoEnvio === "tienda"
@@ -422,7 +466,10 @@ export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; form
         for (const p of productos) {
             ticketH += 34
             if (p.mostrarCalculo) ticketH += L
-            if (p.indicaciones) ticketH += 14
+            if (p.indicaciones) {
+                const lines = 1 + Math.max(1, Math.ceil(p.indicaciones.length / 34))
+                ticketH += 8 + lines * 11
+            }
         }
         ticketH += 36
         if (pedido.costoEnvio > 0) ticketH += L
@@ -528,7 +575,11 @@ export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; form
                                         <Text style={{ fontSize: 10 }}> X {p.precio.toUpperCase()}</Text>
                                     </Text>
                                     {p.mostrarCalculo && <Text style={ticketStyles.productoTotal}>= S/ {p.total.toFixed(2)}</Text>}
-                                    {p.indicaciones && <Text style={ticketStyles.indicaciones}>"{p.indicaciones.toUpperCase()}"</Text>}
+                                    {p.indicaciones && (
+                                        <View style={ticketStyles.indicacionesBox}>
+                                            <Text style={ticketStyles.indicacionesText}>INDICACIONES DE CORTE:{String.fromCharCode(10)}{formatTicketLines(p.indicaciones).toUpperCase()}</Text>
+                                        </View>
+                                    )}
                                 </View>
                             )
                         })}
@@ -656,7 +707,7 @@ export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; form
                             </View>
                             {p.indicaciones && (
                                 <View style={styles.tableRowAlt}>
-                                    <Text style={{ width: "100%" }}>L» INDICACIONES DE CORTE: {p.indicaciones.toUpperCase()}</Text>
+                                    <Text style={{ width: "100%" }}>L» INDICACIONES DE CORTE: {formatA4Lines(p.indicaciones).toUpperCase()}</Text>
                                 </View>
                             )}
                         </View>
@@ -675,7 +726,7 @@ export function PedidoPDF({ pedido, formato = "a4" }: { pedido: PedidoData; form
                         </View>
                     )}
                     <View style={{ ...styles.totalRow, ...styles.grandTotal }}>
-                        <Text>TOTAL A PAGAR:</Text>
+                        <Text>TOTAL:</Text>
                         <Text>S/ {pedido.total.toFixed(2)}</Text>
                     </View>
                 </View>

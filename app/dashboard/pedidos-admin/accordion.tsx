@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { ChevronDown, ChevronUp, FileText, UserCheck, ExternalLink, UserPlus, Printer, X, File, Wallet } from "lucide-react"
+import { ChevronDown, ChevronUp, FileText, UserCheck, ExternalLink, UserPlus, Printer, X, File, Wallet, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AdminPedidoActions } from "./actions"
 import { ImprimirPedidoModal } from "@/components/pedidos/ImprimirPedidoModal"
@@ -267,6 +267,12 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                             {pedido.pedidoDetalle.length} items • {new Date(pedido.createdAt).toLocaleDateString("es-PE")} {new Date(pedido.createdAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
                                         </p>
                                     </div>
+                                    {pedido.estado === "pendiente" && (
+                                        <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm hidden sm:inline-flex items-center gap-1">
+                                            <DollarSign className="h-3.5 w-3.5" />
+                                            COBRAR
+                                        </span>
+                                    )}
                                     {isExpanded ? (
                                         <ChevronUp className="h-5 w-5 text-slate-400" />
                                     ) : (
@@ -299,7 +305,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                                 Productos
                                             </h3>
-                                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            <div className="space-y-2">
                                                 {pedido.pedidoDetalle
                                                     .filter(detalle => {
                                                         if (detalle.tipo === "pieza" && pedido.estado !== "metraje_en_proceso") {
@@ -307,6 +313,10 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                             if (etiquetasCount === 0) return false
                                                         }
                                                         return true
+                                                    })
+                                                    .sort((a, b) => {
+                                                        if (a.tipo !== b.tipo) return a.tipo === "metros" ? -1 : 1
+                                                        return a.producto.nombre.localeCompare(b.producto.nombre)
                                                     })
                                                     .map((detalle) => {
                                                     const metrajeTotal = Number((detalle.etiquetas?.reduce((sum, e) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2));
@@ -316,7 +326,7 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                         : Number(detalle.precio) * detalle.cantidad;
 
                                                     return (
-                                                        <div key={detalle.id} className="flex flex-col text-sm bg-white rounded-lg p-2">
+                                                        <div key={detalle.id} className="flex flex-col text-sm bg-white rounded-lg p-2 min-w-0">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <p className="font-bold text-slate-900">{detalle.producto.nombre}</p>
                                                                 <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-medium text-slate-600 shrink-0">{detalle.producto.categoria}</span>
@@ -368,13 +378,16 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                             Indicaciones de corte
                                                         </h3>
                                                         <div className="space-y-2">
-                                                            {detallesConIndicaciones.map((detalle: any) => {
+                                                            {detallesConIndicaciones.sort((a: any, b: any) => {
+                                                                if (a.tipo !== b.tipo) return a.tipo === "metros" ? -1 : 1
+                                                                return a.producto.nombre.localeCompare(b.producto.nombre)
+                                                            }).map((detalle: any) => {
                                                                 const metrajeTotal = Number((detalle.etiquetas?.reduce((sum: number, e: any) => sum + (e.valor || 0), 0) ?? Number(detalle.metraje || 0)).toFixed(2))
                                                                 const precioTotal = detalle.tipo === "pieza"
                                                                     ? Number(detalle.precio) * metrajeTotal
                                                                     : Number(detalle.precio) * detalle.cantidad
                                                                 return (
-                                                                    <div key={detalle.id} className="flex flex-col text-sm bg-white rounded p-2">
+                                                                     <div key={detalle.id} className="flex flex-col text-sm bg-white rounded p-2 min-w-0">
                                                                         <div className="flex items-center gap-2 mb-1">
                                                                             <p className="font-bold text-slate-900">{detalle.producto.nombre}</p>
                                                                             <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-medium text-slate-600 shrink-0">{detalle.producto.categoria}</span>
@@ -406,9 +419,11 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                                             <span className="text-sm font-bold text-slate-900">S/ {precioTotal.toFixed(2)}</span>
                                                                         </div>
                                                                         {detalle.indicacionesCorte && (
-                                                                            <p className="text-xs text-amber-700 mt-1.5 italic break-words whitespace-normal leading-relaxed border-t border-amber-100 pt-1.5">
-                                                                                "{detalle.indicacionesCorte}"
-                                                                            </p>
+                                                                            <div className="mt-1.5 border border-amber-200 rounded bg-amber-50/50 px-2 py-1.5">
+                                                                                <p className="text-xs text-amber-700 italic break-words whitespace-normal leading-relaxed [word-break:break-word]">
+                                                                                    "{detalle.indicacionesCorte}"
+                                                                                </p>
+                                                                            </div>
                                                                         )}
                                                                     </div>
                                                                 )

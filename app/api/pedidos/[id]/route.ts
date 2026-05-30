@@ -99,7 +99,7 @@ export async function PUT(
         // Obtener detalles existentes con sus etiquetas
         const existingDetalles = await prisma.pedidoDetalle.findMany({
             where: { pedidoId: id },
-            include: { etiquetas: { select: { id: true } } }
+            include: { etiquetas: { select: { id: true, valor: true } } }
         })
         const existingMap = new Map(existingDetalles.map(d => [d.id, d]))
 
@@ -125,20 +125,43 @@ export async function PUT(
             d => !incomingIds.has(d.id) && d.etiquetas.length === 0
         )
 
-        // Calcular subtotal incluyendo items preservados + actualizados + nuevos
+        // Calcular subtotal usando valores reales de etiquetas para piezas
         let subtotalRaw = 0
 
-        for (const item of [...toUpdate, ...toCreate]) {
+        // Items existentes actualizados — usar etiquetas reales de la DB
+        for (const item of toUpdate) {
+            const precio = Number(item.precio) || 0
+            if (item.tipo === "pieza") {
+                const existing: any = existingMap.get(item.detalleId)
+                const metrajeSum = existing?.etiquetas?.length
+                    ? existing.etiquetas.reduce((s: number, e: any) => s + e.valor, 0)
+                    : (existing?.metraje || 0)
+                subtotalRaw += precio * metrajeSum
+            } else {
+                subtotalRaw += precio * (Number(item.cantidad) || 0)
+            }
+        }
+
+        // Items nuevos — sin etiquetas aún, pieza contribuye 0
+        for (const item of toCreate) {
             const precio = Number(item.precio) || 0
             const cantidad = Number(item.cantidad) || 0
-            const metros = item.tipo === "pieza" ? 50 : 1
-            subtotalRaw += precio * cantidad * metros
+            if (item.tipo !== "pieza") {
+                subtotalRaw += precio * cantidad
+            }
         }
+
+        // Items preservados (no tocados, con etiquetas) — usar valores de DB
         for (const det of toPreserve) {
             const precio = Number(det.precio) || 0
-            const cantidad = Number(det.cantidad) || 0
-            const metros = det.tipo === "pieza" ? 50 : 1
-            subtotalRaw += precio * cantidad * metros
+            if (det.tipo === "pieza") {
+                const metrajeSum = det.etiquetas?.length
+                    ? det.etiquetas.reduce((s: number, e: any) => s + e.valor, 0)
+                    : (det.metraje || 0)
+                subtotalRaw += precio * metrajeSum
+            } else {
+                subtotalRaw += precio * (Number(det.cantidad) || 0)
+            }
         }
 
         const subtotal = Math.round(subtotalRaw * 100) / 100

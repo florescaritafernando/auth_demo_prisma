@@ -146,7 +146,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const mostrarCarteraCheckbox = saldoCartera > 0 && carteraMovimientosCount > 1
 
     const estaAsignado = pedido.delegados?.some(d => d.userId === userId)
-    const puedeEditar = role === "admin" || (role === "empleado" && estaAsignado && pedido.estado !== "metraje_confirmado")
+    const puedeEditar = (role === "admin" || (role === "empleado" && estaAsignado)) && pedido.estado === "metraje_en_proceso"
 
     const piezaDetails = pedido.pedidoDetalle.filter(d => d.tipo === "pieza")
     const tienePiezas = piezaDetails.length > 0
@@ -447,7 +447,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
 
     return (
         <div className="space-y-4">
-            {faltaPagar > 0.01 && pedido.estado !== "metraje_en_proceso" && (
+            {faltaPagar > 0.01 && pedido.estado === "pendiente" && (
                 <Button
                     onClick={() => setShowPagoPedidoModal(true)}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-10"
@@ -598,7 +598,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                     </div>
 
                     <div className="space-y-3">
-                        {piezaDetails.map((detalle) => {
+                        {piezaDetails.sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre)).map((detalle) => {
                             const registros = metrajeData[detalle.id] || []
                             const metrajeTotal = getMetrajeTotal(detalle.id)
                             const precioTotal = Number(detalle.precio) * metrajeTotal
