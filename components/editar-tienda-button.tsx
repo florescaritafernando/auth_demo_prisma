@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Pencil, X, Loader2 } from "lucide-react"
@@ -103,8 +104,8 @@ export function BotonEditarTienda({ tienda }: { tienda: Tienda }) {
                 <Pencil className="h-4 w-4" />
             </button>
 
-            {open && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            {open && createPortal(
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
                     <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold text-slate-900">Editar Tienda</h2>
@@ -201,8 +202,9 @@ export function BotonEditarTienda({ tienda }: { tienda: Tienda }) {
                             </div>
                         </form>
                     </div>
-                </div>
-            )}
+                    </div>,
+                    document.body
+                )}
         </>
     )
 }

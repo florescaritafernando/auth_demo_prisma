@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Plus, X, Store, Loader2 } from "lucide-react"
@@ -81,8 +82,8 @@ export function BotonNuevaTienda() {
                 Nueva Tienda
             </Button>
 
-            {open && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            {open && createPortal(
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
                     <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold text-black">Nueva Tienda</h2>
@@ -169,8 +170,9 @@ export function BotonNuevaTienda() {
                             </div>
                         </form>
                     </div>
-                </div>
-            )}
+                    </div>,
+                    document.body
+                )}
         </>
     )
 }

@@ -83,6 +83,14 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
     const [showDetallePagoModal, setShowDetallePagoModal] = useState(false)
     const [detalleEditandoIdx, setDetalleEditandoIdx] = useState<number | null>(null)
     const [pagoParcialTexto, setPagoParcialTexto] = useState("")
+    const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null)
+
+    useEffect(() => {
+        if (toast) {
+            const t = setTimeout(() => setToast(null), 4000)
+            return () => clearTimeout(t)
+        }
+    }, [toast])
     const [guardandoPago, setGuardandoPago] = useState(false)
     const [saldoCartera, setSaldoCartera] = useState(0)
     const [carteraMovimientosCount, setCarteraMovimientosCount] = useState(0)
@@ -289,8 +297,8 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
             const etiquetasActuales = detalle.etiquetas?.length || 0
             const nuevosRegistros = (metrajeData[detalle.id] || []).filter(r => r.isNew === true && Number(r.value) > 0).length
             const totalEtiquetas = etiquetasActuales + nuevosRegistros
-            if (totalEtiquetas > Number(detalle.cantidad)) {
-                alert(`No puedes agregar más metrajes que piezas solicitadas. Has solicitado ${detalle.cantidad} pieza(s).`)
+            if (nuevosRegistros > Number(detalle.cantidad) - etiquetasActuales) {
+                setToast({ message: `No puedes agregar más metrajes que piezas solicitadas. Has solicitado ${detalle.cantidad} pieza(s).`, type: "error" })
                 return
             }
         }
@@ -323,6 +331,13 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
             })
             const json = await res.json()
             if (json.success) {
+                setMetrajeData(prev => {
+                    const updated = { ...prev }
+                    for (const key of Object.keys(updated)) {
+                        updated[key] = updated[key].map(r => ({ ...r, isNew: false }))
+                    }
+                    return updated
+                })
                 // Recalcular el pedido después de guardar el metraje
                 try {
                     await fetch(`/api/pedidos/${pedido.id}/recalcular`, {
@@ -562,11 +577,13 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                             </Button>
                         </div>
                     </div>
+                    {/*
                     {pedido.total < 500 && (
                         <p className="text-xs text-orange-600 mt-2">
                             * El costo mínimo automático para pedidos menores a S/500 es S/10
                         </p>
-                    )}
+                    )}*/}
+                    
                 </div>
             )}
 
@@ -694,6 +711,8 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                     Añadir metraje
                                                 </Button>
                                             )}
+
+                                            {/* 
                                             {puedeEditar && registros.length > 0 && (
                                                 <Button
                                                     size="sm"
@@ -704,8 +723,9 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                     <Trash2 className="h-4 w-4 mr-1.5" />
                                                     Limpiar
                                                 </Button>
-                                            )}
+                                            )}*/}
                                         </div>
+                                        {/* */}
                                         {puedeEditar && (
                                             <Button
                                                 size="sm"
@@ -1265,6 +1285,15 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                             </Button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {toast && (
+                <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-lg shadow-xl z-[9999] flex items-center gap-3 animate-in slide-in-from-bottom-4 ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
+                    <span className="text-white font-medium">{toast.message}</span>
+                    <button onClick={() => setToast(null)} className="text-white/70 hover:text-white">
+                        <X className="h-4 w-4" />
+                    </button>
                 </div>
             )}
         </div>
