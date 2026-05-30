@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Search, Loader2 } from "lucide-react"
 import { DEPARTAMENTOS } from "@/lib/ubigeo"
@@ -134,8 +135,8 @@ export function BotonEditarClientePedido({ cliente }: { cliente: ClientePedido }
 
     if (!mounted) {
         return (
-            <button className="p-2 hover:bg-slate-100 rounded-lg">
-                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button className="p-2 sm:p-1.5 hover:bg-slate-100 rounded-lg">
+                <svg className="h-5 w-5 sm:h-4 sm:w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
             </button>
@@ -144,16 +145,15 @@ export function BotonEditarClientePedido({ cliente }: { cliente: ClientePedido }
 
     if (!open) {
         return (
-            <button onClick={() => setOpen(true)} className="p-2 hover:bg-slate-100 rounded-lg">
-                <svg className="h-4 w-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button onClick={() => setOpen(true)} className="p-2 sm:p-1.5 hover:bg-slate-100 rounded-lg">
+                <svg className="h-5 w-5 sm:h-4 sm:w-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
             </button>
         )
     }
-
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+    return createPortal(
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
             <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
                 <div className="flex justify-between items-center p-4 border-b border-slate-200 sticky top-0 bg-white">
                     <h2 className="text-lg font-bold text-slate-900">Editar Cliente</h2>
@@ -167,6 +167,7 @@ export function BotonEditarClientePedido({ cliente }: { cliente: ClientePedido }
                 <form onSubmit={handleSubmit} className="p-4 space-y-4 text-slate-900">
                     {error && (
                         <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+
                             {error}
                         </div>
                     )}
@@ -360,6 +361,7 @@ export function BotonEditarClientePedido({ cliente }: { cliente: ClientePedido }
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 
 interface Almacen {
@@ -176,8 +177,8 @@ export function BotonNuevoProducto() {
         )
     }
 
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+    return createPortal(
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
             <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
                 <div className="flex justify-between items-center p-4 border-b border-slate-200 sticky top-0 bg-white">
                     <h2 className="text-lg font-bold text-slate-900">Nuevo Articulo</h2>
@@ -309,7 +310,8 @@ export function BotonNuevoProducto() {
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }
 

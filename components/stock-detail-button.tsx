@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Eye } from "lucide-react"
 
 interface StockDetail {
@@ -44,8 +45,8 @@ export function BotonVerStock({ stocks }: { stocks: StockDetail[] }) {
                 <Eye className="h-4 w-4 text-blue-600" />
             </button>
             
-            {open && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            {open && createPortal(
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4" role="dialog">
                     <div className="bg-white rounded-xl w-full max-w-md shadow-2xl">
                         <div className="flex justify-between items-center p-4 border-b border-slate-200">
                             <h2 className="text-lg font-bold text-slate-900">Detalle de Stock</h2>
@@ -97,7 +98,8 @@ export function BotonVerStock({ stocks }: { stocks: StockDetail[] }) {
                             </table>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     )

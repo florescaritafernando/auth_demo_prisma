@@ -137,7 +137,7 @@ export function ClientesPedidoClient({ initialClientes, userRole }: Props) {
                                 ) : (
                                     paginatedData.map((cli) => (
                                         <tr key={cli.id} className="hover:bg-slate-50">
-                                            <td className="px-3 py-3 text-sm">
+                                            <td className="px-3 py-3.5 sm:py-3 text-sm">
                                                 <div className="flex items-center gap-2">
                                                     <VerClienteButton onClick={() => setDetalleClienteId(cli.id)} />
                                                     {cli.cartera !== null && (
@@ -147,17 +147,17 @@ export function ClientesPedidoClient({ initialClientes, userRole }: Props) {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-3 py-3 text-sm font-medium text-slate-900 uppercase">{cli.nombre}</td>
-                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">
+                                            <td className="px-3 py-3.5 sm:py-3 text-sm font-medium text-slate-900 uppercase">{cli.nombre}</td>
+                                            <td className="px-3 py-3.5 sm:py-3 text-sm text-slate-600 uppercase">
                                                 <span className="inline-flex items-center gap-1">
                                                     <span className="px-1.5 py-0.5 bg-slate-100 rounded text-xs font-medium">{getTipoDocLabel(cli.tipoDoc)}</span>
                                                     {cli.numeroDoc}
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">{cli.direccion || "-"}</td>
-                                            <td className="px-3 py-3 text-sm text-slate-600 uppercase">{cli.telefono || "-"}</td>
-                                            <td className="px-3 py-3 text-right">
-                                                <div className="flex justify-end gap-2">
+                                            <td className="px-3 py-3.5 sm:py-3 text-sm text-slate-600 uppercase">{cli.direccion || "-"}</td>
+                                            <td className="px-3 py-3.5 sm:py-3 text-sm text-slate-600 uppercase">{cli.telefono || "-"}</td>
+                                            <td className="px-3 py-3.5 sm:py-3 text-right">
+                                                <div className="flex justify-end gap-3 sm:gap-1.5">
                                                     <BotonEditarClientePedido cliente={cli as any} />
                                                     <BotonEliminarClientePedido id={cli.id} />
                                                 </div>

@@ -13,7 +13,11 @@ export async function GET(
     })
 
     if (!cliente) {
-        return NextResponse.json({ success: false, error: "Cliente no encontrado" }, { status: 404 })
+        return NextResponse.json({
+            success: true,
+            cliente: null,
+            cartera: { id: null, saldo: 0, movimientos: [] }
+        })
     }
 
     const cartera = await prisma.cartera.findUnique({

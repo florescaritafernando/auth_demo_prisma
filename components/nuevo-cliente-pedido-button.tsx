@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Search, Loader2 } from "lucide-react"
 import { DEPARTAMENTOS } from "@/lib/ubigeo"
@@ -387,9 +388,9 @@ export function BotonEliminarClientePedido({ id }: { id: string }) {
         <button
             onClick={handleDelete}
             disabled={loading}
-            className="p-2 hover:bg-red-50 rounded-lg disabled:opacity-50"
+            className="p-2 sm:p-1.5 hover:bg-red-50 rounded-lg disabled:opacity-50"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-4 sm:h-4 text-red-500">
                 <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
             </svg>
         </button>
