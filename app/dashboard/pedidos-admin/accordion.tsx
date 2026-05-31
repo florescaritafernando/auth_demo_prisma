@@ -167,11 +167,23 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                         >
                             <div
                                 onClick={() => toggleExpand(pedido.id)}
-                                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer"
+                                className="w-full p-4 flex items-center hover:bg-slate-50 transition-colors cursor-pointer"
                             >
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                                        <FileText className="h-5 w-5 text-slate-600" />
+                                    <div className="flex flex-col items-center gap-1 shrink-0">
+                                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                                            <FileText className="h-5 w-5 text-slate-600" />
+                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setPedidoImprimir(pedido)
+                                            }}
+                                            className="p-1 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                            title="Imprimir pedido"
+                                        >
+                                            <Printer className="h-5 w-5" />
+                                        </button>
                                     </div>
                                     <div className="text-left min-w-0 flex-1">
                                         <p className="text-sm font-medium text-slate-700 break-words leading-tight">
@@ -179,16 +191,6 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                         </p>
                                         <div className="flex items-center gap-2 flex-wrap mt-1">
                                             <p className="font-bold text-slate-900 text-sm">{pedido.numeroOrden}</p>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    setPedidoImprimir(pedido)
-                                                }}
-                                                className="p-1 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                title="Imprimir pedido"
-                                            >
-                                                <Printer className="h-3.5 w-3.5" />
-                                            </button>
                                             {pedido.estado === "completado" ? (
                                                 <>
                                                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color} ${config.colorTexto}`}>
@@ -249,35 +251,33 @@ export function PedidoAccordion({ pedidos, role, userId, expandedIds, onToggleEx
                                                     </Button>
                                                 )
                                             )}
+                                            <div className="flex items-center gap-2 ml-auto shrink-0">
+                                                <div className="text-right hidden sm:block">
+                                                    {ocultarPrecio ? (
+                                                        <p className="text-sm text-slate-500 italic">Precio en revisión</p>
+                                                    ) : (
+                                                        <p className="font-bold text-slate-900">S/ {Number(pedido.total).toFixed(2)}</p>
+                                                    )}
+                                                    <p className="text-xs text-slate-500">
+                                                        {pedido.pedidoDetalle.length} items • {new Date(pedido.createdAt).toLocaleDateString("es-PE")} {new Date(pedido.createdAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
+                                                    </p>
+                                                </div>
+                                                {ocultarPrecio ? (
+                                                    <span className="text-sm text-slate-500 italic sm:hidden">Precio en revisión</span>
+                                                ) : (
+                                                    <span className="font-bold text-slate-900 sm:hidden">S/ {Number(pedido.total).toFixed(2)}</span>
+                                                )}
+                                                {isExpanded ? (
+                                                    <ChevronUp className="h-5 w-5 text-slate-400" />
+                                                ) : (
+                                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                                )}
+                                            </div>
                                         </div>
                                         <p className="text-xs text-slate-400 sm:hidden mt-0.5">
                                             {new Date(pedido.createdAt).toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "2-digit" })} {new Date(pedido.createdAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
                                         </p>
                                     </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 shrink-0">
-                                    <div className="text-right hidden sm:block">
-                                        {ocultarPrecio ? (
-                                            <p className="text-sm text-slate-500 italic">Precio en revisión</p>
-                                        ) : (
-                                            <p className="font-bold text-slate-900">S/ {Number(pedido.total).toFixed(2)}</p>
-                                        )}
-                                        <p className="text-xs text-slate-500">
-                                            {pedido.pedidoDetalle.length} items • {new Date(pedido.createdAt).toLocaleDateString("es-PE")} {new Date(pedido.createdAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
-                                        </p>
-                                    </div>
-                                    {pedido.estado === "pendiente" && (
-                                        <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm hidden sm:inline-flex items-center gap-1">
-                                            <DollarSign className="h-3.5 w-3.5" />
-                                            COBRAR
-                                        </span>
-                                    )}
-                                    {isExpanded ? (
-                                        <ChevronUp className="h-5 w-5 text-slate-400" />
-                                    ) : (
-                                        <ChevronDown className="h-5 w-5 text-slate-400" />
-                                    )}
                                 </div>
                             </div>
 
