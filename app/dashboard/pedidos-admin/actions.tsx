@@ -900,6 +900,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                     <button
                                         onClick={() => {
                                             setTipoPago("completo")
+                                            setPagoParcialTexto("")
                                             if (usarSaldoCartera) { setCarteraMontoCustom(Math.min(saldoCartera, faltaPagar)); setCarteraInputText("") }
                                             const emp = pedido.pedidoEmpleadoInfo?.empresa || ""
                                             const mp = pedido.pedidoEmpleadoInfo?.metodoPago || ""
@@ -910,7 +911,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                         PAGO COMPLETO
                                     </button>
                                     <button
-                                        onClick={() => { setTipoPago("dividido"); setCarteraMontoCustom(0); setDetallesPago(usarSaldoCartera ? [{ monto: "", empresa: "", metodoPago: "" }] : [{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }}
+                                        onClick={() => { setTipoPago("dividido"); setPagoParcialTexto(""); setCarteraMontoCustom(0); setDetallesPago(usarSaldoCartera ? [{ monto: "", empresa: "", metodoPago: "" }] : [{ monto: "", empresa: "", metodoPago: "" }, { monto: "", empresa: "", metodoPago: "" }]) }}
                                         className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${tipoPago === "dividido" ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
                                     >
                                         DIVIDIR PAGO
@@ -1003,7 +1004,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                             + Agregar
                                         </button>
                                     )}
-                                    {tipoPago === "parcial" && (
+                                    {(tipoPago === "completo" || tipoPago === "dividido" || tipoPago === "parcial") && (
                                         <div className="mt-3">
                                             <p className="text-sm font-medium text-slate-700 mb-1">Detalle (opcional)</p>
                                             <input
@@ -1011,7 +1012,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                                 value={pagoParcialTexto}
                                                 onChange={(e) => setPagoParcialTexto(e.target.value)}
                                                 placeholder="ej. abono de prueba"
-                                                className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all bg-white"
+                                                className={`w-full px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white ${tipoPago === "parcial" ? "border-slate-200 focus:ring-amber-500" : "border-slate-200 focus:ring-emerald-500"}`}
                                             />
                                         </div>
                                     )}
@@ -1086,6 +1087,9 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                         } else if (det?.metodoPago === "EFECTIVO") {
                                             textoPago += ` (EFECTIVO)`
                                         }
+                                        if (pagoParcialTexto.trim()) {
+                                            textoPago += ` - Detalle: ${pagoParcialTexto.trim()}`
+                                        }
                                     } else if (tipoPago === "parcial") {
                                         cambiarEstado = false
                                         const monto = Number(detallesPago[0]?.monto) || 0
@@ -1113,7 +1117,7 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                         }
                                         textoPago = `PAGO: Parcial - S/ ${totalPagado.toFixed(2)} (${detalleStr}) - ${fecha}`
                                         if (pagoParcialTexto.trim()) {
-                                            textoPago += ` ${pagoParcialTexto.trim()}`
+                                            textoPago += ` - Detalle: ${pagoParcialTexto.trim()}`
                                         }
                                     } else {
                                         const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
@@ -1141,6 +1145,9 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                                         textoPago = carteraActiva
                                             ? `PAGO: Dividido - SALDO CARTERA S/ ${carteraUsada.toFixed(2)}${suma > 0 ? ` + ${detallesStr}` : ""} = S/ ${totalPagado.toFixed(2)}`
                                             : `PAGO: Dividido - ${detallesStr} = S/ ${suma.toFixed(2)}`
+                                        if (pagoParcialTexto.trim()) {
+                                            textoPago += ` - Detalle: ${pagoParcialTexto.trim()}`
+                                        }
                                     }
                                     const currentNotas = (pedido as any).notas || ""
                                     const newNotas = currentNotas ? currentNotas + "\n" + textoPago : textoPago
