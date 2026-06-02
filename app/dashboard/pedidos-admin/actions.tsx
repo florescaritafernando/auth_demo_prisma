@@ -39,6 +39,7 @@ interface Pedido {
     clientePedidoId: string | null
     pedidoDetalle: DetalleItem[]
     delegados: { id: string; userId: string; user: { id: string; name: string | null; email: string | null } }[]
+    pedidoEmpleadoInfo?: { empresa: string | null; metodoPago: string | null } | null
 }
 
 interface Props {
@@ -897,7 +898,13 @@ export function AdminPedidoActions({ pedido, role, userId }: Props) {
                             <div>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => { setTipoPago("completo"); if (usarSaldoCartera) { setCarteraMontoCustom(Math.min(saldoCartera, faltaPagar)); setCarteraInputText("") } }}
+                                        onClick={() => {
+                                            setTipoPago("completo")
+                                            if (usarSaldoCartera) { setCarteraMontoCustom(Math.min(saldoCartera, faltaPagar)); setCarteraInputText("") }
+                                            const emp = pedido.pedidoEmpleadoInfo?.empresa || ""
+                                            const mp = pedido.pedidoEmpleadoInfo?.metodoPago || ""
+                                            setDetallesPago([{ monto: "", empresa: emp, metodoPago: mp }])
+                                        }}
                                         className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all flex-1 ${tipoPago === "completo" ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"}`}
                                     >
                                         PAGO COMPLETO

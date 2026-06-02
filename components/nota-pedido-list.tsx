@@ -109,6 +109,11 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
     const [divisorPersonalizado, setDivisorPersonalizado] = useState("")
     const [copiedField, setCopiedField] = useState<string | null>(null)
     const [telefonoColaborador, setTelefonoColaborador] = useState<Record<string, string>>({})
+    const [showDividirPartes, setShowDividirPartes] = useState(false)
+    const [partesMontos, setPartesMontos] = useState<string[]>([])
+    const [nuevoMonto, setNuevoMonto] = useState("")
+    const [precioPartes, setPrecioPartes] = useState("20.00")
+    const [precioPersonalizado, setPrecioPersonalizado] = useState("")
 
     useEffect(() => {
         fetch("/api/empleados-telefonos", { credentials: "include" })
@@ -143,6 +148,11 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
     }
 
     const toggleExpanded = (id: string) => {
+        setShowDividirPartes(false)
+        setPartesMontos([])
+        setNuevoMonto("")
+        setPrecioPartes("20.00")
+        setPrecioPersonalizado("")
         if (id !== expandedId) {
             setDivisor("")
             setDivisorPersonalizado("")
@@ -644,14 +654,14 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                         </div>
                                     </div>
 
-                                    {/* Dividir entre */}
+                                    {!showDividirPartes && (
                                     <div className="bg-slate-50 rounded-lg p-3">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Divide className="h-4 w-4 text-slate-500" />
                                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dividir entre</p>
                                         </div>
                                         <div className="flex items-center gap-2 mb-2">
-                                            {["18", "20"].map((num) => (
+                                            {["18.00", "20.00"].map((num) => (
                                                 <button
                                                     key={num}
                                                     onClick={() => {
@@ -660,7 +670,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     }}
                                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${divisor === num ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
                                                 >
-                                                    {num}
+                                                    S/ {num}
                                                 </button>
                                             ))}
                                             <div className="relative flex-1 max-w-[120px]">
@@ -680,7 +690,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             const valorDivisor = divisor || divisorPersonalizado
                                             if (!valorDivisor || Number(valorDivisor) <= 0) return null
                                             const resultado = Number(pedido.total) / Number(valorDivisor)
-                                            const decimales = Number(valorDivisor) === 20 ? 2 : 4
+                                            const decimales = Number(resultado.toFixed(2)) === resultado ? 2 : (Number(valorDivisor) === 20 ? 2 : 4)
                                             return (
                                                 <div className="flex items-center justify-between bg-indigo-50 rounded-lg p-3 border border-indigo-200">
                                                     <div className="flex items-baseline gap-1.5">
@@ -709,6 +719,171 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 </div>
                                             )
                                         })()}
+                                    </div>
+                                    )}
+
+                                    {/* Dividir pedido en partes */}
+                                    <div className="bg-slate-50 rounded-lg p-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDividirPartes(!showDividirPartes)}
+                                            className="w-full flex items-center justify-between gap-2 text-left"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Divide className="h-4 w-4 text-slate-500" />
+                                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dividir pedido en partes</p>
+                                            </div>
+                                            {showDividirPartes ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                                        </button>
+                                        {showDividirPartes && (
+                                            <div className="mt-3 space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    {["20.00", "18.00"].map((num) => (
+                                                        <button
+                                                            key={num}
+                                                            onClick={() => {
+                                                                setPrecioPartes(num)
+                                                                setPrecioPersonalizado("")
+                                                            }}
+                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${precioPartes === num ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
+                                                        >
+                                                            S/ {num}
+                                                        </button>
+                                                    ))}
+                                                    <div className="relative max-w-[80px]">
+                                                        <input
+                                                            type="number"
+                                                            value={precioPersonalizado}
+                                                            onChange={(e) => {
+                                                                setPrecioPersonalizado(e.target.value)
+                                                                setPrecioPartes("")
+                                                            }}
+                                                            placeholder="Otro"
+                                                            className="w-full px-2 py-1 rounded text-xs border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-slate-200">
+                                                    <span className="text-sm text-slate-500">Total</span>
+                                                    <span className="font-bold text-slate-900">S/ {Number(pedido.total).toFixed(2)}</span>
+                                                </div>
+                                                {partesMontos.length > 0 && (
+                                                    <div className="space-y-1.5">
+                                                        {partesMontos.map((monto, idx) => {
+                                                            const precioActual = precioPersonalizado || precioPartes
+                                                            const metros = Number(precioActual) > 0 ? Number(monto) / Number(precioActual) : 0
+                                                            return (
+                                                                <div key={idx} className="flex items-center gap-2 bg-white rounded-lg border border-slate-200 px-3 py-2">
+                                                                    <span className="text-xs font-semibold text-slate-400 w-6">#{idx + 1}</span>
+                                                                    <span className="text-sm font-medium text-slate-900 min-w-[90px]">S/ {Number(monto).toFixed(2)}</span>
+                                                                    <span className="text-xs text-slate-500">→</span>
+                                                                    <span className="text-sm font-semibold text-indigo-700">{metros.toFixed(Number(metros.toFixed(2)) === metros ? 2 : Number(precioActual) === 20 ? 2 : 4)} mts</span>
+                                                                    <button
+                                                                        onClick={() => copiarAlPortapapeles(metros.toFixed(Number(metros.toFixed(2)) === metros ? 2 : Number(precioActual) === 20 ? 2 : 4), `parte_mts_${idx}`)}
+                                                                        className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                                                                        title="Copiar metros"
+                                                                    >
+                                                                        {copiedField === `parte_mts_${idx}` ? <span className="text-xs text-green-600 font-medium">OK</span> : <Copy className="h-3 w-3" />}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setPartesMontos(partesMontos.filter((_, i) => i !== idx))}
+                                                                        className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                                    >
+                                                                        <X className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-medium text-slate-500">S/</span>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={nuevoMonto}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value
+                                                            if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                                                                setNuevoMonto(val)
+                                                            }
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === "Enter" && nuevoMonto && !isNaN(parseFloat(nuevoMonto)) && parseFloat(nuevoMonto) > 0) {
+                                                                setPartesMontos([...partesMontos, nuevoMonto])
+                                                                setNuevoMonto("")
+                                                            }
+                                                        }}
+                                                        placeholder="0.00"
+                                                        className="flex-1 px-3 py-1.5 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            if (nuevoMonto && !isNaN(parseFloat(nuevoMonto)) && parseFloat(nuevoMonto) > 0) {
+                                                                setPartesMontos([...partesMontos, nuevoMonto])
+                                                                setNuevoMonto("")
+                                                            }
+                                                        }}
+                                                        disabled={!nuevoMonto || isNaN(parseFloat(nuevoMonto)) || parseFloat(nuevoMonto) <= 0}
+                                                        className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                                {(() => {
+                                                    const suma = partesMontos.reduce((s, m) => s + Number(m), 0)
+                                                    const total = Number(pedido.total)
+                                                    const falta = total - suma
+                                                    const precioActual = Number(precioPersonalizado || precioPartes)
+                                                    return partesMontos.length > 0 ? (
+                                                        <div className={`rounded-lg p-3 border ${Math.abs(falta) < 0.01 ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"}`}>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="text-slate-500">Suma parcial</span>
+                                                                <span className="font-semibold text-slate-900">S/ {suma.toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm mt-1">
+                                                                <span className="text-slate-500">Total</span>
+                                                                <span className="font-semibold text-slate-900">S/ {total.toFixed(2)}</span>
+                                                            </div>
+                                                            <div className={`flex justify-between text-sm font-bold mt-2 pt-2 border-t ${Math.abs(falta) < 0.01 ? "border-emerald-200 text-emerald-700" : "border-amber-200 text-amber-700"}`}>
+                                                                <span>{Math.abs(falta) < 0.01 ? "Monto total completado ✓" : "Falta"}</span>
+                                                                <span>{Math.abs(falta) < 0.01 ? "" : `S/ ${falta.toFixed(2)}`}</span>
+                                                            </div>
+                                                            {Math.abs(falta) >= 0.01 && suma < total && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setPartesMontos([...partesMontos, falta.toFixed(2)])
+                                                                    }}
+                                                                    className="mt-2 w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors"
+                                                                >
+                                                                    Completar con S/ {falta.toFixed(2)} ({precioActual > 0 ? (() => { const v = falta / precioActual; return v.toFixed(Number(v.toFixed(2)) === v ? 2 : precioActual === 20 ? 2 : 4) })() : "—"} mts)
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ) : null
+                                                })()}
+                                                {partesMontos.length > 0 && (
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                const precioActual = Number(precioPersonalizado || precioPartes)
+                                                                const texto = partesMontos.map(m => { const v = Number(m) / precioActual; return `S/ ${Number(m).toFixed(2)} (${precioActual > 0 ? v.toFixed(Number(v.toFixed(2)) === v ? 2 : precioActual === 20 ? 2 : 4) : "—"} mts)` }).join(" + ") + ` = S/ ${Number(pedido.total).toFixed(2)}`
+                                                                copiarAlPortapapeles(texto, "partes_total")
+                                                            }}
+                                                            className="flex-1 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                                                        >
+                                                            {copiedField === "partes_total" ? "✓ Copiado" : "Copiar lista"}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { setPartesMontos([]); setNuevoMonto("") }}
+                                                            className="py-1.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 transition-colors"
+                                                        >
+                                                            Limpiar
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Observaciones */}

@@ -129,6 +129,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const [itemIndicaciones, setItemIndicaciones] = useState("")
     const [costoEnvio, setCostoEnvio] = useState("0")
     const [observaciones, setObservaciones] = useState("")
+    const [showMontoModal, setShowMontoModal] = useState(false)
+    const [montoValue, setMontoValue] = useState("")
     const [showAgregarArticulo, setShowAgregarArticulo] = useState(false)
     const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
     const [tipoPago, setTipoPago] = useState<"completo" | "dividido" | "parcial" | "">("")
@@ -537,6 +539,37 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setItems(items.filter(i => i.id !== id))
     }
 
+    const agregarPorMonto = async () => {
+        const monto = parseFloat(montoValue)
+        if (isNaN(monto) || monto <= 0) return
+        try {
+            const res = await fetch("/api/productos?search=D-10-001", { credentials: "include" })
+            const json = await res.json()
+            if (!json.success || json.productos.length === 0) {
+                setToastMessage({ show: true, message: "Producto D-10-001 no encontrado", type: "error" })
+                return
+            }
+            const producto = json.productos[0]
+            const precio = 20.00
+            const cantidad = Math.round((monto / precio) * 100) / 100
+            setItems([...items, {
+                id: Date.now().toString(),
+                productoId: producto.id,
+                productoNombre: "D-10-001",
+                productoCategoria: "MANCHESTER SUITING",
+                productoPrecio: precio,
+                cantidad,
+                tipo: "metros" as const,
+                indicacionesCorte: ""
+            }])
+            setShowMontoModal(false)
+            setMontoValue("")
+        } catch (e) {
+            console.error("Error buscando D-10-001:", e)
+            setToastMessage({ show: true, message: "Error al buscar producto", type: "error" })
+        }
+    }
+
     const editarArticulo = (item: ItemPedido) => {
         setEditandoArticuloId(item.id)
         setProductoSeleccionado({
@@ -742,6 +775,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setBorradorGuardado(false)
         setCategoriaFiltro("")
         setShowAgregarArticulo(false)
+        setShowMontoModal(false)
+        setMontoValue("")
         setCurrentDraftId(null)
     }
 
@@ -946,7 +981,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                 <div className="border-t border-slate-100" />
 
                                 {/* Buscar cliente */}
-                                <div>
+                                <div className="bg-slate-200 p-4 rounded-xl">
                                     <div className="flex items-center justify-between gap-2 mb-2">
                                         <p className={labelBase}><User className="h-3.5 w-3.5" /> Buscar Cliente</p>
                                         <button
@@ -1535,6 +1570,19 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                     </div>
                                 </div>
 
+                                {/* Agregar por Monto */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setMontoValue("")
+                                        setShowMontoModal(true)
+                                    }}
+                                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm"
+                                >
+                                    <DollarSign className="h-4 w-4" />
+                                    Agregar por Monto
+                                </button>
+
                                 {/* Observaciones */}
                                 <div>
                                     <p className={labelBase}><FileText className="h-3.5 w-3.5" /> Observaciones</p>
@@ -1631,18 +1679,17 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                             </div>
                             <div>
                                 <p className="font-semibold text-slate-900 text-lg">¿Estás seguro de salir?</p>
-                                <p className="text-sm text-slate-500">Se perderán los datos no guardados.</p>
                             </div>
                         </div>
                         <div className="flex flex-col gap-2 mt-6">
-                            <Button onClick={async () => { await guardarBorrador(); resetForm(); setShowConfirmClose(false); onClose() }} className="w-full bg-blue-600 border-blue-800 border-2 hover:bg-blue-700 text-white text-sm h-9">
-                                <Save className="h-4 w-4 mr-1" /> Guardar borrador y salir
+                            <Button onClick={async () => { await limpiarBorrador(); resetForm(); setShowConfirmClose(false); onClose() }} className="w-full bg-amber-300 hover:bg-amber-400 text-black text-sm h-9">
+                                Salir
                             </Button>
-                            <Button onClick={async () => { await limpiarBorrador(); setShowConfirmClose(false); onClose() }} className="w-full bg-slate-200 border-slate-500 border-2 hover:bg-slate-300 text-black text-sm h-9">
-                                Salir sin guardar
+                            <Button onClick={() => setShowConfirmClose(false)} className="w-full bg-blue-700 hover:bg-blue-800 text-white text-sm h-9">
+                                Conitnuar Editando
                             </Button>
-                            <Button onClick={() => setShowConfirmClose(false)} className="w-full bg-green-700 hover:bg-green-800 border-green-900 border-2 text-white text-sm h-9">
-                                Continuar editando
+                            <Button onClick={async () => { await guardarBorrador(); resetForm(); setShowConfirmClose(false); onClose() }} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm h-9">
+                                <Save className="h-4 w-4 mr-1" /> Guardar Borrador
                             </Button>
                         </div>
                     </div>
@@ -1859,6 +1906,68 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                 className="bg-slate-900 hover:bg-slate-800 text-white text-sm h-9 px-4 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 {editandoArticuloId ? <Check className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} {editandoArticuloId ? "Guardar cambios" : "Agregar artículo"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sub-modal agregar por monto */}
+            {showMontoModal && (
+                <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/40" onClick={() => { setShowMontoModal(false); setMontoValue("") }} />
+                    <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
+                            <p className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                                <DollarSign className="h-4 w-4" /> Agregar por Monto
+                            </p>
+                            <button onClick={() => { setShowMontoModal(false); setMontoValue("") }} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
+                                <X className="h-4 w-4 text-slate-400" />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <label className={labelBase}>Monto (S/)</label>
+                                <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={montoValue}
+                                    onChange={(e) => {
+                                        const val = e.target.value
+                                        if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                                            setMontoValue(val)
+                                        }
+                                    }}
+                                    placeholder="0.00"
+                                    className="w-full px-3 py-2.5 border-2 border-emerald-300 rounded-lg text-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white text-center font-bold"
+                                    autoFocus
+                                />
+                            </div>
+                            {montoValue && !isNaN(parseFloat(montoValue)) && parseFloat(montoValue) > 0 && (
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                                    <p className="text-sm text-emerald-800">
+                                        <span className="font-bold">{parseFloat(montoValue).toFixed(2)}</span> S/ ÷ S/20.00 =
+                                    </p>
+                                    <p className="text-xl font-bold text-emerald-700 mt-1">
+                                        {(parseFloat(montoValue) / 20).toFixed(2)} metros de D-10-001
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => { setShowMontoModal(false); setMontoValue("") }}
+                                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <Button
+                                onClick={agregarPorMonto}
+                                disabled={!montoValue || isNaN(parseFloat(montoValue)) || parseFloat(montoValue) <= 0}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 px-4 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                <Plus className="h-4 w-4 mr-1" /> Agregar
                             </Button>
                         </div>
                     </div>

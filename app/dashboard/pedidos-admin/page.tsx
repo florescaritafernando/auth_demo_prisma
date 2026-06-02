@@ -18,7 +18,8 @@ async function getPedidos() {
                 tienda: { select: { id: true, nombre: true, direccion: true } },
                 delegados: {
                     include: { user: { select: { id: true, name: true, email: true } } }
-                }
+                },
+                pedidoEmpleadoInfo: { select: { empresa: true, metodoPago: true } }
             },
             orderBy: { createdAt: "desc" }
         })
