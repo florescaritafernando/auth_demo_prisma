@@ -5,9 +5,14 @@ import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, M
 import { Pagination } from "@/components/ui/pagination"
 
 const AGENCIA_LABELS: Record<string, string> = {
+    antezana: "ANTEZANA",
     shalom: "SHALOM",
     flores: "FLORES",
     marvisur: "MARVISUR",
+    grael: "GRAEL",
+    raza: "RAZA",
+    rana_express: "RANA EXPRESS",
+    carhuamayo: "CARHUAMAYO",
     otros: "OTROS"
 }
 

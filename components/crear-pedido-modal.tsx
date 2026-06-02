@@ -549,14 +549,14 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                 setToastMessage({ show: true, message: "Producto D-10-001 no encontrado", type: "error" })
                 return
             }
-            const producto = json.productos[0]
+            const producto = json.productos.find((p: any) => p.categoria === "MANCHESTER SUITING") || json.productos[0]
             const precio = 20.00
             const cantidad = Math.round((monto / precio) * 100) / 100
             setItems([...items, {
                 id: Date.now().toString(),
                 productoId: producto.id,
                 productoNombre: "D-10-001",
-                productoCategoria: "MANCHESTER SUITING",
+                productoCategoria: producto.categoria,
                 productoPrecio: precio,
                 cantidad,
                 tipo: "metros" as const,
