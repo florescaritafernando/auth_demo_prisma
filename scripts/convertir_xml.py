@@ -50,7 +50,12 @@ def main():
 
         converter.generate_pdf(args.formato)
 
-        result = {"success": True, "output_path": args.output}
+        numero = converter.data.get('numero_factura', '').replace('/', '-')
+        cliente = converter.data.get('cliente_nombre', '').strip().upper()[:30]
+        formato_label = "TICKET" if args.formato == "ticket" else "ETIQUETA"
+        nombre_archivo = f"{numero}-{cliente}-{formato_label}"
+
+        result = {"success": True, "output_path": args.output, "nombre_archivo": nombre_archivo}
         print(json.dumps(result))
     except Exception as e:
         result = {"success": False, "error": str(e)}

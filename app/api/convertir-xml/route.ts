@@ -113,7 +113,8 @@ export async function POST(request: NextRequest) {
         }
 
         const pdfBuffer = fs.readFileSync(outputPath)
-        const filename = `documento-${id}.pdf`
+        const nombreArchivo = (result as any).nombre_archivo || `documento-${id}`
+        const filename = `${nombreArchivo}.pdf`
 
         return new NextResponse(new Blob([pdfBuffer], { type: "application/pdf" }), {
             headers: {

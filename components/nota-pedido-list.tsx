@@ -1170,11 +1170,14 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
 
                                             const blob = await res.blob()
                                             const url = URL.createObjectURL(blob)
+                                            const cd = res.headers.get("Content-Disposition") || ""
+                                            const match = cd.match(/filename="?(.+?)"?$/)
+                                            const filename = match?.[1] || "documento.pdf"
                                             const isMobile = window.innerWidth < 1024 || "ontouchstart" in window
                                             if (isMobile) {
                                                 const a = document.createElement("a")
                                                 a.href = url
-                                                a.download = "documento.pdf"
+                                                a.download = filename
                                                 a.click()
                                             } else {
                                                 window.open(url, "_blank")
