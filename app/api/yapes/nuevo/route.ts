@@ -3,6 +3,7 @@ import { spawn } from "child_process"
 import path from "path"
 
 const SCRIPTS_DIR = path.join(process.cwd(), "scripts")
+const PYTHON_PATH = process.env.PYTHON_PATH || "python"
 
 export async function POST(request: NextRequest) {
     try {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
         }
 
         const result = await new Promise<{ success: boolean; error?: string }>((resolve) => {
-            const proc = spawn("python", [
+            const proc = spawn(PYTHON_PATH, [
                 path.join(SCRIPTS_DIR, "agregar_yape.py"),
                 "--nombre", nombre,
                 "--monto", String(monto),

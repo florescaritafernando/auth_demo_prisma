@@ -6,6 +6,8 @@ import crypto from "crypto"
 
 const TEMP_DIR = path.join(process.cwd(), "temp")
 const SCRIPTS_DIR = path.join(process.cwd(), "scripts")
+const PYTHON_PATH = process.env.PYTHON_PATH || "python"
+fs.mkdirSync(TEMP_DIR, { recursive: true })
 
 export async function POST(request: NextRequest) {
     let outputPath: string | null = null
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
         if (fechaFin) args.push("--fecha-fin", fechaFin)
 
         const result = await new Promise<{ success: boolean; error?: string }>((resolve) => {
-            const proc = spawn("python", args, {
+            const proc = spawn(PYTHON_PATH, args, {
                 cwd: SCRIPTS_DIR,
                 timeout: 60000,
             })
