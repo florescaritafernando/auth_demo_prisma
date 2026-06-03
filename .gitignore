@@ -44,3 +44,6 @@ next-env.d.ts
 
 # credentials (Google service account, etc.)
 /credentials/
+
+# python virtual environment
+/venv/
