@@ -855,9 +855,8 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                                             <div className="relative">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">S/</span>
                                                 <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
+                                                    type="text"
+                                                    inputMode="decimal"
                                                     value={nuevoYapeMonto}
                                                     onChange={(e) => setNuevoYapeMonto(e.target.value)}
                                                     placeholder="0.00"
