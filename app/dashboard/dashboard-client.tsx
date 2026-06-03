@@ -651,6 +651,26 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                         </Link>
 
                         <button
+                            onClick={() => setShowModalYapes(true)}
+                            className="group relative overflow-hidden bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 text-left hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-purple-400/30"
+                        >
+                            <div className="absolute top-0 right-0 w-20 h-20 bg-purple-300/20 rounded-full -translate-y-6 translate-x-6 group-hover:scale-150 transition-transform duration-500" />
+                            <div className="relative">
+                                <div className="w-11 h-11 bg-white/20 rounded-xl mb-3 group-hover:bg-white/30 transition-colors relative overflow-hidden">
+                                    <Image
+                                        src="/images/yape_logo.png"
+                                        alt="Yape"
+                                        fill
+                                        sizes="44px"
+                                        className="object-cover"
+                                    />
+                                </div>
+                                <p className="font-semibold text-white text-sm">YAPES</p>
+                                <p className="text-xs text-purple-200 mt-0.5 truncate">Generar PDF de YAPES recibidos</p>
+                            </div>
+                        </button>
+
+                        <button
                             onClick={() => window.dispatchEvent(new CustomEvent("mobile-nav:borradores"))}
                             className="group relative overflow-hidden bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl p-5 text-left hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-amber-200/50"
                         >
@@ -679,25 +699,6 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                                     <p className="text-xs text-purple-600/70 mt-0.5">Administrar clientes</p>
                                 </div>
                             </Link>
-                            <button
-                                onClick={() => setShowModalYapes(true)}
-                                className="group relative overflow-hidden bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 text-left hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-purple-400/30"
-                            >
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-purple-300/20 rounded-full -translate-y-6 translate-x-6 group-hover:scale-150 transition-transform duration-500" />
-                                <div className="relative flex items-center gap-3">
-                                    <Image
-                                        src="/images/yape_logo.png"
-                                        alt="Yape"
-                                        width={36}
-                                        height={36}
-                                        className="object-contain rounded-lg"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-white text-sm">YAPES</p>
-                                        <p className="text-xs text-purple-200 mt-0.5 truncate">Generar PDF de YAPES recibidos</p>
-                                    </div>
-                                </div>
-                            </button>
                             </>
                         )}
                     </div>
