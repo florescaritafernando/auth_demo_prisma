@@ -496,6 +496,13 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
         fetchFavoritos()
     }, [esStaff])
 
+    useEffect(() => {
+        if (!esStaff) return
+        const handleYapes = () => setShowModalYapes(true)
+        window.addEventListener("mobile-nav:yapes", handleYapes)
+        return () => window.removeEventListener("mobile-nav:yapes", handleYapes)
+    }, [esStaff])
+
     const toggleFavorito = async (id: string) => {
         const esFavorito = favoritos.has(id)
         const favoritosAnteriores = new Set(favoritos)
@@ -683,10 +690,10 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                                         alt="Yape"
                                         width={36}
                                         height={36}
-                                        className="object-contain"
+                                        className="object-contain rounded-lg"
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-white text-sm">Resumen YAPES</p>
+                                        <p className="font-semibold text-white text-sm">YAPES</p>
                                         <p className="text-xs text-purple-200 mt-0.5 truncate">Generar PDF de YAPES recibidos</p>
                                     </div>
                                 </div>
@@ -707,7 +714,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-between p-5 border-b border-slate-100">
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-900">Resumen YAPES</h3>
+                                    <h3 className="text-lg font-bold text-slate-900">YAPES</h3>
                                     <p className="text-sm text-slate-500 mt-0.5">Generar PDF o registrar nuevo YAPE</p>
                                 </div>
                                 <button onClick={() => setShowModalYapes(false)} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
@@ -835,11 +842,11 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                                             <select
                                                 value={nuevoYapeNombre}
                                                 onChange={(e) => setNuevoYapeNombre(e.target.value)}
-                                                className="w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 appearance-none cursor-pointer"
+                                                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 appearance-none cursor-pointer text-sm max-sm:text-lg max-sm:font-bold"
                                             >
                                                 <option value="">Seleccionar...</option>
-                                                <option value="Carlos">Carlos</option>
-                                                <option value="Angel">Angel</option>
+                                                <option value="Carlos" className="font-bold">Carlos</option>
+                                                <option value="Angel" className="font-bold">Angel</option>
                                             </select>
                                         </div>
 
@@ -854,7 +861,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                                                     value={nuevoYapeMonto}
                                                     onChange={(e) => setNuevoYapeMonto(e.target.value)}
                                                     placeholder="0.00"
-                                                    className="w-full pl-8 pr-10 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full pl-8 pr-10 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 text-sm max-sm:text-lg max-sm:font-bold"
                                                 />
                                                 <button
                                                     type="button"
@@ -880,7 +887,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                                                     type="date"
                                                     value={nuevoYapeFecha}
                                                     onChange={(e) => setNuevoYapeFecha(e.target.value)}
-                                                    className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 text-sm max-sm:text-lg max-sm:font-bold"
                                                 />
                                             </div>
                                         </div>
@@ -926,7 +933,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                                                 }
                                             }}
                                             disabled={!nuevoYapeNombre.trim() || !nuevoYapeMonto || agregandoYape}
-                                            className="px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg text-sm font-semibold hover:from-amber-600 hover:to-orange-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-md shadow-amber-200"
+                                            className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-purple-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-md shadow-purple-200"
                                         >
                                             {agregandoYape ? (
                                                 <>

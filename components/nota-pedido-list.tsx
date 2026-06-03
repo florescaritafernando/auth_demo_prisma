@@ -1170,7 +1170,15 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
 
                                             const blob = await res.blob()
                                             const url = URL.createObjectURL(blob)
-                                            window.open(url, "_blank")
+                                            const isMobile = window.innerWidth < 1024 || "ontouchstart" in window
+                                            if (isMobile) {
+                                                const a = document.createElement("a")
+                                                a.href = url
+                                                a.download = "documento.pdf"
+                                                a.click()
+                                            } else {
+                                                window.open(url, "_blank")
+                                            }
                                         } catch (err) {
                                             alert(err instanceof Error ? err.message : "Error de conexión")
                                         } finally {

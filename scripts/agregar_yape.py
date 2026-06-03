@@ -3,6 +3,7 @@ import sys
 import json
 import argparse
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from app import YAPES_SHEETS_URL  # type: ignore
 
@@ -47,9 +48,9 @@ def main():
         else:
             monto_str = f"{monto:.2f}".rstrip("0").rstrip(".").replace(".", ",")
 
-        # Fecha: DD/MM/YYYY HH:MM:SS con la hora actual
+        # Fecha: DD/MM/YYYY HH:MM:SS con hora de Lima
         fecha_dt = datetime.strptime(args.fecha, '%Y-%m-%d')
-        ahora = datetime.now()
+        ahora = datetime.now(ZoneInfo("America/Lima"))
         fecha_formateada = f"{fecha_dt.day:02d}/{fecha_dt.month:02d}/{fecha_dt.year} {ahora.strftime('%H:%M:%S')}"
 
         ws.append_row([args.nombre, monto_str, fecha_formateada])

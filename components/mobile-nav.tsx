@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Home, Plus, X, FilePlus, ClipboardList, Pencil, FileText, File, Users, ShoppingCart, Heart } from "lucide-react"
 
@@ -34,7 +35,7 @@ export function MobileNav({ userName, userRole, onOpenCrearPedido, onOpenBorrado
         setTimeout(() => setShowAcciones(false), 300)
     }
 
-    const triggerAction = (action: "crear-pedido" | "borradores" | "modificar-pedido", localCallback?: () => void) => {
+    const triggerAction = (action: "crear-pedido" | "borradores" | "modificar-pedido" | "yapes", localCallback?: () => void) => {
         setAnimating(false)
         setTimeout(() => {
             setShowAcciones(false)
@@ -57,6 +58,7 @@ export function MobileNav({ userName, userRole, onOpenCrearPedido, onOpenBorrado
         { icon: FileText, label: "Ver Pedidos", desc: "Detalle completo de pedidos", gradient: "from-emerald-100 to-emerald-200", border: "border-emerald-200/50", iconBg: "bg-emerald-900/10", iconHover: "group-hover:bg-emerald-900/20", circle: "bg-emerald-300/30", text: "text-emerald-800", subtext: "text-emerald-600/70", iconColor: "text-emerald-700", href: "/dashboard/nota-pedido" },
         { icon: File, label: "Mis Borradores", desc: "Continuar pedidos guardados", gradient: "from-amber-100 to-amber-200", border: "border-amber-200/50", iconBg: "bg-amber-900/10", iconHover: "group-hover:bg-amber-900/20", circle: "bg-amber-300/30", text: "text-amber-800", subtext: "text-amber-600/70", iconColor: "text-amber-700", action: () => triggerAction("borradores", onOpenBorradores) },
         { icon: Users, label: "Gestion Clientes", desc: "Administrar clientes", gradient: "from-purple-100 to-purple-200", border: "border-purple-200/50", iconBg: "bg-purple-900/10", iconHover: "group-hover:bg-purple-900/20", circle: "bg-purple-300/30", text: "text-purple-800", subtext: "text-purple-600/70", iconColor: "text-purple-700", href: "/dashboard/clientes-pedido" },
+        { icon: FileText, label: "YAPES", desc: "YAPES recibidos", gradient: "from-purple-300 to-purple-400", border: "border-purple-400/50", iconBg: "bg-purple-900/10", iconHover: "group-hover:bg-purple-900/20", circle: "bg-purple-400/30", text: "text-purple-900", subtext: "text-purple-700/70", iconColor: "text-purple-800", action: () => triggerAction("yapes") },
     ] : [
         { icon: ShoppingCart, label: "Mi Carrito", desc: "Ver productos agregados", gradient: "from-slate-100 to-slate-200", border: "border-slate-200/50", iconBg: "bg-slate-900/10", iconHover: "group-hover:bg-slate-900/20", circle: "bg-slate-300/30", text: "text-slate-800", subtext: "text-slate-500", iconColor: "text-slate-700", href: "/dashboard/carrito" },
         { icon: Heart, label: "Favoritos", desc: "Productos que te gustan", gradient: "from-red-100 to-red-200", border: "border-red-200/50", iconBg: "bg-red-900/10", iconHover: "group-hover:bg-red-900/20", circle: "bg-red-300/30", text: "text-red-800", subtext: "text-red-600/70", iconColor: "text-red-700", href: "/dashboard?favoritos=1" },
@@ -148,7 +150,11 @@ export function MobileNav({ userName, userRole, onOpenCrearPedido, onOpenBorrado
                                         <div className={`absolute top-0 right-0 w-10 h-10 ${acc.circle} rounded-full -translate-y-3 translate-x-3 group-hover:scale-150 transition-transform duration-500`} />
                                         <div className="relative">
                                             <div className={`w-9 h-9 ${acc.iconBg} rounded-xl flex items-center justify-center mb-2 ${acc.iconHover} transition-colors`}>
-                                                <Icon className={`h-4 w-4 ${acc.iconColor}`} />
+                                                {acc.label === "YAPES" ? (
+                                                    <Image src="/images/yape_logo.png" alt="Yape" width={20} height={20} className="object-contain rounded" />
+                                                ) : (
+                                                    <Icon className={`h-4 w-4 ${acc.iconColor}`} />
+                                                )}
                                             </div>
                                             <p className={`font-semibold text-xs ${acc.text} leading-tight`}>{acc.label}</p>
                                             <p className={`text-[10px] ${acc.subtext} mt-0.5 line-clamp-2`}>{acc.desc}</p>

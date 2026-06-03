@@ -180,6 +180,7 @@ export async function PUT(
             await prisma.pedidoDetalle.update({
                 where: { id: item.detalleId },
                 data: {
+                    productoId: item.productoId,
                     cantidad: Number(item.cantidad),
                     precio: Number(item.precio),
                     indicacionesCorte: item.indicacionesCorte || null
