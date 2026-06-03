@@ -119,6 +119,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
     const [nuevoMonto, setNuevoMonto] = useState("")
     const [precioPartes, setPrecioPartes] = useState("20.00")
     const [precioPersonalizado, setPrecioPersonalizado] = useState("")
+    const [showModalXml, setShowModalXml] = useState<string | null>(null)
+    const [xmlFile, setXmlFile] = useState<File | null>(null)
+    const [formatoXml, setFormatoXml] = useState<"ticket" | "shipping_label">("ticket")
+    const [convirtiendoXml, setConvirtiendoXml] = useState(false)
+    const [xmlAgencia, setXmlAgencia] = useState("")
+    const [xmlOtraAgencia, setXmlOtraAgencia] = useState("")
+    const [xmlNotas, setXmlNotas] = useState("")
+    const [xmlRecojeOtraPersona, setXmlRecojeOtraPersona] = useState(false)
+    const [xmlRecojeDni, setXmlRecojeDni] = useState("")
+    const [xmlRecojeNombre, setXmlRecojeNombre] = useState("")
+    const [xmlRecojeDireccion, setXmlRecojeDireccion] = useState("")
 
     useEffect(() => {
         fetch("/api/empleados-telefonos", { credentials: "include" })
@@ -891,6 +902,30 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                         )}
                                     </div>
 
+                                    {/* Convertir XML */}
+                                    <div className="bg-slate-50 rounded-lg p-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const agenciaKey = pedido.agencia || pedido.clientePedido?.agencia || ""
+                                                setShowModalXml(pedido.id)
+                                                setXmlFile(null)
+                                                setFormatoXml("ticket")
+                                                setXmlAgencia(AGENCIA_LABELS[agenciaKey] || "")
+                                                setXmlOtraAgencia(agenciaKey === "otros" ? (pedido.agenciaOtro || pedido.clientePedido?.agenciaOtro || "") : "")
+                                                setXmlNotas("")
+                                                setXmlRecojeDni(pedido.dniRecibe || "")
+                                                setXmlRecojeNombre(pedido.nombreRecibe || "")
+                                                setXmlRecojeDireccion(pedido.direccion || "")
+                                                setXmlRecojeOtraPersona(!!(pedido.dniRecibe || pedido.nombreRecibe))
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-violet-700 to-indigo-800 rounded-lg text-sm font-semibold text-white hover:from-violet-800 hover:to-indigo-900 shadow-md shadow-violet-300 transition-all"
+                                        >
+                                            <Printer className="h-4 w-4" />
+                                            Convertir XML a Ticket o etiqueta envios
+                                        </button>
+                                    </div>
+
                                     {/* Observaciones */}
                                     {pedido.notas && (
                                         <div>
@@ -921,6 +956,250 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                     itemLabel="pedidos"
                 />
             </>)}
+
+            {/* Modal Convertir XML */}
+            {showModalXml && (() => {
+                const pedido = pedidos.find(p => p.id === showModalXml)
+                if (!pedido) return null
+                return (
+                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModalXml(null)}>
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">Convertir XML</h3>
+                                    <p className="text-sm text-slate-500 mt-0.5">{pedido.numeroOrden}</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowModalXml(null)}
+                                    className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                                >
+                                    <X className="h-5 w-5 text-slate-400" />
+                                </button>
+                            </div>
+
+                            <div className="p-5 space-y-5">
+                                {/* Cliente y Monto */}
+                                <div className="flex items-center justify-between bg-indigo-50 rounded-xl px-4 py-3 border border-indigo-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center">
+                                            <User className="h-4 w-4 text-indigo-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-900">{pedido.clientePedido?.nombre || pedido.nombreFactura || "—"}</p>
+                                            <p className="text-xs text-slate-500">{pedido.numeroDoc || pedido.clientePedido?.tipoDoc ? `${(pedido.clientePedido?.tipoDoc || pedido.tipoDocumento || "").toUpperCase()}: ${pedido.clientePedido?.numeroDoc || pedido.numeroDoc || ""}` : ""}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-lg font-bold text-slate-900">S/ {Number(pedido.total).toFixed(2)}</p>
+                                        <p className="text-xs text-slate-500">Total</p>
+                                    </div>
+                                </div>
+
+                                {/* Archivo XML */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                                        Archivo XML <span className="text-red-500">*</span>
+                                    </label>
+                                    <label className={`flex items-center justify-center gap-2 px-4 py-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${xmlFile ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
+                                        <FileText className={`h-6 w-6 ${xmlFile ? "text-emerald-500" : "text-slate-400"}`} />
+                                        <span className={`text-sm ${xmlFile ? "text-emerald-700 font-medium" : "text-slate-500"}`}>
+                                            {xmlFile ? xmlFile.name : "Seleccionar archivo XML"}
+                                        </span>
+                                        <input
+                                            type="file"
+                                            accept=".xml"
+                                            className="sr-only"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0] || null
+                                                setXmlFile(file)
+                                            }}
+                                        />
+                                    </label>
+                                </div>
+
+                                {/* Formato */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Formato</label>
+                                    <div className="flex gap-2">
+                                        {[
+                                            { value: "ticket" as const, label: "Ticket 80mm" },
+                                            { value: "shipping_label" as const, label: "Etiqueta de envío 100mm×150mm" },
+                                        ].map(f => (
+                                            <button
+                                                key={f.value}
+                                                type="button"
+                                                onClick={() => setFormatoXml(f.value)}
+                                                className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium border transition-colors ${formatoXml === f.value ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                                            >
+                                                {f.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Campos de Etiqueta */}
+                                {formatoXml === "shipping_label" && (
+                                    <>
+                                        {/* Agencia */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Agencia</label>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={xmlAgencia}
+                                                    onChange={(e) => {
+                                                        setXmlAgencia(e.target.value)
+                                                        if (e.target.value !== "OTROS") setXmlOtraAgencia("")
+                                                    }}
+                                                    className="flex-1 px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                >
+                                                    <option value="">Seleccionar agencia</option>
+                                                    {Object.values(AGENCIA_LABELS).map((label) => (
+                                                        <option key={label} value={label}>{label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            {xmlAgencia === "OTROS" && (
+                                                <input
+                                                    type="text"
+                                                    value={xmlOtraAgencia}
+                                                    onChange={(e) => setXmlOtraAgencia(e.target.value)}
+                                                    placeholder="Nombre de agencia"
+                                                    className="mt-2 w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                />
+                                            )}
+                                        </div>
+
+                                        {/* Notas */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Notas adicionales</label>
+                                            <textarea
+                                                value={xmlNotas}
+                                                onChange={(e) => setXmlNotas(e.target.value)}
+                                                rows={2}
+                                                className="w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                                            />
+                                        </div>
+
+                                        {/* Recoje otra persona */}
+                                        <div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setXmlRecojeOtraPersona(!xmlRecojeOtraPersona)}
+                                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${xmlRecojeOtraPersona ? "border-indigo-400 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${xmlRecojeOtraPersona ? "bg-indigo-600 border-indigo-600" : "border-slate-300"}`}>
+                                                        {xmlRecojeOtraPersona && (
+                                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <span className="text-sm font-medium text-slate-700">Otra persona recoge</span>
+                                                        <p className="text-xs text-slate-400">Completa datos de quien recibe el pedido</p>
+                                                    </div>
+                                                </div>
+                                                <Truck className={`h-4 w-4 ${xmlRecojeOtraPersona ? "text-indigo-500" : "text-slate-300"}`} />
+                                            </button>
+                                            {xmlRecojeOtraPersona && (
+                                                <div className="mt-3 space-y-3">
+                                                    <input
+                                                        type="text"
+                                                        value={xmlRecojeDni}
+                                                        onChange={(e) => setXmlRecojeDni(e.target.value)}
+                                                        placeholder="DNI"
+                                                        className="w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={xmlRecojeNombre}
+                                                        onChange={(e) => setXmlRecojeNombre(e.target.value)}
+                                                        placeholder="Nombre completo"
+                                                        className="w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={xmlRecojeDireccion}
+                                                        onChange={(e) => setXmlRecojeDireccion(e.target.value)}
+                                                        placeholder="Dirección"
+                                                        className="w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-100">
+                                <button
+                                    onClick={() => setShowModalXml(null)}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        if (!xmlFile) return
+                                        setConvirtiendoXml(true)
+                                        try {
+                                            const formData = new FormData()
+                                            formData.append("xml", xmlFile)
+                                            formData.append("formato", formatoXml)
+                                            if (xmlAgencia) formData.append("agencia", xmlAgencia)
+                                            if (xmlAgencia === "OTROS" && xmlOtraAgencia) formData.append("otraAgencia", xmlOtraAgencia)
+                                            if (xmlNotas) formData.append("notas", xmlNotas)
+                                            if (xmlRecojeOtraPersona) {
+                                                formData.append("recojeOtraPersona", "true")
+                                                if (xmlRecojeDni) formData.append("recojeDni", xmlRecojeDni)
+                                                if (xmlRecojeNombre) formData.append("recojeNombre", xmlRecojeNombre)
+                                                if (xmlRecojeDireccion) formData.append("recojeDireccion", xmlRecojeDireccion)
+                                            }
+
+                                            const res = await fetch("/api/convertir-xml", {
+                                                method: "POST",
+                                                body: formData,
+                                            })
+
+                                            if (!res.ok) {
+                                                const err = await res.json()
+                                                alert(err.error || "Error al convertir XML")
+                                                return
+                                            }
+
+                                            const blob = await res.blob()
+                                            const url = URL.createObjectURL(blob)
+                                            window.open(url, "_blank")
+                                        } catch (err) {
+                                            alert(err instanceof Error ? err.message : "Error de conexión")
+                                        } finally {
+                                            setConvirtiendoXml(false)
+                                        }
+                                    }}
+                                    disabled={!xmlFile || convirtiendoXml}
+                                    className="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    {convirtiendoXml ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                            Convirtiendo...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Printer className="h-4 w-4" />
+                                            Convertir y previsualizar
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
         </div>
     )
 }
