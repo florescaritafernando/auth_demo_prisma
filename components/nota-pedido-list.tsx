@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList, Search, X, Copy, Divide, Calendar, SlidersHorizontal, Printer } from "lucide-react"
+import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList, Search, X, Copy, Divide, Calendar, SlidersHorizontal, Printer, DollarSign, CheckCircle } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
+import { CobrarPedidoModal } from "@/components/cobrar-pedido-modal"
 
 const AGENCIA_LABELS: Record<string, string> = {
     antezana: "ANTEZANA",
@@ -23,7 +24,7 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: 
     confirmado: { label: "Pago confirmado", color: "bg-green-200", colorTexto: "text-green-900" },
     pedido_enviado: { label: "Pedido enviado", color: "bg-yellow-100", colorTexto: "text-yellow-800" },
     rechazado: { label: "Pedido rechazado", color: "bg-red-100", colorTexto: "text-red-800" },
-    completado: { label: "Pedido completado", color: "bg-green-100", colorTexto: "text-green-800" },
+    completado: { label: "Pedido completado", color: "bg-blue-100", colorTexto: "text-blue-800" },
 }
 
 const ESTADOS_FILTRO = [
@@ -130,6 +131,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
     const [xmlRecojeDni, setXmlRecojeDni] = useState("")
     const [xmlRecojeNombre, setXmlRecojeNombre] = useState("")
     const [xmlRecojeDireccion, setXmlRecojeDireccion] = useState("")
+    const [pedidoCobrar, setPedidoCobrar] = useState<PedidoItem | null>(null)
 
     useEffect(() => {
         fetch("/api/empleados-telefonos", { credentials: "include" })
@@ -376,9 +378,32 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     {/* Info Empleado */}
                                     {pedido.pedidoEmpleadoInfo && (
                                         <div>
-                                            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
-                                                <Building2 className="h-4 w-4 text-blue-500" />
-                                                <p className="font-semibold text-slate-700 text-sm">Info del Pedido</p>
+                                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="h-4 w-4 text-blue-500" />
+                                                    <p className="font-semibold text-slate-700 text-sm">Info del Pedido</p>
+                                                </div>
+                                                {pedido.estado === "confirmado" && userRole !== "cliente" && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                await fetch(`/api/pedidos/${pedido.id}`, {
+                                                                    method: "PATCH",
+                                                                    headers: { "Content-Type": "application/json" },
+                                                                    body: JSON.stringify({ estado: "completado" }),
+                                                                    credentials: "include",
+                                                                })
+                                                                window.location.reload()
+                                                            } catch (e) {
+                                                                console.error(e)
+                                                            }
+                                                        }}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg text-xs font-semibold text-white hover:from-slate-800 hover:to-slate-900 shadow-sm transition-all active:scale-[0.97]"
+                                                    >
+                                                        <CheckCircle className="h-3.5 w-3.5" />
+                                                        MARCAR COMPLETADO
+                                                    </button>
+                                                )}
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                                 {pedido.pedidoEmpleadoInfo.empresa && (
@@ -926,6 +951,16 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                         </button>
                                     </div>
 
+                                    {/* Cobrar */}
+                                    {pedido.estado === "pendiente" && userRole !== "cliente" && (
+                                        <button
+                                            onClick={() => setPedidoCobrar(pedido)}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg text-sm font-semibold text-white hover:from-emerald-700 hover:to-emerald-800 shadow-md shadow-emerald-200 transition-all active:scale-[0.98]"
+                                        >
+                                            <DollarSign className="h-4 w-4" />
+                                            COBRAR (S/ {Number(pedido.total).toFixed(2)})
+                                        </button>
+                                    )}
                                     {/* Observaciones */}
                                     {pedido.notas && (
                                         <div>
@@ -1211,6 +1246,15 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                     </div>
                 )
             })()}
+
+            {pedidoCobrar && (
+                <CobrarPedidoModal
+                    pedido={pedidoCobrar}
+                    isOpen={!!pedidoCobrar}
+                    onClose={() => setPedidoCobrar(null)}
+                    estadoAlCobrar="completado"
+                />
+            )}
         </div>
     )
 }

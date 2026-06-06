@@ -551,7 +551,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             }
             const producto = json.productos.find((p: any) => p.categoria === "MANCHESTER SUITING") || json.productos[0]
             const precio = 20.00
-            const cantidad = Math.round((monto / precio) * 100) / 100
+            const cantidad = Math.round((monto / precio) * 1000000) / 1000000
             setItems([...items, {
                 id: Date.now().toString(),
                 productoId: producto.id,
@@ -1943,16 +1943,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                     autoFocus
                                 />
                             </div>
-                            {montoValue && !isNaN(parseFloat(montoValue)) && parseFloat(montoValue) > 0 && (
-                                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
-                                    <p className="text-sm text-emerald-800">
-                                        <span className="font-bold">{parseFloat(montoValue).toFixed(2)}</span> S/ ÷ S/20.00 =
-                                    </p>
-                                    <p className="text-xl font-bold text-emerald-700 mt-1">
-                                        {(parseFloat(montoValue) / 20).toFixed(2)} metros de D-10-001
-                                    </p>
-                                </div>
-                            )}
                         </div>
                         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 shrink-0">
                             <button

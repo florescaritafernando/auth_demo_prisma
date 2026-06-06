@@ -11,7 +11,7 @@ import { Pagination } from "@/components/ui/pagination"
 import { CarritoBadge } from "@/components/carrito-badge"
 import { CarritoParticulas } from "@/components/carrito-particulas"
 import { MobileNav } from "@/components/mobile-nav"
-import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus, ClipboardList, FileText, Users, File, Pencil, DollarSign, Printer, Calendar } from "lucide-react"
+import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus, ClipboardList, FileText, Users, File, Pencil } from "lucide-react"
 import { BotonAgregarCarrito } from "@/components/agregar-carrito-button"
 import { cn } from "@/lib/utils"
 
@@ -390,55 +390,6 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
     })
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(12)
-    const [showModalYapes, setShowModalYapes] = useState(false)
-    const [yapeTab, setYapeTab] = useState<"resumen" | "nuevo">("nuevo")
-    const [yapesFechaInicio, setYapesFechaInicio] = useState("")
-    const [yapesFechaFin, setYapesFechaFin] = useState("")
-    const [generandoYapes, setGenerandoYapes] = useState(false)
-
-    const [nuevoYapeNombre, setNuevoYapeNombre] = useState("")
-    const [nuevoYapeMonto, setNuevoYapeMonto] = useState("")
-    const [nuevoYapeFecha, setNuevoYapeFecha] = useState(() => new Date().toISOString().split("T")[0])
-    const [agregandoYape, setAgregandoYape] = useState(false)
-    const [escuchando, setEscuchando] = useState<string | false>(false)
-    const [yapeSuccessMsg, setYapeSuccessMsg] = useState("")
-
-    const iniciarReconocimiento = (campo: "nombre" | "monto") => {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        if (!SpeechRecognition) {
-            alert("Reconocimiento de voz no soportado en este navegador. Usá Chrome o Edge.")
-            return
-        }
-
-        const recognition = new SpeechRecognition()
-        recognition.lang = "es-PE"
-        recognition.interimResults = false
-        recognition.maxAlternatives = 1
-
-        setEscuchando(campo)
-
-        recognition.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript.trim()
-            if (campo === "nombre") {
-                setNuevoYapeNombre(transcript)
-            } else {
-                const soloNumeros = transcript.replace(/[^0-9.]/g, "")
-                setNuevoYapeMonto(soloNumeros)
-            }
-            setEscuchando(false)
-        }
-
-        recognition.onerror = () => {
-            setEscuchando(false)
-        }
-
-        recognition.onend = () => {
-            setEscuchando(false)
-        }
-
-        recognition.start()
-    }
-
     const esStaff = userRole === "empleado" || userRole === "admin"
 
     useEffect(() => {
@@ -494,13 +445,6 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
             }
         }
         fetchFavoritos()
-    }, [esStaff])
-
-    useEffect(() => {
-        if (!esStaff) return
-        const handleYapes = () => setShowModalYapes(true)
-        window.addEventListener("mobile-nav:yapes", handleYapes)
-        return () => window.removeEventListener("mobile-nav:yapes", handleYapes)
     }, [esStaff])
 
     const toggleFavorito = async (id: string) => {
@@ -651,7 +595,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                         </Link>
 
                         <button
-                            onClick={() => setShowModalYapes(true)}
+                            onClick={() => window.dispatchEvent(new CustomEvent("mobile-nav:yapes"))}
                             className="group relative overflow-hidden bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 text-left hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-purple-400/30"
                         >
                             <div className="absolute top-0 right-0 w-20 h-20 bg-purple-300/20 rounded-full -translate-y-6 translate-x-6 group-hover:scale-150 transition-transform duration-500" />
@@ -707,255 +651,9 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                 <MobileNav
                     userName={userName}
                     userRole={userRole}
+                    onOpenYapes={() => window.dispatchEvent(new CustomEvent("mobile-nav:yapes"))}
                 />
 
-                {/* Modal YAPES */}
-                {showModalYapes && (
-                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModalYapes(false)}>
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                            <div className="flex items-center justify-between p-5 border-b border-slate-100">
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-900">YAPES</h3>
-                                    <p className="text-sm text-slate-500 mt-0.5">Generar PDF o registrar nuevo YAPE</p>
-                                </div>
-                                <button onClick={() => setShowModalYapes(false)} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
-                                    <X className="h-5 w-5 text-slate-400" />
-                                </button>
-                            </div>
-
-                            {/* Tabs */}
-                            <div className="flex border-b border-slate-100 px-5">
-                                <button
-                                    onClick={() => setYapeTab("resumen")}
-                                    className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${yapeTab === "resumen" ? "border-purple-600 text-purple-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-                                >
-                                    <Printer className="h-4 w-4 inline mr-1.5" />
-                                    Generar resumen
-                                </button>
-                                <button
-                                    onClick={() => setYapeTab("nuevo")}
-                                    className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${yapeTab === "nuevo" ? "border-purple-600 text-purple-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-                                >
-                                    <DollarSign className="h-4 w-4 inline mr-1.5" />
-                                    Nuevo registro
-                                </button>
-                            </div>
-
-                            {/* Tab: Generar resumen */}
-                            {yapeTab === "resumen" && (
-                                <>
-                                    <div className="p-5 space-y-5">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha inicio</label>
-                                                <div className="relative">
-                                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                                    <input
-                                                        type="date"
-                                                        value={yapesFechaInicio}
-                                                        onChange={(e) => setYapesFechaInicio(e.target.value)}
-                                                        className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha fin</label>
-                                                <div className="relative">
-                                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                                    <input
-                                                        type="date"
-                                                        value={yapesFechaFin}
-                                                        onChange={(e) => setYapesFechaFin(e.target.value)}
-                                                        className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-100">
-                                        <button onClick={() => setShowModalYapes(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
-                                            Cerrar
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                setGenerandoYapes(true)
-                                                try {
-                                                    const res = await fetch("/api/yapes-pdf", {
-                                                        method: "POST",
-                                                        headers: { "Content-Type": "application/json" },
-                                                        body: JSON.stringify({
-                                                            fechaInicio: yapesFechaInicio || undefined,
-                                                            fechaFin: yapesFechaFin || undefined,
-                                                        }),
-                                                    })
-                                                    if (!res.ok) {
-                                                        const err = await res.json()
-                                                        alert(err.error || "Error al generar PDF")
-                                                        return
-                                                    }
-                                                    const blob = await res.blob()
-                                                    const url = URL.createObjectURL(blob)
-                                                    window.open(url, "_blank")
-                                                } catch (err) {
-                                                    alert(err instanceof Error ? err.message : "Error de conexión")
-                                                } finally {
-                                                    setGenerandoYapes(false)
-                                                }
-                                            }}
-                                            disabled={generandoYapes}
-                                            className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg text-sm font-semibold hover:from-emerald-600 hover:to-teal-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-md shadow-emerald-200"
-                                        >
-                                            {generandoYapes ? (
-                                                <>
-                                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                                    </svg>
-                                                    Generando...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Printer className="h-4 w-4" />
-                                                    Generar PDF
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Tab: Nuevo registro */}
-                            {yapeTab === "nuevo" && (
-                                <>
-                                    {yapeSuccessMsg && (
-                                        <div className="mx-5 mt-5 flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                                            <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                                                <polyline points="22 4 12 14.01 9 11.01" />
-                                            </svg>
-                                            <span>{yapeSuccessMsg}</span>
-                                        </div>
-                                    )}
-                                    <div className="p-5 space-y-5">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre</label>
-                                            <select
-                                                value={nuevoYapeNombre}
-                                                onChange={(e) => setNuevoYapeNombre(e.target.value)}
-                                                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 appearance-none cursor-pointer text-sm max-sm:text-lg max-sm:font-bold"
-                                            >
-                                                <option value="">Seleccionar...</option>
-                                                <option value="Carlos" className="font-bold">Carlos</option>
-                                                <option value="Angel" className="font-bold">Angel</option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Monto</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">S/</span>
-                                                <input
-                                                    type="text"
-                                                    inputMode="decimal"
-                                                    value={nuevoYapeMonto}
-                                                    onChange={(e) => setNuevoYapeMonto(e.target.value)}
-                                                    placeholder="0.00"
-                                                    className="w-full pl-8 pr-10 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 text-sm max-sm:text-lg max-sm:font-bold"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => iniciarReconocimiento("monto")}
-                                                    className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${escuchando === "monto" ? "bg-red-100 text-red-600 animate-pulse" : "hover:bg-slate-100 text-slate-400"}`}
-                                                    title="Dictar por voz"
-                                                >
-                                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                                                        <line x1="12" y1="19" x2="12" y2="23" />
-                                                        <line x1="8" y1="23" x2="16" y2="23" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha</label>
-                                            <div className="relative">
-                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                                <input
-                                                    type="date"
-                                                    value={nuevoYapeFecha}
-                                                    onChange={(e) => setNuevoYapeFecha(e.target.value)}
-                                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 text-sm max-sm:text-lg max-sm:font-bold"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-100">
-                                        <button onClick={() => {
-                                            setNuevoYapeNombre("")
-                                            setNuevoYapeMonto("")
-                                            setNuevoYapeFecha(new Date().toISOString().split("T")[0])
-                                            setYapeTab("resumen")
-                                        }} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                if (!nuevoYapeNombre.trim() || !nuevoYapeMonto) return
-                                                setAgregandoYape(true)
-                                                try {
-                                                    const res = await fetch("/api/yapes/nuevo", {
-                                                        method: "POST",
-                                                        headers: { "Content-Type": "application/json" },
-                                                        body: JSON.stringify({
-                                                            nombre: nuevoYapeNombre.trim(),
-                                                            monto: parseFloat(nuevoYapeMonto),
-                                                            fecha: nuevoYapeFecha,
-                                                        }),
-                                                    })
-                                                    if (!res.ok) {
-                                                        const err = await res.json()
-                                                        alert(err.error || "Error al registrar YAPE")
-                                                        return
-                                                    }
-                                                    setNuevoYapeNombre("")
-                                                    setNuevoYapeMonto("")
-                                                    setNuevoYapeFecha(new Date().toISOString().split("T")[0])
-                                                    setYapeSuccessMsg("YAPE registrado correctamente")
-                                                    setTimeout(() => setYapeSuccessMsg(""), 3000)
-                                                } catch (err) {
-                                                    alert(err instanceof Error ? err.message : "Error de conexión")
-                                                } finally {
-                                                    setAgregandoYape(false)
-                                                }
-                                            }}
-                                            disabled={!nuevoYapeNombre.trim() || !nuevoYapeMonto || agregandoYape}
-                                            className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-purple-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-md shadow-purple-200"
-                                        >
-                                            {agregandoYape ? (
-                                                <>
-                                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                                    </svg>
-                                                    Guardando...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <DollarSign className="h-4 w-4" />
-                                                    Registrar YAPE
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                )}
             </div>
         )
     }
