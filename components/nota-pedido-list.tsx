@@ -695,6 +695,40 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                         </div>
                                     </div>
 
+                                    {/* Observaciones */}
+                                    {pedido.notas && (
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <ClipboardList className="h-4 w-4 text-slate-400" />
+                                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Observaciones</p>
+                                            </div>
+                                            <p className="text-sm text-slate-700 bg-amber-50 border border-amber-100 rounded-lg p-3">{pedido.notas}</p>
+                                        </div>
+                                    )}
+                                    {/* Convertir XML */}
+                                    <div className="bg-slate-50 rounded-lg p-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const agenciaKey = pedido.agencia || pedido.clientePedido?.agencia || ""
+                                                setShowModalXml(pedido.id)
+                                                setXmlFile(null)
+                                                setFormatoXml("ticket")
+                                                setXmlAgencia(AGENCIA_LABELS[agenciaKey] || "")
+                                                setXmlOtraAgencia(agenciaKey === "otros" ? (pedido.agenciaOtro || pedido.clientePedido?.agenciaOtro || "") : "")
+                                                setXmlNotas("")
+                                                setXmlRecojeDni(pedido.dniRecibe || "")
+                                                setXmlRecojeNombre(pedido.nombreRecibe || "")
+                                                setXmlRecojeDireccion(pedido.direccion || "")
+                                                setXmlRecojeOtraPersona(!!(pedido.dniRecibe || pedido.nombreRecibe))
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-violet-700 to-indigo-800 rounded-lg text-sm font-semibold text-white hover:from-violet-800 hover:to-indigo-900 shadow-md shadow-violet-300 transition-all"
+                                        >
+                                            <Printer className="h-4 w-4" />
+                                            Convertir XML a Ticket o etiqueta envios
+                                        </button>
+                                    </div>
+
                                     {!showDividirPartes && (
                                     <div className="bg-slate-50 rounded-lg p-3">
                                         <div className="flex items-center gap-2 mb-2">
@@ -731,7 +765,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             const valorDivisor = divisor || divisorPersonalizado
                                             if (!valorDivisor || Number(valorDivisor) <= 0) return null
                                             const resultado = Number(pedido.total) / Number(valorDivisor)
-                                            const decimales = Number(resultado.toFixed(2)) === resultado ? 2 : (Number(valorDivisor) === 20 ? 2 : 4)
+                                            const decimales = Number(resultado.toFixed(2)) === resultado ? 2 : 4
                                             return (
                                                 <div className="flex items-center justify-between bg-indigo-50 rounded-lg p-3 border border-indigo-200">
                                                     <div className="flex items-baseline gap-1.5">
@@ -818,9 +852,9 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                     <span className="text-xs font-semibold text-slate-400 w-6">#{idx + 1}</span>
                                                                     <span className="text-sm font-medium text-slate-900 min-w-[90px]">S/ {Number(monto).toFixed(2)}</span>
                                                                     <span className="text-xs text-slate-500">→</span>
-                                                                    <span className="text-sm font-semibold text-indigo-700">{metros.toFixed(Number(metros.toFixed(2)) === metros ? 2 : Number(precioActual) === 20 ? 2 : 4)} mts</span>
+                                                                    <span className="text-sm font-semibold text-indigo-700">{metros.toFixed(Number(metros.toFixed(2)) === metros ? 2 : 4)} mts</span>
                                                                     <button
-                                                                        onClick={() => copiarAlPortapapeles(metros.toFixed(Number(metros.toFixed(2)) === metros ? 2 : Number(precioActual) === 20 ? 2 : 4), `parte_mts_${idx}`)}
+                                                                        onClick={() => copiarAlPortapapeles(metros.toFixed(Number(metros.toFixed(2)) === metros ? 2 : 4), `parte_mts_${idx}`)}
                                                                         className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
                                                                         title="Copiar metros"
                                                                     >
@@ -897,7 +931,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                     }}
                                                                     className="mt-2 w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors"
                                                                 >
-                                                                    Completar con S/ {falta.toFixed(2)} ({precioActual > 0 ? (() => { const v = falta / precioActual; return v.toFixed(Number(v.toFixed(2)) === v ? 2 : precioActual === 20 ? 2 : 4) })() : "—"} mts)
+                                                                    Completar con S/ {falta.toFixed(2)} ({precioActual > 0 ? (() => { const v = falta / precioActual; return v.toFixed(Number(v.toFixed(2)) === v ? 2 : 4) })() : "—"} mts)
                                                                 </button>
                                                             )}
                                                         </div>
@@ -908,7 +942,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         <button
                                                             onClick={() => {
                                                                 const precioActual = Number(precioPersonalizado || precioPartes)
-                                                                const texto = partesMontos.map(m => { const v = Number(m) / precioActual; return `S/ ${Number(m).toFixed(2)} (${precioActual > 0 ? v.toFixed(Number(v.toFixed(2)) === v ? 2 : precioActual === 20 ? 2 : 4) : "—"} mts)` }).join(" + ") + ` = S/ ${Number(pedido.total).toFixed(2)}`
+                                                                const texto = partesMontos.map(m => { const v = Number(m) / precioActual; return `S/ ${Number(m).toFixed(2)} (${precioActual > 0 ? v.toFixed(Number(v.toFixed(2)) === v ? 2 : 4) : "—"} mts)` }).join(" + ") + ` = S/ ${Number(pedido.total).toFixed(2)}`
                                                                 copiarAlPortapapeles(texto, "partes_total")
                                                             }}
                                                             className="flex-1 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
@@ -927,29 +961,6 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                         )}
                                     </div>
 
-                                    {/* Convertir XML */}
-                                    <div className="bg-slate-50 rounded-lg p-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const agenciaKey = pedido.agencia || pedido.clientePedido?.agencia || ""
-                                                setShowModalXml(pedido.id)
-                                                setXmlFile(null)
-                                                setFormatoXml("ticket")
-                                                setXmlAgencia(AGENCIA_LABELS[agenciaKey] || "")
-                                                setXmlOtraAgencia(agenciaKey === "otros" ? (pedido.agenciaOtro || pedido.clientePedido?.agenciaOtro || "") : "")
-                                                setXmlNotas("")
-                                                setXmlRecojeDni(pedido.dniRecibe || "")
-                                                setXmlRecojeNombre(pedido.nombreRecibe || "")
-                                                setXmlRecojeDireccion(pedido.direccion || "")
-                                                setXmlRecojeOtraPersona(!!(pedido.dniRecibe || pedido.nombreRecibe))
-                                            }}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-violet-700 to-indigo-800 rounded-lg text-sm font-semibold text-white hover:from-violet-800 hover:to-indigo-900 shadow-md shadow-violet-300 transition-all"
-                                        >
-                                            <Printer className="h-4 w-4" />
-                                            Convertir XML a Ticket o etiqueta envios
-                                        </button>
-                                    </div>
 
                                     {/* Cobrar */}
                                     {pedido.estado === "pendiente" && userRole !== "cliente" && (
@@ -961,16 +972,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             COBRAR (S/ {Number(pedido.total).toFixed(2)})
                                         </button>
                                     )}
-                                    {/* Observaciones */}
-                                    {pedido.notas && (
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <ClipboardList className="h-4 w-4 text-slate-400" />
-                                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Observaciones</p>
-                                            </div>
-                                            <p className="text-sm text-slate-700 bg-amber-50 border border-amber-100 rounded-lg p-3">{pedido.notas}</p>
-                                        </div>
-                                    )}
+
                                 </div>
                             </div>
                         )}

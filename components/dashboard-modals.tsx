@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useState, useEffect, useCallback } from "react"
 import { CrearPedidoModal } from "@/components/crear-pedido-modal"
-import { X, File, ClipboardList, Pencil, RotateCcw, Trash2, Loader2, Search, DollarSign, Printer, Calendar } from "lucide-react"
+import { X, File, ClipboardList, Pencil, RotateCcw, Trash2, Loader2, Search, DollarSign, Printer, Calendar, Plus } from "lucide-react"
 
 interface Props {
     userName: string
@@ -36,49 +36,35 @@ export function DashboardModals({ userName, userRole }: Props) {
     const [yapesFechaFin, setYapesFechaFin] = useState("")
     const [generandoYapes, setGenerandoYapes] = useState(false)
 
-    const [nuevoYapeNombre, setNuevoYapeNombre] = useState("")
-    const [nuevoYapeMonto, setNuevoYapeMonto] = useState("")
+    const [yapeEntries, setYapeEntries] = useState<{ nombre: string; monto: string }[]>([
+        { nombre: "", monto: "" }
+    ])
     const [nuevoYapeFecha, setNuevoYapeFecha] = useState(() => new Date().toISOString().split("T")[0])
     const [agregandoYape, setAgregandoYape] = useState(false)
-    const [escuchando, setEscuchando] = useState<string | false>(false)
     const [yapeSuccessMsg, setYapeSuccessMsg] = useState("")
     const [ultimoYapeNombre, setUltimoYapeNombre] = useState("")
-    const [ultimoYapeMonto, setUltimoYapeMonto] = useState("")
 
-    const iniciarReconocimiento = (campo: "nombre" | "monto") => {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        if (!SpeechRecognition) {
-            alert("Reconocimiento de voz no soportado en este navegador. Usá Chrome o Edge.")
-            return
+    const checkYapeStatus = async (batchId: string): Promise<{ status: string; results?: { nombre: string; monto: string }[]; error?: string } | null> => {
+        try {
+            const res = await fetch(`/api/yapes/nuevo?batchId=${batchId}`)
+            return await res.json()
+        } catch {
+            return null
         }
+    }
 
-        const recognition = new SpeechRecognition()
-        recognition.lang = "es-PE"
-        recognition.interimResults = false
-        recognition.maxAlternatives = 1
+    const addEntry = () => {
+        setYapeEntries([...yapeEntries, { nombre: "", monto: "" }])
+    }
 
-        setEscuchando(campo)
+    const removeEntry = (idx: number) => {
+        setYapeEntries(yapeEntries.filter((_, i) => i !== idx))
+    }
 
-        recognition.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript.trim()
-            if (campo === "nombre") {
-                setNuevoYapeNombre(transcript)
-            } else {
-                const soloNumeros = transcript.replace(/[^0-9.]/g, "")
-                setNuevoYapeMonto(soloNumeros)
-            }
-            setEscuchando(false)
-        }
-
-        recognition.onerror = () => {
-            setEscuchando(false)
-        }
-
-        recognition.onend = () => {
-            setEscuchando(false)
-        }
-
-        recognition.start()
+    const updateEntry = (idx: number, field: "nombre" | "monto", value: string) => {
+        const updated = [...yapeEntries]
+        updated[idx] = { ...updated[idx], [field]: value }
+        setYapeEntries(updated)
     }
 
     const esStaff = userRole === "empleado" || userRole === "admin"
@@ -185,6 +171,70 @@ export function DashboardModals({ userName, userRole }: Props) {
             window.removeEventListener("mobile-nav:yapes", handleYapes)
         }
     }, [cargarBorradores, cargarPedidosAsignados])
+
+    useEffect(() => {
+        if (!showModalYapes) return
+
+        const batchEntries: { key: string; batchId: string; entries: { nombre: string; monto: string }[] }[] = []
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i)
+            if (key?.startsWith("yape_batch_")) {
+                try {
+                    const entry = JSON.parse(localStorage.getItem(key)!)
+                    if (entry.batchId) batchEntries.push({ key, batchId: entry.batchId, entries: entry.entries || [] })
+                    else localStorage.removeItem(key)
+                } catch { localStorage.removeItem(key) }
+            }
+        }
+
+        if (batchEntries.length > 0) {
+            ;(async () => {
+                const results = await Promise.allSettled(
+                    batchEntries.map(e => checkYapeStatus(e.batchId).then(data => ({ ...e, data })))
+                )
+                const grouped: Record<string, string[]> = {}
+                const errors: string[] = []
+                let totalConfirmed = 0
+                for (const r of results) {
+                    if (r.status === "fulfilled") {
+                        localStorage.removeItem(r.value.key)
+                        if (r.value.data?.status === "success" && r.value.data.results) {
+                            for (const res of r.value.data.results) {
+                                if (!grouped[res.nombre]) grouped[res.nombre] = []
+                                grouped[res.nombre].push("S/ " + parseFloat(res.monto.replace(",", ".")).toFixed(2))
+                                totalConfirmed++
+                            }
+                        } else if (r.value.data?.status === "error") {
+                            errors.push(`Batch ${r.value.batchId.slice(0, 8)}: ${r.value.data.error || "Error"}`)
+                        } else {
+                            for (const entry of r.value.entries) {
+                                if (!grouped[entry.nombre]) grouped[entry.nombre] = []
+                                grouped[entry.nombre].push("S/ " + parseFloat(entry.monto.replace(",", ".")).toFixed(2))
+                                totalConfirmed++
+                            }
+                        }
+                    }
+                }
+
+                const namesText = Object.entries(grouped)
+                    .map(([name, montos]) => `${name}: ${montos.join(" , ")}`)
+                    .join("\n")
+
+                if (namesText) {
+                    setUltimoYapeNombre(namesText)
+                    setYapeSuccessMsg(
+                        totalConfirmed > 1
+                            ? `${totalConfirmed} YAPEs registrados correctamente`
+                            : `1 YAPE registrado correctamente`
+                    )
+                    setTimeout(() => setYapeSuccessMsg(""), 5000)
+                }
+                if (errors.length > 0) {
+                    alert(`Errores:\n${errors.join("\n")}`)
+                }
+            })()
+        }
+    }, [showModalYapes])
 
     return (
         <>
@@ -539,15 +589,12 @@ export function DashboardModals({ userName, userRole }: Props) {
                                             <p className="font-bold text-purple-800 text-lg animate-[yape-slide-up_0.4s_ease-out_0.4s_both]">
                                                 {yapeSuccessMsg}
                                             </p>
-                                            {ultimoYapeNombre && ultimoYapeMonto && (
+                                            {ultimoYapeNombre && (
                                                 <div className="mt-3 space-y-1.5 animate-[yape-slide-up_0.4s_ease-out_0.5s_both]">
-                                                    <div className="flex items-center justify-center gap-2 text-sm text-purple-700">
+                                                    <div className="text-center text-sm text-purple-700 whitespace-pre-line">
                                                         <span className="font-medium text-purple-400">Yape para:</span>
-                                                        <span className="font-bold">{ultimoYapeNombre}</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-center gap-2 text-sm text-purple-700">
-                                                        <span className="font-medium text-purple-400">Monto:</span>
-                                                        <span className="font-bold text-purple-900">S/ {parseFloat(ultimoYapeMonto).toFixed(2)}</span>
+                                                        <br />
+                                                        <span className="font-bold text-purple-800">{ultimoYapeNombre}</span>
                                                     </div>
                                                 </div>
                                             )}
@@ -555,47 +602,6 @@ export function DashboardModals({ userName, userRole }: Props) {
                                     </div>
                                 )}
                                 <div className="p-5 space-y-5">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre</label>
-                                        <select
-                                            value={nuevoYapeNombre}
-                                            onChange={(e) => setNuevoYapeNombre(e.target.value)}
-                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 appearance-none cursor-pointer text-sm max-sm:text-lg max-sm:font-bold"
-                                        >
-                                            <option value="">Seleccionar...</option>
-                                            <option value="Carlos" className="font-bold">Carlos</option>
-                                            <option value="Angel" className="font-bold">Angel</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Monto</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">S/</span>
-                                            <input
-                                                type="text"
-                                                inputMode="decimal"
-                                                value={nuevoYapeMonto}
-                                                onChange={(e) => setNuevoYapeMonto(e.target.value)}
-                                                placeholder="0.00"
-                                                className="w-full pl-8 pr-10 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 text-sm max-sm:text-lg max-sm:font-bold"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => iniciarReconocimiento("monto")}
-                                                className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${escuchando === "monto" ? "bg-red-100 text-red-600 animate-pulse" : "hover:bg-slate-100 text-slate-400"}`}
-                                                title="Dictar por voz"
-                                            >
-                                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                                                    <line x1="12" y1="19" x2="12" y2="23" />
-                                                    <line x1="8" y1="23" x2="16" y2="23" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha</label>
                                         <div className="relative">
@@ -608,12 +614,59 @@ export function DashboardModals({ userName, userRole }: Props) {
                                             />
                                         </div>
                                     </div>
+                                    <div className="space-y-3">
+                                        {yapeEntries.map((entry, idx) => (
+                                            <div key={idx} className="flex gap-2 items-start p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                                <div className="flex-1">
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">Nombre</label>
+                                                    <select
+                                                        value={entry.nombre}
+                                                        onChange={(e) => updateEntry(idx, "nombre", e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 appearance-none cursor-pointer text-sm max-sm:text-lg max-sm:font-bold"
+                                                    >
+                                                        <option value="">Seleccionar...</option>
+                                                        <option value="Carlos" className="font-bold">Carlos</option>
+                                                        <option value="Angel" className="font-bold">Angel</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">Monto</label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">S/</span>
+                                                        <input
+                                                            type="text"
+                                                            inputMode="decimal"
+                                                            value={entry.monto}
+                                                            onChange={(e) => updateEntry(idx, "monto", e.target.value)}
+                                                            placeholder="0.00"
+                                                            className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 text-sm max-sm:text-lg max-sm:font-bold"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {yapeEntries.length > 1 && (
+                                                    <button
+                                                        onClick={() => removeEntry(idx)}
+                                                        className="mt-5 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Eliminar"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={addEntry}
+                                        className="w-full py-2 border-2 border-dashed border-slate-300 rounded-lg text-sm font-medium text-slate-500 hover:border-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Agregar otro YAPE
+                                    </button>
                                 </div>
 
                                 <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-100">
                                     <button onClick={() => {
-                                        setNuevoYapeNombre("")
-                                        setNuevoYapeMonto("")
+                                        setYapeEntries([{ nombre: "", monto: "" }])
                                         setNuevoYapeFecha(new Date().toISOString().split("T")[0])
                                         setYapeTab("resumen")
                                     }} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
@@ -621,37 +674,73 @@ export function DashboardModals({ userName, userRole }: Props) {
                                     </button>
                                     <button
                                         onClick={async () => {
-                                            if (!nuevoYapeNombre.trim() || !nuevoYapeMonto) return
+                                            const validEntries = yapeEntries.filter(e => {
+                                                const montoNum = parseFloat(e.monto)
+                                                return e.nombre.trim() && e.monto.trim() && !isNaN(montoNum) && montoNum > 0
+                                            })
+                                            if (validEntries.length === 0) return
+
+                                            const fecha = nuevoYapeFecha
                                             setAgregandoYape(true)
-                                            try {
-                                                const res = await fetch("/api/yapes/nuevo", {
-                                                    method: "POST",
-                                                    headers: { "Content-Type": "application/json" },
-                                                    body: JSON.stringify({
-                                                        nombre: nuevoYapeNombre.trim(),
-                                                        monto: parseFloat(nuevoYapeMonto),
-                                                        fecha: nuevoYapeFecha,
-                                                    }),
-                                                })
-                                                if (!res.ok) {
-                                                    const err = await res.json()
-                                                    alert(err.error || "Error al registrar YAPE")
-                                                    return
+
+                                            const pendings = validEntries.map(e => ({
+                                                nombre: e.nombre.trim(),
+                                                monto: e.monto.trim(),
+                                                fecha,
+                                            }))
+
+                                            const res = await fetch("/api/yapes/nuevo", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ entries: pendings }),
+                                            })
+
+                                            const data = await res.json()
+
+                                            if (res.status === 200 && data.status === "success") {
+                                                const results = data.results || pendings
+                                                const grouped: Record<string, string[]> = {}
+                                                for (const r of results) {
+                                                    if (!grouped[r.nombre]) grouped[r.nombre] = []
+                                                    grouped[r.nombre].push("S/ " + parseFloat(r.monto.replace(",", ".")).toFixed(2))
                                                 }
-                                                setUltimoYapeNombre(nuevoYapeNombre.trim())
-                                                setUltimoYapeMonto(nuevoYapeMonto)
-                                                setNuevoYapeNombre("")
-                                                setNuevoYapeMonto("")
-                                                setNuevoYapeFecha(new Date().toISOString().split("T")[0])
-                                                setYapeSuccessMsg("YAPE registrado correctamente")
-                                                setTimeout(() => setYapeSuccessMsg(""), 3000)
-                                            } catch (err) {
-                                                alert(err instanceof Error ? err.message : "Error de conexión")
-                                            } finally {
-                                                setAgregandoYape(false)
+                                                const namesText = Object.entries(grouped)
+                                                    .map(([name, montos]) => `${name}: ${montos.join(" , ")}`)
+                                                    .join("\n")
+
+                                                if (namesText) {
+                                                    setUltimoYapeNombre(namesText)
+                                                    setYapeSuccessMsg(
+                                                        results.length > 1
+                                                            ? `${results.length} YAPES registrados correctamente`
+                                                            : `1 YAPE registrado correctamente`
+                                                    )
+                                                    setTimeout(() => setYapeSuccessMsg(""), 5000)
+                                                }
+                                            } else if (res.status === 202 && data.status === "pending") {
+                                                const batchId = data.batchId
+                                                localStorage.setItem("yape_batch_" + batchId, JSON.stringify({
+                                                    batchId,
+                                                    count: data.count,
+                                                    entries: pendings,
+                                                    timestamp: Date.now(),
+                                                }))
+                                                setUltimoYapeNombre(`${data.count} YAPES en proceso (se confirmarán automáticamente)`)
+                                                setYapeSuccessMsg(`${data.count} en proceso`)
+                                                setTimeout(() => setYapeSuccessMsg(""), 5000)
+                                            } else {
+                                                alert(`Error: ${data.error || "Error al registrar YAPES"}`)
                                             }
+
+                                            setYapeEntries([{ nombre: "", monto: "" }])
+                                            setNuevoYapeFecha(new Date().toISOString().split("T")[0])
+                                            setAgregandoYape(false)
                                         }}
-                                        disabled={!nuevoYapeNombre.trim() || !nuevoYapeMonto || agregandoYape}
+                                        disabled={!yapeEntries.every(e => {
+                                            if (!e.nombre.trim() || !e.monto.trim()) return false
+                                            const n = parseFloat(e.monto)
+                                            return !isNaN(n) && n > 0
+                                        }) || agregandoYape}
                                         className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-purple-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-md shadow-purple-200"
                                     >
                                         {agregandoYape ? (
@@ -665,7 +754,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                         ) : (
                                             <>
                                                 <DollarSign className="h-4 w-4" />
-                                                Registrar YAPE
+                                                Registrar{yapeEntries.filter(e => e.nombre.trim() && e.monto.trim() && !isNaN(parseFloat(e.monto)) && parseFloat(e.monto) > 0).length > 1 ? " YAPES" : " YAPE"}
                                             </>
                                         )}
                                     </button>
