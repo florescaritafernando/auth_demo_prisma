@@ -429,7 +429,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     </button>
                                                 )}
                                             </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                            <div className="grid grid-cols-4 gap-3 text-sm">
                                                 {pedido.pedidoEmpleadoInfo.empresa && (
                                                     <div className="flex items-start gap-2">
                                                         <Building2 className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
@@ -442,10 +442,21 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 {pedido.pedidoEmpleadoInfo.metodoPago && (
                                                     <div className="flex items-start gap-2">
                                                         <CreditCard className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                                                        <div>
+                                                        <div className="flex-1">
                                                             <p className="text-slate-500 text-xs">Método de Pago</p>
                                                             <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.metodoPago}</p>
                                                         </div>
+                                                        <button
+                                                            onClick={() => copiarAlPortapapeles(pedido.pedidoEmpleadoInfo?.metodoPago || "", "metodoPago")}
+                                                            className="p-1.5 rounded hover:bg-slate-100 transition-colors shrink-0"
+                                                            title="Copiar método de pago"
+                                                        >
+                                                            {copiedField === "metodoPago" ? (
+                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                            ) : (
+                                                                <Copy className="h-3.5 w-3.5 text-slate-400" />
+                                                            )}
+                                                        </button>
                                                     </div>
                                                 )}
                                                 <div className="flex items-start gap-2">
@@ -475,7 +486,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 <User className="h-4 w-4 text-green-500" />
                                                 <p className="font-semibold text-slate-700 text-sm">Datos del Cliente</p>
                                             </div>
-                                            <div className="space-y-2 text-sm">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                                                 <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
                                                     <User className="h-4 w-4 text-slate-400 shrink-0" />
                                                     <span className="text-slate-500 text-xs w-16 shrink-0">Cliente:</span>
@@ -662,7 +673,9 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             </div>
                                         </div>
                                     )}
+                                    <div className="border-t border-slate-100 my-2" />
 
+                                    <div className={pedido.pedidoDetalle?.length === 1 ? "sm:grid sm:grid-cols-2 sm:gap-4" : ""}>
                                     {/* Artículos */}
                                     {pedido.pedidoDetalle && pedido.pedidoDetalle.length > 0 && (
                                         <div>
@@ -670,7 +683,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 <Package className="h-4 w-4 text-purple-500" />
                                                 <p className="font-semibold text-slate-700 text-sm">Artículos ({pedido.pedidoDetalle.length})</p>
                                             </div>
-                                            <div className="space-y-2">
+                                            <div className={`grid grid-cols-1 gap-2 ${pedido.pedidoDetalle.length > 1 ? "sm:grid-cols-2" : ""}`}>
                                                 {pedido.pedidoDetalle.map((detalle, idx) => {
                                                     const metrajeTotal = detalle.etiquetas?.reduce((s, e) => s + e.valor, 0) || detalle.metraje || detalle.cantidad
                                                     const subtotalItem = detalle.precio * Number(metrajeTotal)
@@ -693,7 +706,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                     <p className="text-xs text-amber-600 mt-1">{detalle.indicacionesCorte}</p>
                                                                 )}
                                                             </div>
-                                                            <p className="font-semibold text-slate-900 text-sm shrink-0 ml-3">S/ {subtotalItem.toFixed(2)}</p>
+                                                            <p className="font-semibold text-slate-900 text-sm shrink-0 ml-3 mt-0.5">S/ {subtotalItem.toFixed(2)}</p>
                                                         </div>
                                                     )
                                                 })}
@@ -702,7 +715,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     )}
 
                                     {/* Totales */}
-                                    <div className="bg-slate-50 rounded-lg p-3">
+                                    <div className={`bg-slate-50 rounded-lg p-3 ${pedido.pedidoDetalle && pedido.pedidoDetalle.length > 1 ? "mt-4" : ""}`}>
                                         <div className="space-y-1 text-sm">
                                             <div className="flex justify-between">
                                                 <span className="text-slate-500">Subtotal</span>
@@ -718,6 +731,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             </div>
                                         </div>
                                     </div>
+                                    </div>
 
                                     {/* Observaciones */}
                                     {pedido.notas && (
@@ -729,37 +743,54 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             <p className="text-sm text-slate-700 bg-amber-50 border border-amber-100 rounded-lg p-3">{pedido.notas}</p>
                                         </div>
                                     )}
-                                    {/* Convertir XML */}
-                                    <div className="bg-slate-50 rounded-lg p-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const agenciaKey = pedido.agencia || pedido.clientePedido?.agencia || ""
-                                                setShowModalXml(pedido.id)
-                                                setXmlFile(null)
-                                                setFormatoXml("ticket")
-                                                setXmlAgencia(AGENCIA_LABELS[agenciaKey] || "")
-                                                setXmlOtraAgencia(agenciaKey === "otros" ? (pedido.agenciaOtro || pedido.clientePedido?.agenciaOtro || "") : "")
-                                                setXmlNotas("")
-                                                setXmlRecojeDni(pedido.dniRecibe || "")
-                                                setXmlRecojeNombre(pedido.nombreRecibe || "")
-                                                setXmlRecojeDireccion(pedido.direccion || "")
-                                                setXmlRecojeOtraPersona(!!(pedido.dniRecibe || pedido.nombreRecibe))
-                                            }}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-violet-700 to-indigo-800 rounded-lg text-sm font-semibold text-white hover:from-violet-800 hover:to-indigo-900 shadow-md shadow-violet-300 transition-all"
-                                        >
-                                            <Printer className="h-4 w-4" />
-                                            Convertir XML a Ticket o etiqueta envios
-                                        </button>
-                                    </div>
+                                    <div className="border-t border-slate-100 my-2" />
 
-                                    {!showDividirPartes && (
+                                    {/* Convertir XML + Cobrar */}
+                                    <div className="flex gap-3">
+                                        <div className="flex-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const agenciaKey = pedido.agencia || pedido.clientePedido?.agencia || ""
+                                                    setShowModalXml(pedido.id)
+                                                    setXmlFile(null)
+                                                    setFormatoXml("ticket")
+                                                    setXmlAgencia(AGENCIA_LABELS[agenciaKey] || "")
+                                                    setXmlOtraAgencia(agenciaKey === "otros" ? (pedido.agenciaOtro || pedido.clientePedido?.agenciaOtro || "") : "")
+                                                    setXmlNotas("")
+                                                    setXmlRecojeDni(pedido.dniRecibe || "")
+                                                    setXmlRecojeNombre(pedido.nombreRecibe || "")
+                                                    setXmlRecojeDireccion(pedido.direccion || "")
+                                                    setXmlRecojeOtraPersona(!!(pedido.dniRecibe || pedido.nombreRecibe))
+                                                }}
+                                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-violet-700 to-indigo-800 rounded-lg text-sm font-semibold text-white hover:from-violet-800 hover:to-indigo-900 shadow-md shadow-violet-300 transition-all"
+                                            >
+                                                <Printer className="h-4 w-4" />
+                                                Convertir XML a Ticket o etiqueta envios
+                                            </button>
+                                        </div>
+                                        {pedido.estado === "pendiente" && userRole !== "cliente" && (
+                                            <div className="flex-1">
+                                                <button
+                                                    onClick={() => setPedidoCobrar(pedido)}
+                                                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg text-sm font-semibold text-white hover:from-emerald-700 hover:to-emerald-800 shadow-md shadow-emerald-200 transition-all active:scale-[0.98]"
+                                                >
+                                                    <DollarSign className="h-4 w-4" />
+                                                    COBRAR (S/ {Number(pedido.total).toFixed(2)})
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="border-t border-slate-100 my-2" />
+
+                                    <div className="sm:grid sm:grid-cols-2 sm:gap-4">
+                                    {/* Dividir entre */}
                                     <div className="bg-slate-50 rounded-lg p-3">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Divide className="h-4 w-4 text-slate-500" />
                                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dividir entre</p>
                                         </div>
-                                        <div className="flex items-center gap-2 mb-2">
+                                        <div className="grid grid-cols-3 gap-2 mb-2">
                                             {["18.00", "20.00"].map((num) => (
                                                 <button
                                                     key={num}
@@ -767,12 +798,12 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         setDivisor(num)
                                                         setDivisorPersonalizado("")
                                                     }}
-                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${divisor === num ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
+                                                    className={`w-full px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${divisor === num ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
                                                 >
                                                     S/ {num}
                                                 </button>
                                             ))}
-                                            <div className="relative flex-1 max-w-[120px]">
+                                            <div className="relative">
                                                 <input
                                                     type="number"
                                                     value={divisorPersonalizado}
@@ -819,24 +850,25 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             )
                                         })()}
                                     </div>
-                                    )}
 
                                     {/* Dividir pedido en partes */}
-                                    <div className="bg-slate-50 rounded-lg p-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowDividirPartes(!showDividirPartes)}
-                                            className="w-full flex items-center justify-between gap-2 text-left"
-                                        >
+                                     <div className="bg-slate-50 rounded-lg p-3">
+                                        <div className="w-full flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
                                                 <Divide className="h-4 w-4 text-slate-500" />
                                                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dividir pedido en partes</p>
                                             </div>
-                                            {showDividirPartes ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
-                                        </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowDividirPartes(!showDividirPartes)}
+                                                className={`w-18 h-8 rounded-full transition-colors relative shrink-0 ${showDividirPartes ? "bg-blue-600" : "bg-slate-300"}`}
+                                            >
+                                                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-transform shadow-sm ${showDividirPartes ? "translate-x-10" : "translate-x-1"}`} />
+                                            </button>
+                                        </div>
                                         {showDividirPartes && (
                                             <div className="mt-3 space-y-3">
-                                                <div className="flex items-center gap-2">
+                                                <div className="grid grid-cols-3 gap-2">
                                                     {["20.00", "18.00"].map((num) => (
                                                         <button
                                                             key={num}
@@ -844,12 +876,12 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                 setPrecioPartes(num)
                                                                 setPrecioPersonalizado("")
                                                             }}
-                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${precioPartes === num ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
+                                                            className={`w-full px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${precioPartes === num ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
                                                         >
                                                             S/ {num}
                                                         </button>
                                                     ))}
-                                                    <div className="relative max-w-[80px]">
+                                                    <div className="relative">
                                                         <input
                                                             type="number"
                                                             value={precioPersonalizado}
@@ -858,7 +890,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                 setPrecioPartes("")
                                                             }}
                                                             placeholder="Otro"
-                                                            className="w-full px-2 py-1 rounded text-xs border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                            className="w-full px-2 py-1.5 rounded text-xs border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                         />
                                                     </div>
                                                 </div>
@@ -984,19 +1016,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             </div>
                                         )}
                                     </div>
-
-
-                                    {/* Cobrar */}
-                                    {pedido.estado === "pendiente" && userRole !== "cliente" && (
-                                        <button
-                                            onClick={() => setPedidoCobrar(pedido)}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg text-sm font-semibold text-white hover:from-emerald-700 hover:to-emerald-800 shadow-md shadow-emerald-200 transition-all active:scale-[0.98]"
-                                        >
-                                            <DollarSign className="h-4 w-4" />
-                                            COBRAR (S/ {Number(pedido.total).toFixed(2)})
-                                        </button>
-                                    )}
-
+                                    </div>
                                 </div>
                             </div>
                         )}
