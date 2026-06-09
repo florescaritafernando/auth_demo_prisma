@@ -1593,6 +1593,17 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                         className={`${inputBase} resize-none`}
                                         placeholder="Notas adicionales..."
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const texto = "DIVIDIR ENTRE 18"
+                                            setObservaciones(prev => prev ? `${prev}\n${texto}` : texto)
+                                        }}
+                                        className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                                    >
+                                        <Ruler className="h-3 w-3" />
+                                        DIVIDIR ENTRE 18
+                                    </button>
                                 </div>
                             </div>
                         )}
