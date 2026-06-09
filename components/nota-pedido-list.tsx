@@ -132,6 +132,22 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
     const [xmlRecojeNombre, setXmlRecojeNombre] = useState("")
     const [xmlRecojeDireccion, setXmlRecojeDireccion] = useState("")
     const [pedidoCobrar, setPedidoCobrar] = useState<PedidoItem | null>(null)
+    const [showXmlCloseConfirm, setShowXmlCloseConfirm] = useState(false)
+
+    const handleCloseXmlModal = () => {
+        if (xmlFile) {
+            setShowXmlCloseConfirm(true)
+            return
+        }
+        setXmlFile(null)
+        setShowModalXml(null)
+    }
+
+    const handleConfirmExitXml = () => {
+        setXmlFile(null)
+        setShowModalXml(null)
+        setShowXmlCloseConfirm(false)
+    }
 
     useEffect(() => {
         fetch("/api/empleados-telefonos", { credentials: "include" })
@@ -147,6 +163,14 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
             })
             .catch(() => {})
     }, [])
+
+    useEffect(() => {
+        if (xmlFile) {
+            const handler = (e: BeforeUnloadEvent) => { e.preventDefault() }
+            window.addEventListener("beforeunload", handler)
+            return () => window.removeEventListener("beforeunload", handler)
+        }
+    }, [xmlFile])
 
     const copiarAlPortapapeles = async (texto: string, field: string) => {
         try {
@@ -999,7 +1023,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                 const pedido = pedidos.find(p => p.id === showModalXml)
                 if (!pedido) return null
                 return (
-                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModalXml(null)}>
+                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={handleCloseXmlModal}>
                         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-between p-5 border-b border-slate-100">
                                 <div>
@@ -1007,7 +1031,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     <p className="text-sm text-slate-500 mt-0.5">{pedido.numeroOrden}</p>
                                 </div>
                                 <button
-                                    onClick={() => setShowModalXml(null)}
+                                    onClick={handleCloseXmlModal}
                                     className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
                                 >
                                     <X className="h-5 w-5 text-slate-400" />
@@ -1171,7 +1195,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
 
                             <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-100">
                                 <button
-                                    onClick={() => setShowModalXml(null)}
+                                    onClick={handleCloseXmlModal}
                                     className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
                                 >
                                     Cancelar
@@ -1248,6 +1272,43 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                     </div>
                 )
             })()}
+
+            {/* Confirmación salir módulo XML */}
+            {showXmlCloseConfirm && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4" onClick={() => setShowXmlCloseConfirm(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                        <div className="p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                                    <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">¿Salir del módulo Convetir XML?</h3>
+                                </div>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+                                Se perderá el XML cargado y los datos ingresados.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowXmlCloseConfirm(false)}
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleConfirmExitXml}
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    Salir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {pedidoCobrar && (
                 <CobrarPedidoModal
