@@ -429,10 +429,10 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     </button>
                                                 )}
                                             </div>
-                                            <div className="grid grid-cols-4 gap-3 text-sm">
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                                                 {pedido.pedidoEmpleadoInfo.empresa && (
-                                                    <div className="flex items-start gap-2">
-                                                        <Building2 className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                                                    <div className="flex items-center gap-2">
+                                                        <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
                                                         <div>
                                                             <p className="text-slate-500 text-xs">Empresa</p>
                                                             <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.empresa}</p>
@@ -440,34 +440,34 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     </div>
                                                 )}
                                                 {pedido.pedidoEmpleadoInfo.metodoPago && (
-                                                    <div className="flex items-start gap-2">
-                                                        <CreditCard className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                                                        <div className="flex-1">
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <CreditCard className="h-4 w-4 text-slate-400 shrink-0" />
+                                                        <div className="min-w-0 flex-1">
                                                             <p className="text-slate-500 text-xs">Método de Pago</p>
-                                                            <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.metodoPago}</p>
+                                                            <p className="font-medium text-slate-800 truncate">{pedido.pedidoEmpleadoInfo.metodoPago}</p>
                                                         </div>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(pedido.pedidoEmpleadoInfo?.metodoPago || "", "metodoPago")}
-                                                            className="p-1.5 rounded hover:bg-slate-100 transition-colors shrink-0"
+                                                            className="p-1.5 rounded hover:bg-slate-200 transition-colors shrink-0"
                                                             title="Copiar método de pago"
                                                         >
                                                             {copiedField === "metodoPago" ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                <span className="text-xs text-green-600 font-medium whitespace-nowrap">Copiado</span>
                                                             ) : (
-                                                                <Copy className="h-3.5 w-3.5 text-slate-400" />
+                                                                <Copy className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                                                             )}
                                                         </button>
                                                     </div>
                                                 )}
-                                                <div className="flex items-start gap-2">
-                                                    <FileCheck className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                                                <div className="flex items-center gap-2">
+                                                    <FileCheck className="h-4 w-4 text-slate-400 shrink-0" />
                                                     <div>
                                                         <p className="text-slate-500 text-xs">Guía de remisión</p>
                                                         <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.guiaRemision ? "Sí" : "No"}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-start gap-2">
-                                                    <Printer className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                                                <div className="flex items-center gap-2">
+                                                    <Printer className="h-4 w-4 text-slate-400 shrink-0" />
                                                     <div>
                                                         <p className="text-slate-500 text-xs">Envío comprobante</p>
                                                         <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.envioComprobante || "No imprimir"}</p>
@@ -561,25 +561,30 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     </div>
                                                 )}
                                                 {c.telefono && (
-                                                    <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
-                                                        <Phone className="h-4 w-4 text-slate-400 shrink-0" />
-                                                        <span className="text-slate-500 text-xs w-16 shrink-0">Teléfono:</span>
-                                                        <span className="font-medium text-slate-800">{c.telefono}</span>
+                                                    <div className="bg-slate-50 rounded-lg p-2.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                                                            <span className="text-slate-500 text-xs shrink-0">Teléfono:</span>
+                                                            <span className="font-medium text-slate-800 whitespace-nowrap">{c.telefono}</span>
+                                                            <div className="flex-1 min-w-0" />
+                                                            <button
+                                                                onClick={() => copiarAlPortapapeles(c.telefono || "", "telefono")}
+                                                                className="p-1.5 rounded hover:bg-slate-200 transition-colors shrink-0"
+                                                                title="Copiar teléfono"
+                                                            >
+                                                                {copiedField === "telefono" ? (
+                                                                    <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                ) : (
+                                                                    <Copy className="h-3.5 w-3.5 text-slate-400" />
+                                                                )}
+                                                            </button>
+                                                        </div>
                                                         {telefonoColaborador[c.telefono] && (
-                                                            <span className="text-xs text-slate-400">({telefonoColaborador[c.telefono].toUpperCase()})</span>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <div className="w-4 shrink-0" />
+                                                                <span className="text-xs text-slate-400">({telefonoColaborador[c.telefono].toUpperCase()})</span>
+                                                            </div>
                                                         )}
-                                                        <div className="flex-1" />
-                                                        <button
-                                                            onClick={() => copiarAlPortapapeles(c.telefono || "", "telefono")}
-                                                            className="p-1.5 rounded hover:bg-slate-200 transition-colors"
-                                                            title="Copiar teléfono"
-                                                        >
-                                                            {copiedField === "telefono" ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
-                                                            ) : (
-                                                                <Copy className="h-3.5 w-3.5 text-slate-400" />
-                                                            )}
-                                                        </button>
                                                     </div>
                                                 )}
                                                 {c.agencia && (() => {
@@ -715,7 +720,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     )}
 
                                     {/* Totales */}
-                                    <div className={`bg-slate-50 rounded-lg p-3 ${pedido.pedidoDetalle && pedido.pedidoDetalle.length > 1 ? "mt-4" : ""}`}>
+                                    <div className={`bg-slate-50 rounded-lg p-3 mt-3 sm:mt-0 ${pedido.pedidoDetalle && pedido.pedidoDetalle.length > 1 ? "sm:mt-4" : ""}`}>
                                         <div className="space-y-1 text-sm">
                                             <div className="flex justify-between">
                                                 <span className="text-slate-500">Subtotal</span>
@@ -746,39 +751,35 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     <div className="border-t border-slate-100 my-2" />
 
                                     {/* Convertir XML + Cobrar */}
-                                    <div className="flex gap-3">
-                                        <div className="flex-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const agenciaKey = pedido.agencia || pedido.clientePedido?.agencia || ""
-                                                    setShowModalXml(pedido.id)
-                                                    setXmlFile(null)
-                                                    setFormatoXml("ticket")
-                                                    setXmlAgencia(AGENCIA_LABELS[agenciaKey] || "")
-                                                    setXmlOtraAgencia(agenciaKey === "otros" ? (pedido.agenciaOtro || pedido.clientePedido?.agenciaOtro || "") : "")
-                                                    setXmlNotas("")
-                                                    setXmlRecojeDni(pedido.dniRecibe || "")
-                                                    setXmlRecojeNombre(pedido.nombreRecibe || "")
-                                                    setXmlRecojeDireccion(pedido.direccion || "")
-                                                    setXmlRecojeOtraPersona(!!(pedido.dniRecibe || pedido.nombreRecibe))
-                                                }}
-                                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-violet-700 to-indigo-800 rounded-lg text-sm font-semibold text-white hover:from-violet-800 hover:to-indigo-900 shadow-md shadow-violet-300 transition-all"
-                                            >
-                                                <Printer className="h-4 w-4" />
-                                                Convertir XML a Ticket o etiqueta envios
-                                            </button>
-                                        </div>
+                                    <div className={`grid gap-3 ${pedido.estado === "pendiente" && userRole !== "cliente" ? "grid-cols-2" : ""}`}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const agenciaKey = pedido.agencia || pedido.clientePedido?.agencia || ""
+                                                setShowModalXml(pedido.id)
+                                                setXmlFile(null)
+                                                setFormatoXml("ticket")
+                                                setXmlAgencia(AGENCIA_LABELS[agenciaKey] || "")
+                                                setXmlOtraAgencia(agenciaKey === "otros" ? (pedido.agenciaOtro || pedido.clientePedido?.agenciaOtro || "") : "")
+                                                setXmlNotas("")
+                                                setXmlRecojeDni(pedido.dniRecibe || "")
+                                                setXmlRecojeNombre(pedido.nombreRecibe || "")
+                                                setXmlRecojeDireccion(pedido.direccion || "")
+                                                setXmlRecojeOtraPersona(!!(pedido.dniRecibe || pedido.nombreRecibe))
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 min-h-[44px] bg-gradient-to-r from-violet-700 to-indigo-800 rounded-lg text-sm font-semibold text-white hover:from-violet-800 hover:to-indigo-900 shadow-md shadow-violet-300 transition-all"
+                                        >
+                                            <Printer className="h-4 w-4" />
+                                            Convertir XML a Ticket o etiqueta envios
+                                        </button>
                                         {pedido.estado === "pendiente" && userRole !== "cliente" && (
-                                            <div className="flex-1">
-                                                <button
-                                                    onClick={() => setPedidoCobrar(pedido)}
-                                                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg text-sm font-semibold text-white hover:from-emerald-700 hover:to-emerald-800 shadow-md shadow-emerald-200 transition-all active:scale-[0.98]"
-                                                >
-                                                    <DollarSign className="h-4 w-4" />
-                                                    COBRAR (S/ {Number(pedido.total).toFixed(2)})
-                                                </button>
-                                            </div>
+                                            <button
+                                                onClick={() => setPedidoCobrar(pedido)}
+                                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 min-h-[44px] bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg text-sm font-semibold text-white hover:from-emerald-700 hover:to-emerald-800 shadow-md shadow-emerald-200 transition-all active:scale-[0.98]"
+                                            >
+                                                <DollarSign className="h-4 w-4" />
+                                                COBRAR (S/ {Number(pedido.total).toFixed(2)})
+                                            </button>
                                         )}
                                     </div>
                                     <div className="border-t border-slate-100 my-2" />

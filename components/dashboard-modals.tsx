@@ -40,6 +40,7 @@ export function DashboardModals({ userName, userRole }: Props) {
         { nombre: "", monto: "" }
     ])
     const [nuevoYapeFecha, setNuevoYapeFecha] = useState(() => new Date().toISOString().split("T")[0])
+    const [yapeFechaEditando, setYapeFechaEditando] = useState(false)
     const [agregandoYape, setAgregandoYape] = useState(false)
     const [yapeSuccessMsg, setYapeSuccessMsg] = useState("")
     const [ultimoYapeNombre, setUltimoYapeNombre] = useState("")
@@ -603,15 +604,38 @@ export function DashboardModals({ userName, userRole }: Props) {
                                 )}
                                 <div className="p-5 space-y-5">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha</label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                            <input
-                                                type="date"
-                                                value={nuevoYapeFecha}
-                                                onChange={(e) => setNuevoYapeFecha(e.target.value)}
-                                                className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 text-sm max-sm:text-lg max-sm:font-bold"
-                                            />
+                                        <div className="relative flex items-center gap-2">
+                                            <div className="relative flex-1">
+                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                                <input
+                                                    type="date"
+                                                    value={nuevoYapeFecha}
+                                                    readOnly={!yapeFechaEditando}
+                                                    onChange={(e) => setNuevoYapeFecha(e.target.value)}
+                                                    className={`w-full pl-10 pr-3 py-2 rounded-lg border text-sm transition-all ${
+                                                        !yapeFechaEditando
+                                                            ? "border-slate-200 bg-slate-50 text-slate-600 cursor-default"
+                                                            : "border-purple-400 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                                    }`}
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => setYapeFechaEditando(!yapeFechaEditando)}
+                                                className={`p-2 rounded-lg transition-all shrink-0 ${
+                                                    yapeFechaEditando
+                                                        ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                                                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                                }`}
+                                                title={yapeFechaEditando ? "Confirmar fecha" : "Editar fecha"}
+                                            >
+                                                {yapeFechaEditando ? (
+                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                ) : (
+                                                    <Pencil className="h-4 w-4" />
+                                                )}
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="space-y-3">
