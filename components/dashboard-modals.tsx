@@ -604,20 +604,22 @@ export function DashboardModals({ userName, userRole }: Props) {
                                 )}
                                 <div className="p-5 space-y-5">
                                     <div>
-                                        <div className="relative flex items-center gap-2">
+                                        <div className="flex items-center gap-2">
                                             <div className="relative flex-1">
                                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                                <input
-                                                    type="date"
-                                                    value={nuevoYapeFecha}
-                                                    readOnly={!yapeFechaEditando}
-                                                    onChange={(e) => setNuevoYapeFecha(e.target.value)}
-                                                    className={`w-full pl-10 pr-3 py-2 rounded-lg border text-sm transition-all ${
-                                                        !yapeFechaEditando
-                                                            ? "border-slate-200 bg-slate-50 text-slate-600 cursor-default"
-                                                            : "border-purple-400 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                                                    }`}
-                                                />
+                                                {yapeFechaEditando ? (
+                                                    <input
+                                                        type="date"
+                                                        value={nuevoYapeFecha}
+                                                        onChange={(e) => setNuevoYapeFecha(e.target.value)}
+                                                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                                        autoFocus
+                                                    />
+                                                ) : (
+                                                    <div className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 text-sm">
+                                                        {new Date(nuevoYapeFecha + "T12:00:00").toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" })}
+                                                    </div>
+                                                )}
                                             </div>
                                             <button
                                                 onClick={() => setYapeFechaEditando(!yapeFechaEditando)}
@@ -648,7 +650,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                         onChange={(e) => updateEntry(idx, "nombre", e.target.value)}
                                                         className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 appearance-none cursor-pointer text-sm max-sm:text-lg max-sm:font-bold"
                                                     >
-                                                        <option value="">Seleccionar...</option>
+                                                        <option value="">Seleccionar</option>
                                                         <option value="Carlos" className="font-bold">Carlos</option>
                                                         <option value="Angel" className="font-bold">Angel</option>
                                                     </select>
