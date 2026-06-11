@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import * as React from "react";
+import { toSlug } from "@/lib/slug";
 import { useState, useEffect, useRef } from "react";
 import { Map, MapControls, MapMarker, MarkerContent } from "@/components/ui/map";
 import { Card } from "@/components/ui/card";
@@ -114,9 +116,13 @@ function ProductCard({ prod, onClick, priority }: { prod: any, onClick?: () => v
       <div className="p-4 flex flex-col items-center text-center justify-center">
         <h3 className="text-sm font-medium text-slate-900">{prod.nombre}</h3>
         <p className="text-xs text-slate-500 mt-1">{prod.categoria}</p>
-        <span className="text-xs text-slate-400 mt-3 hover:text-slate-600 transition-colors">
+        <Link
+          href={`/producto/${toSlug(prod.nombre, prod.categoria)}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-xs text-slate-400 mt-3 hover:text-slate-600 transition-colors"
+        >
           Ver detalles →
-        </span>
+        </Link>
       </div>
     </div>
   );
