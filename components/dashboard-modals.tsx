@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useState, useEffect, useCallback } from "react"
 import { CrearPedidoModal } from "@/components/crear-pedido-modal"
-import { X, File, ClipboardList, Pencil, RotateCcw, Trash2, Loader2, Search, DollarSign, Printer, Calendar, Plus } from "lucide-react"
+import { X, File, ClipboardList, Pencil, RotateCcw, Trash2, Loader2, Search, DollarSign, Printer, Calendar, Plus, FileText, User, Truck } from "lucide-react"
 
 interface Props {
     userName: string
@@ -44,6 +44,22 @@ export function DashboardModals({ userName, userRole }: Props) {
     const [agregandoYape, setAgregandoYape] = useState(false)
     const [yapeSuccessMsg, setYapeSuccessMsg] = useState("")
     const [ultimoYapeNombre, setUltimoYapeNombre] = useState("")
+
+    const [showModalXml, setShowModalXml] = useState(false)
+    const [xmlFile, setXmlFile] = useState<File | null>(null)
+    const [formatoXml, setFormatoXml] = useState<"ticket" | "shipping_label">("ticket")
+    const [convirtiendoXml, setConvirtiendoXml] = useState(false)
+    const [xmlAgencia, setXmlAgencia] = useState("")
+    const [xmlOtraAgencia, setXmlOtraAgencia] = useState("")
+    const [xmlNotas, setXmlNotas] = useState("")
+    const [xmlRecojeOtraPersona, setXmlRecojeOtraPersona] = useState(false)
+    const [xmlRecojeDni, setXmlRecojeDni] = useState("")
+    const [xmlRecojeNombre, setXmlRecojeNombre] = useState("")
+    const [xmlRecojeDireccion, setXmlRecojeDireccion] = useState("")
+    const [showXmlCloseConfirm, setShowXmlCloseConfirm] = useState(false)
+    const [xmlMetadata, setXmlMetadata] = useState<{ nombre: string; documento: string; total: number; tipo: string; numero: string } | null>(null)
+    const [buscandoDocRecibe, setBuscandoDocRecibe] = useState(false)
+    const AGENCIA_OPTIONS = ["ANTEZANA", "SHALOM", "FLORES", "MARVISUR", "GRAEL", "RAZA", "RANA EXPRESS", "CARHUAMAYO"]
 
     const checkYapeStatus = async (batchId: string): Promise<{ status: string; results?: { nombre: string; monto: string }[]; error?: string } | null> => {
         try {
@@ -142,6 +158,45 @@ export function DashboardModals({ userName, userRole }: Props) {
         }
     }
 
+    const handleCloseXmlModal = () => {
+        if (xmlFile) {
+            setShowXmlCloseConfirm(true)
+            return
+        }
+        setXmlFile(null)
+        setShowModalXml(false)
+        setXmlMetadata(null)
+    }
+
+    const handleConfirmExitXml = () => {
+        setXmlFile(null)
+        setShowModalXml(false)
+        setShowXmlCloseConfirm(false)
+        setXmlMetadata(null)
+    }
+
+    const buscarDocRecibe = async () => {
+        if (xmlRecojeDni.length < 8) return
+        setBuscandoDocRecibe(true)
+        try {
+            const res = await fetch("/api/buscar-documento", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tipo: "dni", numero: xmlRecojeDni })
+            })
+            const json = await res.json()
+            if (json.success) {
+                setXmlRecojeNombre(json.nombre || "")
+            } else {
+                alert("DNI no encontrado")
+            }
+        } catch {
+            alert("Error al buscar DNI")
+        } finally {
+            setBuscandoDocRecibe(false)
+        }
+    }
+
     useEffect(() => {
         const handleCrearPedido = () => {
             setPedidoAEditar(null)
@@ -160,16 +215,22 @@ export function DashboardModals({ userName, userRole }: Props) {
             setShowModalYapes(true)
         }
 
+        const handleConvertirXml = () => {
+            setShowModalXml(true)
+        }
+
         window.addEventListener("mobile-nav:crear-pedido", handleCrearPedido)
         window.addEventListener("mobile-nav:borradores", handleBorradores)
         window.addEventListener("mobile-nav:modificar-pedido", handleModificarPedido)
         window.addEventListener("mobile-nav:yapes", handleYapes)
+        window.addEventListener("mobile-nav:convertir-xml", handleConvertirXml)
 
         return () => {
             window.removeEventListener("mobile-nav:crear-pedido", handleCrearPedido)
             window.removeEventListener("mobile-nav:borradores", handleBorradores)
             window.removeEventListener("mobile-nav:modificar-pedido", handleModificarPedido)
             window.removeEventListener("mobile-nav:yapes", handleYapes)
+            window.removeEventListener("mobile-nav:convertir-xml", handleConvertirXml)
         }
     }, [cargarBorradores, cargarPedidosAsignados])
 
@@ -236,6 +297,14 @@ export function DashboardModals({ userName, userRole }: Props) {
             })()
         }
     }, [showModalYapes])
+
+    useEffect(() => {
+        if (xmlFile) {
+            const handler = (e: BeforeUnloadEvent) => { e.preventDefault() }
+            window.addEventListener("beforeunload", handler)
+            return () => window.removeEventListener("beforeunload", handler)
+        }
+    }, [xmlFile])
 
     return (
         <>
@@ -452,7 +521,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                         {yapeTab === "resumen" && (
                             <>
                                 <div className="p-5 space-y-5">
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha inicio</label>
                                             <div className="relative">
@@ -788,6 +857,348 @@ export function DashboardModals({ userName, userRole }: Props) {
                             </>
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* Modal Convertir XML */}
+            {showModalXml && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={handleCloseXmlModal}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Convertir XML</h3>
+                                <p className="text-sm text-slate-500 mt-0.5">Ticket o etiqueta de envío</p>
+                            </div>
+                            <button onClick={handleCloseXmlModal} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
+                                <X className="h-5 w-5 text-slate-400" />
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-5">
+                            {/* Archivo XML */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                                    Archivo XML <span className="text-red-500">*</span>
+                                </label>
+                                <label className={`flex items-center justify-center gap-2 px-4 py-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${xmlFile ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
+                                    <FileText className={`h-6 w-6 ${xmlFile ? "text-emerald-500" : "text-slate-400"}`} />
+                                    <span className={`text-sm ${xmlFile ? "text-emerald-700 font-medium" : "text-slate-500"}`}>
+                                        {xmlFile ? xmlFile.name : "Seleccionar archivo XML"}
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept=".xml"
+                                        className="sr-only"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0] || null
+                                            setXmlFile(file)
+                                            setXmlMetadata(null)
+                                            if (file) {
+                                                try {
+                                                    const text = await file.text()
+                                                    const parser = new DOMParser()
+                                                    const doc = parser.parseFromString(text, "text/xml")
+                                                    const xpathVal = (expr: string): string => {
+                                                        const ns: Record<string, string> = {
+                                                            cbc: "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+                                                            cac: "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+                                                        }
+                                                        const resolver = (prefix: string | null) => (prefix ? ns[prefix] : null) || null
+                                                        try {
+                                                            const result = doc.evaluate(expr, doc, resolver, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+                                                            return (result.singleNodeValue as Element)?.textContent?.trim() || ""
+                                                        } catch {
+                                                            return ""
+                                                        }
+                                                    }
+                                                    const clienteNombre = xpathVal("//cac:AccountingCustomerParty/cac:Party//cbc:RegistrationName") || xpathVal("//cac:AccountingCustomerParty/cac:Party//cbc:Name")
+                                                    const clienteId = xpathVal("//cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID")
+                                                    const total = parseFloat(xpathVal("//cac:LegalMonetaryTotal/cbc:PayableAmount")) || 0
+                                                    const numero = xpathVal("//cbc:ID")
+                                                    const tipo = numero.startsWith("F") ? "FACTURA" : "BOLETA DE VENTA"
+                                                    const direccion = xpathVal("//cac:AccountingCustomerParty/cac:Party//cac:AddressLine/cbc:Line")
+                                                    setXmlMetadata({ nombre: clienteNombre, documento: clienteId, total, tipo, numero })
+                                                    if (direccion) setXmlRecojeDireccion(direccion)
+                                                } catch {
+                                                    // ignore parse errors
+                                                }
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+
+                            {/* Cliente info */}
+                            {xmlMetadata && (
+                                <div className="flex items-center justify-between bg-indigo-50 rounded-xl px-4 py-3 border border-indigo-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center">
+                                            <User className="h-4 w-4 text-indigo-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-900">{xmlMetadata.nombre || "—"}</p>
+                                            <p className="text-xs text-slate-500">{xmlMetadata.documento ? `${xmlMetadata.tipo === "FACTURA" ? "RUC" : "DNI"}: ${xmlMetadata.documento}` : ""}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-lg font-bold text-slate-900">S/ {xmlMetadata.total.toFixed(2)}</p>
+                                        <p className="text-xs text-slate-500">{xmlMetadata.numero}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Formato */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Formato</label>
+                                <div className="flex gap-2">
+                                    {[
+                                        { value: "ticket" as const, label: "Ticket 80mm" },
+                                        { value: "shipping_label" as const, label: "Etiqueta de envío 100mm×150mm" },
+                                    ].map(f => (
+                                        <button
+                                            key={f.value}
+                                            type="button"
+                                            onClick={() => setFormatoXml(f.value)}
+                                            className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium border transition-colors ${formatoXml === f.value ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                                        >
+                                            {f.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Campos de Etiqueta */}
+                            {formatoXml === "shipping_label" && (
+                                <>
+                                    {/* Agencia */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Agencia</label>
+                                        <div className="flex gap-2">
+                                            <select
+                                                value={xmlAgencia}
+                                                onChange={(e) => {
+                                                    setXmlAgencia(e.target.value)
+                                                    if (e.target.value !== "OTROS") setXmlOtraAgencia("")
+                                                }}
+                                                className="flex-1 px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                            >
+                                                <option value="">Seleccionar agencia</option>
+                                                {AGENCIA_OPTIONS.map(label => (
+                                                    <option key={label} value={label}>{label}</option>
+                                                ))}
+                                                <option value="OTROS">OTROS</option>
+                                            </select>
+                                        </div>
+                                        {xmlAgencia === "OTROS" && (
+                                            <input
+                                                type="text"
+                                                value={xmlOtraAgencia}
+                                                onChange={e => setXmlOtraAgencia(e.target.value)}
+                                                placeholder="Nombre de agencia"
+                                                className="mt-2 w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                            />
+                                        )}
+                                    </div>
+
+                                    {/* Notas */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="block text-sm font-medium text-slate-700">Notas adicionales</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setXmlNotas(prev => {
+                                                    const texto = "A DOMICILIO"
+                                                    return prev.includes(texto) ? prev : prev ? `${prev}, ${texto}` : texto
+                                                })}
+                                                className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                            >
+                                                + A DOMICILIO
+                                            </button>
+                                        </div>
+                                        <textarea
+                                            value={xmlNotas}
+                                            onChange={e => setXmlNotas(e.target.value)}
+                                            rows={2}
+                                            className="w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                                        />
+                                    </div>
+
+                                    {/* Recoje otra persona */}
+                                    <div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setXmlRecojeOtraPersona(!xmlRecojeOtraPersona)}
+                                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${xmlRecojeOtraPersona ? "border-indigo-400 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${xmlRecojeOtraPersona ? "bg-indigo-600 border-indigo-600" : "border-slate-300"}`}>
+                                                    {xmlRecojeOtraPersona && (
+                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                <div className="text-left">
+                                                    <span className="text-sm font-medium text-slate-700">Otra persona recoge</span>
+                                                    <p className="text-xs text-slate-400">Completa datos de quien recibe el pedido</p>
+                                                </div>
+                                            </div>
+                                            <Truck className={`h-4 w-4 ${xmlRecojeOtraPersona ? "text-indigo-500" : "text-slate-300"}`} />
+                                        </button>
+                                        {xmlRecojeOtraPersona && (
+                                            <div className="mt-3 space-y-3">
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={xmlRecojeDni}
+                                                        onChange={e => setXmlRecojeDni(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                                                        placeholder="DNI"
+                                                        maxLength={8}
+                                                        className="flex-1 px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={buscarDocRecibe}
+                                                        disabled={buscandoDocRecibe || xmlRecojeDni.length < 8}
+                                                        className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                                    >
+                                                        {buscandoDocRecibe ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Search className="h-3.5 w-3.5" />
+                                                        )}
+                                                        Buscar
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={xmlRecojeNombre}
+                                                    onChange={e => setXmlRecojeNombre(e.target.value)}
+                                                    placeholder="Nombre completo"
+                                                    className="w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={xmlRecojeDireccion}
+                                                    onChange={e => setXmlRecojeDireccion(e.target.value)}
+                                                    placeholder="Dirección"
+                                                    className="w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-100">
+                            <button onClick={handleCloseXmlModal} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (!xmlFile) return
+                                    setConvirtiendoXml(true)
+                                    try {
+                                        const formData = new FormData()
+                                        formData.append("xml", xmlFile)
+                                        formData.append("formato", formatoXml)
+                                        if (xmlAgencia) formData.append("agencia", xmlAgencia)
+                                        if (xmlAgencia === "OTROS" && xmlOtraAgencia) formData.append("otraAgencia", xmlOtraAgencia)
+                                        if (xmlNotas) formData.append("notas", xmlNotas)
+                                        if (xmlRecojeOtraPersona) {
+                                            formData.append("recojeOtraPersona", "true")
+                                            if (xmlRecojeDni) formData.append("recojeDni", xmlRecojeDni)
+                                            if (xmlRecojeNombre) formData.append("recojeNombre", xmlRecojeNombre)
+                                            if (xmlRecojeDireccion) formData.append("recojeDireccion", xmlRecojeDireccion)
+                                        }
+
+                                        const res = await fetch("/api/convertir-xml", {
+                                            method: "POST",
+                                            body: formData,
+                                        })
+
+                                        if (!res.ok) {
+                                            const err = await res.json()
+                                            alert(err.error || "Error al convertir XML")
+                                            return
+                                        }
+
+                                        const blob = await res.blob()
+                                        const url = URL.createObjectURL(blob)
+                                        const cd = res.headers.get("Content-Disposition") || ""
+                                        const match = cd.match(/filename="?(.+?)"?$/)
+                                        const filename = match?.[1] || "documento.pdf"
+                                        const isMobile = window.innerWidth < 1024 || "ontouchstart" in window
+                                        if (isMobile) {
+                                            const a = document.createElement("a")
+                                            a.href = url
+                                            a.download = filename
+                                            a.click()
+                                        } else {
+                                            window.open(url, "_blank")
+                                        }
+                                    } catch (err) {
+                                        alert(err instanceof Error ? err.message : "Error de conexión")
+                                    } finally {
+                                        setConvirtiendoXml(false)
+                                    }
+                                }}
+                                disabled={!xmlFile || convirtiendoXml}
+                                className="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {convirtiendoXml ? (
+                                    <>
+                                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                        Convirtiendo...
+                                    </>
+                                ) : (
+                                    <><Printer className="h-4 w-4" />Convertir y previsualizar</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Confirmación salir módulo XML */}
+                    {showXmlCloseConfirm && (
+                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4" onClick={() => setShowXmlCloseConfirm(false)}>
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                                <div className="p-6">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                                            <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-slate-900">¿Salir del módulo Convertir XML?</h3>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+                                        Se perderá el XML cargado y los datos ingresados.
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setShowXmlCloseConfirm(false)}
+                                            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            onClick={handleConfirmExitXml}
+                                            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            Salir
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </>

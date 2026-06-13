@@ -11,7 +11,7 @@ import { Pagination } from "@/components/ui/pagination"
 import { CarritoBadge } from "@/components/carrito-badge"
 import { CarritoParticulas } from "@/components/carrito-particulas"
 import { MobileNav } from "@/components/mobile-nav"
-import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus, ClipboardList, FileText, Users, File, Pencil } from "lucide-react"
+import { ShoppingCart, Heart, X, MapPin, Package, Filter, SlidersHorizontal, XCircle, Search, FilePlus, ClipboardList, FileText, Users, File, Pencil, Printer } from "lucide-react"
 import { BotonAgregarCarrito } from "@/components/agregar-carrito-button"
 import { cn } from "@/lib/utils"
 
@@ -612,9 +612,23 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                                 <p className="font-semibold text-white text-sm">YAPES</p>
                                 <p className="text-xs text-purple-200 mt-0.5 truncate">Generar PDF de YAPES recibidos</p>
                             </div>
-                        </button>
+                            </button>
 
-                        <button
+                            <button
+                                onClick={() => window.dispatchEvent(new CustomEvent("mobile-nav:convertir-xml"))}
+                                className="group relative overflow-hidden bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl p-5 text-left hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-slate-500/50"
+                            >
+                                <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6 group-hover:scale-150 transition-transform duration-500" />
+                                <div className="relative">
+                                    <div className="w-11 h-11 bg-white/15 rounded-xl flex items-center justify-center mb-3 group-hover:bg-white/25 transition-colors">
+                                        <Printer className="h-5 w-5 text-white" />
+                                    </div>
+                                    <p className="font-semibold text-white text-sm">Convertir XML</p>
+                                    <p className="text-xs text-slate-300 mt-0.5">Ticket o etiqueta de envío</p>
+                                </div>
+                            </button>
+
+                            <button
                             onClick={() => window.dispatchEvent(new CustomEvent("mobile-nav:borradores"))}
                             className="group relative overflow-hidden bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl p-5 text-left hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-amber-200/50"
                         >
@@ -652,6 +666,7 @@ export function DashboardClient({ productos, userName, userRole }: Props) {
                     userName={userName}
                     userRole={userRole}
                     onOpenYapes={() => window.dispatchEvent(new CustomEvent("mobile-nav:yapes"))}
+                    onOpenConvertirXml={() => window.dispatchEvent(new CustomEvent("mobile-nav:convertir-xml"))}
                 />
 
             </div>

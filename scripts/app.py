@@ -1,5 +1,5 @@
 """
-APP DE CONVERSIÓN XML A PDF - TICKET 80mm
+APP DE CONVERSIÓN XML A PDF - TICKET 72mm
 """
 
 import xml.etree.ElementTree as ET
@@ -65,7 +65,7 @@ CONFIG = {
     'MAX_FILE_SIZE': 10 * 1024 * 1024,  # 10MB max
     'ALLOWED_EXTENSIONS': ['.xml', '.csv', '.xlsx'],
     'DEFAULT_FORMAT': 'ticket',
-    'PAGE_WIDTH': 80,
+    'PAGE_WIDTH': 72,
 }
 
 YAPES_SHEETS_URL = "https://docs.google.com/spreadsheets/d/1-egUiQ0K7vYh1rqT0EC0acx5zbFzy5V6IoEGwrNPiAs/export?format=csv"
@@ -449,9 +449,9 @@ class YapesPDF:
         else:
             self.rango_fechas_yape = datetime.now().strftime('%d/%m/%Y')
         
-        page_width = 80
+        page_width = 72
         pdf = FPDF(orientation='P', unit='mm', format=(page_width, 300))
-        pdf.set_margins(2, 2, 2)
+        pdf.set_margins(0, 0, 0)
         pdf.set_auto_page_break(auto=True, margin=3)
         pdf.add_page()
         
@@ -1061,7 +1061,7 @@ class FacturaXMLtoPDF:
             logger.warning(f"Error generando QR: {e}")        
     
     def _generate_ticket_pdf(self):
-        """Generar ticket 80mm"""
+        """Generar ticket 72mm"""
 
         page_height = self.calculate_total_height()
         
@@ -1074,7 +1074,7 @@ class FacturaXMLtoPDF:
         image_path = "images/logo_manchester.png"
         if os.path.exists(image_path):
             try:
-                pdf.image(image_path, x=20, y=3, w=40)
+                pdf.image(image_path, x=(self.page_width - 40) / 2, y=3, w=40)
                 pdf.ln(safe_div(40, 3) + 4)
             except Exception as e:
                 logger.warning(f"Error cargando logo: {e}")
@@ -1130,9 +1130,10 @@ class FacturaXMLtoPDF:
         pdf.set_font("Arial", '', 10)
         cliente_id = self.data.get('cliente_ID', '')
         label_id = "RUC:" if len(cliente_id) == 11 else ("DNI:" if len(cliente_id) == 8 else "CE:")
-        pdf.cell(10, 4, label_id, 0, 0)
+        label_w = pdf.get_string_width(label_id) + 2
+        pdf.cell(label_w, 4, label_id, 0, 0)
         pdf.set_font("Arial", '', 12)
-        pdf.cell(80, 4, cliente_id, 0, 1)
+        pdf.cell(self.page_width - label_w, 4, cliente_id, 0, 1)
         
         pdf.ln(1)
         pdf.set_font("Arial", '', 10)
@@ -1175,7 +1176,7 @@ class FacturaXMLtoPDF:
         if guia and guia not in ['', 'N/A', '-']:
             pdf.cell(35, 4, "GUÍA DE REMISIÓN: ", 0, 0)
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(45, 4, f"N° {guia}", 0, 1)
+            pdf.cell(37, 4, f"N° {guia}", 0, 1)
             pdf.ln(1)
         
         # Forma de pago
@@ -1199,7 +1200,7 @@ class FacturaXMLtoPDF:
         pdf.ln(2)
         
         # Tabla de items
-        anchuras = [8, 14, 10, 22, 10, 16]
+        anchuras = [7, 13, 9, 20, 9, 14]
         pdf.set_draw_color(255, 255, 255)
         pdf.set_font("Arial", '', 7)
         
@@ -1236,12 +1237,15 @@ class FacturaXMLtoPDF:
             pdf.cell(anchuras[2], 3, str(item.get('unidad', 'MTS'))[:4], 1, 0, 'C')
             x_descripcion = pdf.get_x()
 
+
+            pdf.set_font("Arial", '', 7)
             pdf.multi_cell(anchuras[3], 3, str(item.get('descripcion', '')), 0, 'C')
             y_final = pdf.get_y()
             
             altura_fila = y_final - y_start
 
             pdf.set_y(y_start)
+            pdf.set_font("Arial", '', 8)
             
             pdf.set_x(x_descripcion + anchuras[3]) 
             pdf.cell(anchuras[4], altura_fila, str(item.get('precio_unitario', ''))[:5], 1, 0, 'C')
@@ -1253,14 +1257,14 @@ class FacturaXMLtoPDF:
         
         # Totales
         pdf.set_font("Arial", '', 10)
-        pdf.cell(50, 5, "OP. GRAVADA:", 0, 0)
-        pdf.cell(30, 5, self.format_currency(self.data.get('total_venta', '0.00')), 0, 1, 'R')
-        pdf.cell(50, 5, "IGV:", 0, 0)
-        pdf.cell(30, 5, self.format_currency(self.data.get('total_igv', '0.00')), 0, 1, 'R')
+        pdf.cell(45, 5, "OP. GRAVADA:", 0, 0)
+        pdf.cell(27, 5, self.format_currency(self.data.get('total_venta', '0.00')), 0, 1, 'R')
+        pdf.cell(45, 5, "IGV:", 0, 0)
+        pdf.cell(27, 5, self.format_currency(self.data.get('total_igv', '0.00')), 0, 1, 'R')
         
         pdf.set_font("Arial", 'B', 14)
-        pdf.cell(50, 6, "TOTAL:", 0, 0)
-        pdf.cell(30, 8, self.format_currency(self.data.get('total_pagar', '0.00')), 0, 1, 'R')
+        pdf.cell(45, 6, "TOTAL:", 0, 0)
+        pdf.cell(27, 8, self.format_currency(self.data.get('total_pagar', '0.00')), 0, 1, 'R')
         
         pdf.ln(2)
         pdf.set_font("Arial", '', 10)
@@ -1275,7 +1279,9 @@ class FacturaXMLtoPDF:
         self._generate_qr(pdf)
         
         # Pie
-        pdf.cell(0, 4, "Representación impresa del comprobante de pago", 0, 1, 'C')
+        pdf.set_font("Arial", '', 9)
+
+        pdf.cell(0, 4, "Representación impresa del comprobante de pago", 0,1, 'C')
         pdf.set_font("Arial", 'I', 10)
         pdf.cell(0, 4, "¡Gracias por su compra!", 0, 1, 'C')
         
@@ -1642,9 +1648,9 @@ HTML_TEMPLATE = """
                     <div class="form-group">
                         <label for="formato">Formato de salida:</label>
                         <select name="formato" id="formato" onchange="checkFormato(); toggleAgencia()">
-                            <option value="ticket" {% if selected_formato=='ticket' %}selected{% endif %}>Ticket 80mm</option>
+                            <option value="ticket" {% if selected_formato=='ticket' %}selected{% endif %}>Ticket 72mm</option>
                             <option value="shipping_label" {% if selected_formato=='shipping_label' %}selected{% endif %}>Etiqueta de Envío 100mmx150mm</option>
-                            <option value="yapes" {% if selected_formato=='yapes' %}selected{% endif %}>Yapes Resumen 80mm</option>
+                            <option value="yapes" {% if selected_formato=='yapes' %}selected{% endif %}>Yapes Resumen 72mm</option>
                         </select>
                     </div>
                     

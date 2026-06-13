@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList, Search, X, Copy, Divide, Calendar, SlidersHorizontal, Printer, DollarSign, CheckCircle } from "lucide-react"
+import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList, Search, X, Copy, Divide, Calendar, SlidersHorizontal, Printer, DollarSign, CheckCircle, Loader2 } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
 import { CobrarPedidoModal } from "@/components/cobrar-pedido-modal"
 
@@ -133,6 +133,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
     const [xmlRecojeDireccion, setXmlRecojeDireccion] = useState("")
     const [pedidoCobrar, setPedidoCobrar] = useState<PedidoItem | null>(null)
     const [showXmlCloseConfirm, setShowXmlCloseConfirm] = useState(false)
+    const [buscandoDocRecibe, setBuscandoDocRecibe] = useState(false)
 
     const handleCloseXmlModal = () => {
         if (xmlFile) {
@@ -147,6 +148,28 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
         setXmlFile(null)
         setShowModalXml(null)
         setShowXmlCloseConfirm(false)
+    }
+
+    const buscarDocRecibe = async () => {
+        if (xmlRecojeDni.length < 8) return
+        setBuscandoDocRecibe(true)
+        try {
+            const res = await fetch("/api/buscar-documento", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tipo: "dni", numero: xmlRecojeDni })
+            })
+            const json = await res.json()
+            if (json.success) {
+                setXmlRecojeNombre(json.nombre || "")
+            } else {
+                alert("DNI no encontrado")
+            }
+        } catch {
+            alert("Error al buscar DNI")
+        } finally {
+            setBuscandoDocRecibe(false)
+        }
     }
 
     useEffect(() => {
@@ -1153,7 +1176,19 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
 
                                         {/* Notas */}
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Notas adicionales</label>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <label className="block text-sm font-medium text-slate-700">Notas adicionales</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setXmlNotas(prev => {
+                                                        const texto = "A DOMICILIO"
+                                                        return prev.includes(texto) ? prev : prev ? `${prev}, ${texto}` : texto
+                                                    })}
+                                                    className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                                >
+                                                    + A DOMICILIO
+                                                </button>
+                                            </div>
                                             <textarea
                                                 value={xmlNotas}
                                                 onChange={(e) => setXmlNotas(e.target.value)}
@@ -1186,13 +1221,30 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             </button>
                                             {xmlRecojeOtraPersona && (
                                                 <div className="mt-3 space-y-3">
-                                                    <input
-                                                        type="text"
-                                                        value={xmlRecojeDni}
-                                                        onChange={(e) => setXmlRecojeDni(e.target.value)}
-                                                        placeholder="DNI"
-                                                        className="w-full px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
-                                                    />
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            value={xmlRecojeDni}
+                                                            onChange={(e) => setXmlRecojeDni(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                                                            placeholder="DNI"
+                                                            maxLength={8}
+                                                            className="flex-1 px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={buscarDocRecibe}
+                                                            disabled={buscandoDocRecibe || xmlRecojeDni.length < 8}
+                                                            className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                                        >
+                                                            {buscandoDocRecibe ? (
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                            ) : (
+                                                                <Search className="h-3.5 w-3.5" />
+                                                            )}
+                                                            Buscar
+                                                        </button>
+                                                    </div>
                                                     <input
                                                         type="text"
                                                         value={xmlRecojeNombre}

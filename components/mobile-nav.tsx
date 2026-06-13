@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Home, Plus, X, FilePlus, ClipboardList, Pencil, FileText, File, Users, ShoppingCart, Heart } from "lucide-react"
+import { Home, Plus, X, FilePlus, ClipboardList, Pencil, FileText, File, Users, ShoppingCart, Heart, Printer } from "lucide-react"
 
 interface Props {
     userName: string
@@ -13,9 +13,10 @@ interface Props {
     onOpenBorradores?: () => void
     onOpenModificarPedido?: () => void
     onOpenYapes?: () => void
+    onOpenConvertirXml?: () => void
 }
 
-export function MobileNav({ userName, userRole, onOpenCrearPedido, onOpenBorradores, onOpenModificarPedido, onOpenYapes }: Props) {
+export function MobileNav({ userName, userRole, onOpenCrearPedido, onOpenBorradores, onOpenModificarPedido, onOpenYapes, onOpenConvertirXml }: Props) {
     const pathname = usePathname()
     const [showAcciones, setShowAcciones] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
@@ -36,7 +37,7 @@ export function MobileNav({ userName, userRole, onOpenCrearPedido, onOpenBorrado
         setTimeout(() => setShowAcciones(false), 300)
     }
 
-    const triggerAction = (action: "crear-pedido" | "borradores" | "modificar-pedido" | "yapes", localCallback?: () => void) => {
+    const triggerAction = (action: "crear-pedido" | "borradores" | "modificar-pedido" | "yapes" | "convertir-xml", localCallback?: () => void) => {
         setAnimating(false)
         setTimeout(() => {
             setShowAcciones(false)
@@ -57,7 +58,8 @@ export function MobileNav({ userName, userRole, onOpenCrearPedido, onOpenBorrado
         { icon: ClipboardList, label: "Atender Pedidos", desc: "Gestionar pedidos pendientes", gradient: "from-blue-100 to-blue-200", border: "border-blue-200/50", iconBg: "bg-blue-900/10", iconHover: "group-hover:bg-blue-900/20", circle: "bg-blue-300/30", text: "text-blue-800", subtext: "text-blue-600/70", iconColor: "text-blue-700", href: "/dashboard/pedidos-admin" },
         { icon: Pencil, label: "Modificar Pedido", desc: "Editar pedidos que creaste", gradient: "from-indigo-100 to-indigo-200", border: "border-indigo-200/50", iconBg: "bg-indigo-900/10", iconHover: "group-hover:bg-indigo-900/20", circle: "bg-indigo-300/30", text: "text-indigo-800", subtext: "text-indigo-600/70", iconColor: "text-indigo-700", action: () => triggerAction("modificar-pedido", onOpenModificarPedido) },
         { icon: FileText, label: "Ver Pedidos", desc: "Detalle completo de pedidos", gradient: "from-emerald-100 to-emerald-200", border: "border-emerald-200/50", iconBg: "bg-emerald-900/10", iconHover: "group-hover:bg-emerald-900/20", circle: "bg-emerald-300/30", text: "text-emerald-800", subtext: "text-emerald-600/70", iconColor: "text-emerald-700", href: "/dashboard/nota-pedido" },
-        { icon: FileText, label: "YAPES", desc: "Generar PDF de YAPES recibidos", gradient: "from-purple-600 to-purple-800", border: "border-purple-400/30", iconBg: "bg-white/20", iconHover: "group-hover:bg-white/30", circle: "bg-purple-300/20", text: "text-white", subtext: "text-purple-200", iconColor: "text-white", action: () => triggerAction("yapes", onOpenYapes) },
+        { icon: FileText, label: "YAPES", desc: "Generar PDF de YAPES", gradient: "from-purple-600 to-purple-800", border: "border-purple-400/30", iconBg: "bg-white/20", iconHover: "group-hover:bg-white/30", circle: "bg-purple-300/20", text: "text-white", subtext: "text-purple-200", iconColor: "text-white", action: () => triggerAction("yapes", onOpenYapes) },
+        { icon: Printer, label: "Convertir XML", desc: "Ticket o etiqueta de envío", gradient: "from-slate-600 to-slate-700", border: "border-slate-500/50", iconBg: "bg-white/15", iconHover: "group-hover:bg-white/25", circle: "bg-white/10", text: "text-white", subtext: "text-slate-300", iconColor: "text-white", action: () => triggerAction("convertir-xml", onOpenConvertirXml) },
         { icon: File, label: "Mis Borradores", desc: "Continuar pedidos guardados", gradient: "from-amber-100 to-amber-200", border: "border-amber-200/50", iconBg: "bg-amber-900/10", iconHover: "group-hover:bg-amber-900/20", circle: "bg-amber-300/30", text: "text-amber-800", subtext: "text-amber-600/70", iconColor: "text-amber-700", action: () => triggerAction("borradores", onOpenBorradores) },
         { icon: Users, label: "Gestion Clientes", desc: "Administrar clientes", gradient: "from-purple-100 to-purple-200", border: "border-purple-200/50", iconBg: "bg-purple-900/10", iconHover: "group-hover:bg-purple-900/20", circle: "bg-purple-300/30", text: "text-purple-800", subtext: "text-purple-600/70", iconColor: "text-purple-700", href: "/dashboard/clientes-pedido" },
     ] : [
