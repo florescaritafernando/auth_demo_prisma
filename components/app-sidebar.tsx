@@ -128,7 +128,7 @@ export function AppSidebar({ role = "cliente", userName = "Usuario", userImage =
                                                 <item.icon className="h-5 w-5" />
                                                 <span>{item.title}</span>
                                                 {item.isNotificaciones && notificacionesNoLeidas > 0 && (
-                                                    <span className="absolute -right-1 -top-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                                                    <span className="absolute right-8 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                                                         {notificacionesNoLeidas > 9 ? "9+" : notificacionesNoLeidas}
                                                     </span>
                                                 )}
