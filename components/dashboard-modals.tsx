@@ -522,7 +522,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                             <>
                                 <div className="p-5 space-y-5">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div>
+                                        <div className="overflow-hidden">
                                             <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha inicio</label>
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -530,11 +530,11 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaInicio}
                                                     onChange={(e) => setYapesFechaInicio(e.target.value)}
-                                                    className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full min-w-0 pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                 />
                                             </div>
                                         </div>
-                                        <div>
+                                        <div className="overflow-hidden">
                                             <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha fin</label>
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -542,7 +542,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaFin}
                                                     onChange={(e) => setYapesFechaFin(e.target.value)}
-                                                    className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full min-w-0 pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                 />
                                             </div>
                                         </div>
@@ -681,7 +681,10 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     <input
                                                         type="date"
                                                         value={nuevoYapeFecha}
-                                                        onChange={(e) => setNuevoYapeFecha(e.target.value)}
+                                                        onChange={(e) => {
+                                                            setNuevoYapeFecha(e.target.value)
+                                                            setYapeFechaEditando(false)
+                                                        }}
                                                         className="w-full pl-10 pr-3 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                                                         autoFocus
                                                     />
@@ -692,21 +695,11 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                 )}
                                             </div>
                                             <button
-                                                onClick={() => setYapeFechaEditando(!yapeFechaEditando)}
-                                                className={`p-2 rounded-lg transition-all shrink-0 ${
-                                                    yapeFechaEditando
-                                                        ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
-                                                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                                                }`}
-                                                title={yapeFechaEditando ? "Confirmar fecha" : "Editar fecha"}
+                                                onClick={() => setYapeFechaEditando(true)}
+                                                className="p-2 rounded-lg transition-all shrink-0 bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                                title="Editar fecha"
                                             >
-                                                {yapeFechaEditando ? (
-                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                ) : (
-                                                    <Pencil className="h-4 w-4" />
-                                                )}
+                                                <Pencil className="h-4 w-4" />
                                             </button>
                                         </div>
                                     </div>
