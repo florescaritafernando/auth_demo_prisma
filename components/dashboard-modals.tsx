@@ -530,7 +530,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaInicio}
                                                     onChange={(e) => setYapesFechaInicio(e.target.value)}
-                                                    className="w-full min-w-0 pl-10 pr-10 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                 />
                                             </div>
                                         </div>
@@ -542,7 +542,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaFin}
                                                     onChange={(e) => setYapesFechaFin(e.target.value)}
-                                                    className="w-full min-w-0 pl-10 pr-10 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                 />
                                             </div>
                                         </div>
@@ -673,6 +673,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                 )}
                                 <div className="p-5 space-y-5">
                                     <div>
+                                        <label className="block text-xs font-medium text-slate-500 mb-1">Fecha</label>
                                         <div className="flex items-center gap-2">
                                             <div className="relative flex-1">
                                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -681,11 +682,11 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                         type="date"
                                                         value={nuevoYapeFecha}
                                                         onChange={(e) => setNuevoYapeFecha(e.target.value)}
-                                                        className="w-full min-w-0 pl-10 pr-10 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                                                         autoFocus
                                                     />
                                                 ) : (
-                                                    <div className="w-full min-w-0 pl-10 pr-10 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 text-sm">
+                                                    <div className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 text-sm">
                                                         {new Date(nuevoYapeFecha + "T12:00:00").toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" })}
                                                     </div>
                                                 )}
