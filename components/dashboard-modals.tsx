@@ -522,7 +522,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                             <>
                                 <div className="p-5 space-y-5">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div className="overflow-hidden">
+                                        <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha inicio</label>
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -530,11 +530,11 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaInicio}
                                                     onChange={(e) => setYapesFechaInicio(e.target.value)}
-                                                    className="w-full min-w-0 pl-9 pr-3 py-2 rounded-lg text-sm max-sm:text-base border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 [&::-webkit-calendar-picker-indicator]:hidden"
+                                                    className="w-full min-w-0 pl-9 pr-3 py-2 rounded-lg text-sm max-sm:text-base border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="overflow-hidden">
+                                        <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha fin</label>
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -542,7 +542,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaFin}
                                                     onChange={(e) => setYapesFechaFin(e.target.value)}
-                                                    className="w-full min-w-0 pl-9 pr-3 py-2 rounded-lg text-sm max-sm:text-base border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 [&::-webkit-calendar-picker-indicator]:hidden"
+                                                    className="w-full min-w-0 pl-9 pr-3 py-2 rounded-lg text-sm max-sm:text-base border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                 />
                                             </div>
                                         </div>
@@ -686,7 +686,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                             setYapeFechaEditando(false)
                                                         }}
                                                         onBlur={() => setYapeFechaEditando(false)}
-                                                        className="w-full pl-9 pr-3 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm max-sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-400 [&::-webkit-calendar-picker-indicator]:hidden"
+                                                        className="w-full pl-9 pr-3 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm max-sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
                                                         autoFocus
                                                     />
                                                 ) : (
