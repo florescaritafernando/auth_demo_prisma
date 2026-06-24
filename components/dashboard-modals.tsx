@@ -530,7 +530,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaInicio}
                                                     onChange={(e) => setYapesFechaInicio(e.target.value)}
-                                                    className="w-full min-w-0 pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full min-w-0 pl-9 pr-3 py-2 rounded-lg text-sm max-sm:text-base border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 [&::-webkit-calendar-picker-indicator]:hidden"
                                                 />
                                             </div>
                                         </div>
@@ -542,7 +542,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaFin}
                                                     onChange={(e) => setYapesFechaFin(e.target.value)}
-                                                    className="w-full min-w-0 pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full min-w-0 pl-9 pr-3 py-2 rounded-lg text-sm max-sm:text-base border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 [&::-webkit-calendar-picker-indicator]:hidden"
                                                 />
                                             </div>
                                         </div>
@@ -685,18 +685,19 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                             setNuevoYapeFecha(e.target.value)
                                                             setYapeFechaEditando(false)
                                                         }}
-                                                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                                        onBlur={() => setYapeFechaEditando(false)}
+                                                        className="w-full pl-9 pr-3 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm max-sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-400 [&::-webkit-calendar-picker-indicator]:hidden"
                                                         autoFocus
                                                     />
                                                 ) : (
-                                                    <div className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 text-sm">
+                                                    <div className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 text-sm max-sm:text-base">
                                                         {new Date(nuevoYapeFecha + "T12:00:00").toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" })}
                                                     </div>
                                                 )}
                                             </div>
                                             <button
                                                 onClick={() => setYapeFechaEditando(true)}
-                                                className="p-2 rounded-lg transition-all shrink-0 bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                                className="p-2 max-sm:p-3 max-sm:h-11 max-sm:w-11 rounded-lg transition-all shrink-0 bg-slate-100 text-slate-500 hover:bg-slate-200"
                                                 title="Editar fecha"
                                             >
                                                 <Pencil className="h-4 w-4" />
