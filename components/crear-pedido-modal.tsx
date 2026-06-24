@@ -2002,9 +2002,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                         <div className="flex flex-col gap-2.5">
                             <Button
                                 onClick={() => {
-                                    setSuccessOverlay({ show: false, numeroOrden: "", action: "creado" })
-                                    onClose()
-                                    router.push("/dashboard/nota-pedido")
+                                    window.location.href = "/dashboard/nota-pedido"
                                 }}
                                 className="w-full h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transition-all duration-200"
                             >
