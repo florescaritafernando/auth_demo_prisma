@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { createPortal } from "react-dom"
 import { 
     X, Search, Plus, Trash2, FileText, Printer, Send, Save, 
@@ -68,6 +69,7 @@ const AGENCIAS = [
 ]
 
 export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borradorRestaurarId }: Props) {
+    const router = useRouter()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
@@ -143,6 +145,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const [pagoConfirmado, setPagoConfirmado] = useState(false)
     const [pagoParcialTexto, setPagoParcialTexto] = useState("")
     const [guardandoPago, setGuardandoPago] = useState(false)
+    const [successOverlay, setSuccessOverlay] = useState<{ show: boolean; numeroOrden: string; action: "creado" | "actualizado" }>({ show: false, numeroOrden: "", action: "creado" })
+    const isSubmittingRef = useRef(false)
 
     useEffect(() => {
         setIsMounted(true)
@@ -621,6 +625,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     }
 
     const crearPedido = async () => {
+        if (isSubmittingRef.current) return
         if (!cliente.nombre || !cliente.numeroDoc || items.length === 0) {
             setToastMessage({ show: true, message: "Complete todos los campos requeridos", type: "error" })
             return
@@ -638,6 +643,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             return
         }
 
+        isSubmittingRef.current = true
         setLoading(true)
         try {
             if (pedidoEditar) {
@@ -682,11 +688,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                 })
                 const json = await res.json()
                 if (json.success) {
-                    setToastMessage({ show: true, message: `Pedido ${pedidoEditar.numeroOrden} actualizado`, type: "success" })
-                    setTimeout(() => {
-                        onClose()
-                        resetForm()
-                    }, 1500)
+                    setSuccessOverlay({ show: true, numeroOrden: pedidoEditar.numeroOrden, action: "actualizado" })
                 } else {
                     setToastMessage({ show: true, message: json.error || "Error al actualizar pedido", type: "error" })
                 }
@@ -735,12 +737,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             })
             const json = await res.json()
             if (json.success) {
-                setToastMessage({ show: true, message: `Pedido ${json.pedido.numeroOrden} creado`, type: "success" })
                 await limpiarBorrador()
-                setTimeout(() => {
-                    onClose()
-                    resetForm()
-                }, 1500)
+                setSuccessOverlay({ show: true, numeroOrden: json.pedido.numeroOrden, action: "creado" })
             } else {
                 setToastMessage({ show: true, message: json.error || "Error al crear pedido", type: "error" })
             }
@@ -749,6 +747,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             console.error("Error:", e)
             setToastMessage({ show: true, message: "Error al crear pedido", type: "error" })
         } finally {
+            isSubmittingRef.current = false
             setLoading(false)
         }
     }
@@ -1982,6 +1981,45 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 px-4 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <Plus className="h-4 w-4 mr-1" /> Agregar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success overlay */}
+            {successOverlay.show && (
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center animate-in zoom-in-95 duration-300">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                            <Check className="h-8 w-8 text-green-600" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-1">
+                            Pedido {successOverlay.action === "creado" ? "creado" : "actualizado"} exitosamente
+                        </h3>
+                        <p className="text-2xl font-black text-blue-600 mb-6">{successOverlay.numeroOrden}</p>
+                        <div className="flex flex-col gap-2.5">
+                            <Button
+                                onClick={() => {
+                                    setSuccessOverlay({ show: false, numeroOrden: "", action: "creado" })
+                                    onClose()
+                                    router.push("/dashboard/nota-pedido")
+                                }}
+                                className="w-full h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transition-all duration-200"
+                            >
+                                <FileText className="h-4 w-4 mr-2" />
+                                Ver pedido
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    setSuccessOverlay({ show: false, numeroOrden: "", action: "creado" })
+                                    resetForm()
+                                    setStep(1)
+                                }}
+                                className="w-full h-11 bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl transition-all duration-200"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Crear otro pedido
                             </Button>
                         </div>
                     </div>

@@ -530,7 +530,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaInicio}
                                                     onChange={(e) => setYapesFechaInicio(e.target.value)}
-                                                    className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full pl-10 pr-10 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                 />
                                             </div>
                                         </div>
@@ -542,7 +542,7 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                     type="date"
                                                     value={yapesFechaFin}
                                                     onChange={(e) => setYapesFechaFin(e.target.value)}
-                                                    className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                                    className="w-full pl-10 pr-10 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                 />
                                             </div>
                                         </div>
@@ -681,11 +681,11 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                         type="date"
                                                         value={nuevoYapeFecha}
                                                         onChange={(e) => setNuevoYapeFecha(e.target.value)}
-                                                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                                        className="w-full pl-10 pr-10 py-2 rounded-lg border border-purple-400 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                                                         autoFocus
                                                     />
                                                 ) : (
-                                                    <div className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 text-sm">
+                                                    <div className="w-full pl-10 pr-10 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 text-sm">
                                                         {new Date(nuevoYapeFecha + "T12:00:00").toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" })}
                                                     </div>
                                                 )}

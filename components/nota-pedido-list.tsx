@@ -454,48 +454,57 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             </div>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                                                 {pedido.pedidoEmpleadoInfo.empresa && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
-                                                        <div>
-                                                            <p className="text-slate-500 text-xs">Empresa</p>
-                                                            <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.empresa}</p>
+                                                    <div className="bg-slate-800 rounded-xl p-3">
+                                                        <p className="text-slate-400 text-xs mb-1">Empresa</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <Building2 className="h-4 w-4 text-blue-400 shrink-0" />
+                                                            <p className="font-semibold text-white truncate">{pedido.pedidoEmpleadoInfo.empresa}</p>
                                                         </div>
                                                     </div>
                                                 )}
                                                 {pedido.pedidoEmpleadoInfo.metodoPago && (
-                                                    <div className="flex items-center gap-1.5 min-w-0">
-                                                        <CreditCard className="h-4 w-4 text-slate-400 shrink-0" />
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="text-slate-500 text-xs">Método de Pago</p>
-                                                            <p className="font-medium text-slate-800 truncate">{pedido.pedidoEmpleadoInfo.metodoPago}</p>
+                                                    <div className="bg-slate-800 rounded-xl p-3">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <p className="text-slate-400 text-xs">Método de Pago</p>
+                                                            <button
+                                                                onClick={() => copiarAlPortapapeles(pedido.pedidoEmpleadoInfo?.metodoPago || "", "metodoPago")}
+                                                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                    copiedField === "metodoPago"
+                                                                        ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                        : "text-green-400 hover:text-green-300 border border-transparent"
+                                                                }`}
+                                                            >
+                                                                {copiedField === "metodoPago" ? (
+                                                                    "Copiado"
+                                                                ) : (
+                                                                    <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
+                                                                )}
+                                                            </button>
                                                         </div>
-                                                        <button
-                                                            onClick={() => copiarAlPortapapeles(pedido.pedidoEmpleadoInfo?.metodoPago || "", "metodoPago")}
-                                                            className="p-1.5 rounded hover:bg-green-50 transition-colors shrink-0 text-green-600 flex items-center gap-1"
-                                                            title="Copiar método de pago"
-                                                        >
-                                                            {copiedField === "metodoPago" ? (
-                                                                <span className="text-xs text-green-600 font-medium whitespace-nowrap">Copiado</span>
-                                                            ) : (
-                                                                <><Copy className="h-3.5 w-3.5 text-green-600 shrink-0" /><span className="text-xs text-green-600 shrink-0 hidden sm:inline">Copiar</span></>
-                                                            )}
-                                                        </button>
+                                                        <div className="flex items-center gap-2">
+                                                            <CreditCard className="h-4 w-4 text-emerald-400 shrink-0" />
+                                                            <p className="font-semibold text-white truncate">{pedido.pedidoEmpleadoInfo.metodoPago}</p>
+                                                        </div>
                                                     </div>
                                                 )}
-                                                <div className="flex items-center gap-2">
-                                                    <FileCheck className="h-4 w-4 text-slate-400 shrink-0" />
-                                                    <div>
-                                                        <p className="text-slate-500 text-xs">Guía de remisión</p>
-                                                        <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.guiaRemision ? "Sí" : "No"}</p>
+                                                {pedido.pedidoEmpleadoInfo.guiaRemision && (
+                                                    <div className="bg-slate-800 rounded-xl p-3">
+                                                        <p className="text-slate-400 text-xs mb-1">Guía de remisión</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <FileCheck className="h-4 w-4 text-amber-400 shrink-0" />
+                                                            <p className="font-semibold text-white">Sí</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Printer className="h-4 w-4 text-slate-400 shrink-0" />
-                                                    <div>
-                                                        <p className="text-slate-500 text-xs">Envío comprobante</p>
-                                                        <p className="font-medium text-slate-800">{pedido.pedidoEmpleadoInfo.envioComprobante || "No imprimir"}</p>
+                                                )}
+                                                {pedido.pedidoEmpleadoInfo.envioComprobante && (
+                                                    <div className="bg-slate-800 rounded-xl p-3">
+                                                        <p className="text-slate-400 text-xs mb-1">Envío comprobante</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <Printer className="h-4 w-4 text-purple-400 shrink-0" />
+                                                            <p className="font-semibold text-white truncate">{pedido.pedidoEmpleadoInfo.envioComprobante}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -516,13 +525,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     <span className="font-medium text-slate-800 flex-1">{c.nombre?.toUpperCase()}</span>
                                                     <button
                                                         onClick={() => copiarAlPortapapeles(c.nombre || "", "nombre")}
-                                                        className="p-1.5 rounded hover:bg-green-50 transition-colors text-green-600 flex items-center gap-1"
+                                                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                            copiedField === "nombre"
+                                                                ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                : "text-green-600 hover:text-green-700 border border-transparent"
+                                                        }`}
                                                         title="Copiar nombre"
                                                     >
                                                         {copiedField === "nombre" ? (
-                                                            <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                            "Copiado"
                                                         ) : (
-                                                            <><Copy className="h-3.5 w-3.5 text-green-600" /><span className="text-xs text-green-600 hidden sm:inline">Copiar</span></>
+                                                            <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                         )}
                                                     </button>
                                                 </div>
@@ -532,13 +545,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     <span className="font-medium text-slate-800 flex-1">{c.numeroDoc?.toUpperCase()}</span>
                                                     <button
                                                         onClick={() => copiarAlPortapapeles(c.numeroDoc, "ruc")}
-                                                        className="p-1.5 rounded hover:bg-green-50 transition-colors text-green-600 flex items-center gap-1"
+                                                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                            copiedField === "ruc"
+                                                                ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                : "text-green-600 hover:text-green-700 border border-transparent"
+                                                        }`}
                                                         title="Copiar RUC/DNI"
                                                     >
                                                         {copiedField === "ruc" ? (
-                                                            <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                            "Copiado"
                                                         ) : (
-                                                            <><Copy className="h-3.5 w-3.5 text-green-600" /><span className="text-xs text-green-600 hidden sm:inline">Copiar</span></>
+                                                            <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                         )}
                                                     </button>
                                                 </div>
@@ -549,13 +566,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         <span className="font-medium text-slate-800 flex-1">{c.razonSocial?.toUpperCase()}</span>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(c.razonSocial || "", "razonSocial")}
-                                                            className="p-1.5 rounded hover:bg-green-50 transition-colors text-green-600 flex items-center gap-1"
+                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                copiedField === "razonSocial"
+                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
+                                                            }`}
                                                             title="Copiar razón social"
                                                         >
                                                             {copiedField === "razonSocial" ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                "Copiado"
                                                             ) : (
-                                                                <><Copy className="h-3.5 w-3.5 text-green-600" /><span className="text-xs text-green-600 hidden sm:inline">Copiar</span></>
+                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                             )}
                                                         </button>
                                                     </div>
@@ -572,13 +593,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         </span>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(c.direccion || pedido.direccion || "", "direccion")}
-                                                            className="p-1.5 rounded hover:bg-green-50 transition-colors text-green-600 flex items-center gap-1"
+                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                copiedField === "direccion"
+                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
+                                                            }`}
                                                             title="Copiar dirección"
                                                         >
                                                             {copiedField === "direccion" ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                "Copiado"
                                                             ) : (
-                                                                <><Copy className="h-3.5 w-3.5 text-green-600" /><span className="text-xs text-green-600 hidden sm:inline">Copiar</span></>
+                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                             )}
                                                         </button>
                                                     </div>
@@ -591,13 +616,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                             <span className="font-medium text-slate-800 flex-1 whitespace-nowrap">{c.telefono}</span>
                                                             <button
                                                                 onClick={() => copiarAlPortapapeles(c.telefono || "", "telefono")}
-                                                                className="p-1.5 rounded hover:bg-green-50 transition-colors shrink-0 text-green-600 flex items-center gap-1"
+                                                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                    copiedField === "telefono"
+                                                                        ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                        : "text-green-600 hover:text-green-700 border border-transparent"
+                                                                }`}
                                                                 title="Copiar teléfono"
                                                             >
                                                                 {copiedField === "telefono" ? (
-                                                                    <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                    "Copiado"
                                                                 ) : (
-                                                                    <><Copy className="h-3.5 w-3.5 text-green-600" /><span className="text-xs text-green-600 hidden sm:inline">Copiar</span></>
+                                                                    <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                                 )}
                                                             </button>
                                                         </div>
@@ -618,13 +647,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         <span className="font-medium text-slate-800 flex-1">{textoAgencia}</span>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(textoAgencia, "agencia")}
-                                                            className="p-1.5 rounded hover:bg-green-50 transition-colors text-green-600 flex items-center gap-1"
+                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                copiedField === "agencia"
+                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
+                                                            }`}
                                                             title="Copiar agencia"
                                                         >
                                                             {copiedField === "agencia" ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                "Copiado"
                                                             ) : (
-                                                                <><Copy className="h-3.5 w-3.5 text-green-600" /><span className="text-xs text-green-600 hidden sm:inline">Copiar</span></>
+                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                             )}
                                                         </button>
                                                     </div>
@@ -650,13 +683,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         <span className="text-slate-900 uppercase flex-1">{pedido.nombreRecibe}</span>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(pedido.nombreRecibe || "", "nombreRecibe")}
-                                                            className="p-1.5 rounded hover:bg-green-50 transition-colors text-green-600 flex items-center gap-1"
+                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                copiedField === "nombreRecibe"
+                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
+                                                            }`}
                                                             title="Copiar nombre"
                                                         >
                                                             {copiedField === "nombreRecibe" ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                "Copiado"
                                                             ) : (
-                                                                <><Copy className="h-3.5 w-3.5 text-green-600" /><span className="text-xs text-green-600 hidden sm:inline">Copiar</span></>
+                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                             )}
                                                         </button>
                                                     </div>
@@ -668,13 +705,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         <span className="text-slate-800 flex-1">{pedido.dniRecibe}</span>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(pedido.dniRecibe || "", "dniRecibe")}
-                                                            className="p-1.5 rounded hover:bg-green-50 transition-colors text-green-600 flex items-center gap-1"
+                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                copiedField === "dniRecibe"
+                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
+                                                            }`}
                                                             title="Copiar DNI"
                                                         >
                                                             {copiedField === "dniRecibe" ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                "Copiado"
                                                             ) : (
-                                                                <><Copy className="h-3.5 w-3.5 text-green-600" /><span className="text-xs text-green-600 hidden sm:inline">Copiar</span></>
+                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                             )}
                                                         </button>
                                                     </div>
@@ -686,13 +727,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         <span className="text-slate-800 flex-1">{pedido.celularRecibe}</span>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(pedido.celularRecibe || "", "celularRecibe")}
-                                                            className="p-1.5 rounded hover:bg-green-50 transition-colors text-green-600 flex items-center gap-1"
+                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                copiedField === "celularRecibe"
+                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
+                                                            }`}
                                                             title="Copiar celular"
                                                         >
                                                             {copiedField === "celularRecibe" ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                "Copiado"
                                                             ) : (
-                                                                <><Copy className="h-3.5 w-3.5 text-green-600" /><span className="text-xs text-green-600 hidden sm:inline">Copiar</span></>
+                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                             )}
                                                         </button>
                                                     </div>
@@ -859,13 +904,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         <span className="text-xs text-slate-400">mts</span>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(resultado.toFixed(decimales), `dividir_${valorDivisor}`)}
-                                                            className="p-1.5 rounded hover:bg-green-50 transition-colors flex items-center gap-1 text-green-600 hover:text-green-700"
+                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                copiedField === `dividir_${valorDivisor}`
+                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
+                                                            }`}
                                                             title="Copiar resultado"
                                                         >
                                                             {copiedField === `dividir_${valorDivisor}` ? (
-                                                                <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                                                "Copiado"
                                                             ) : (
-                                                                <><Copy className="h-3.5 w-3.5" /><span className="text-xs hidden sm:inline">Copiar</span></>
+                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
                                                             )}
                                                         </button>
                                                     </div>
@@ -934,10 +983,14 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                     <span className="text-sm font-semibold text-indigo-700">{metros.toFixed(Number(metros.toFixed(2)) === metros ? 2 : 4)} mts</span>
                                                                     <button
                                                                         onClick={() => copiarAlPortapapeles(metros.toFixed(Number(metros.toFixed(2)) === metros ? 2 : 4), `parte_mts_${idx}`)}
-                                                                        className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors flex items-center gap-1"
+                                                                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                            copiedField === `parte_mts_${idx}`
+                                                                                ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                                : "text-green-600 hover:text-green-700 border border-transparent"
+                                                                        }`}
                                                                         title="Copiar metros"
                                                                     >
-                                                                        {copiedField === `parte_mts_${idx}` ? <span className="text-xs text-green-600 font-medium">Copiado</span> : <><Copy className="h-3.5 w-3.5" /><span className="text-xs hidden sm:inline">Copiar</span></>}
+                                                                        {copiedField === `parte_mts_${idx}` ? "Copiado" : <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>}
                                                                     </button>
                                                                     <button
                                                                         onClick={() => setPartesMontos(partesMontos.filter((_, i) => i !== idx))}
@@ -1024,7 +1077,11 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                 const texto = partesMontos.map(m => { const v = Number(m) / precioActual; return `S/ ${Number(m).toFixed(2)} (${precioActual > 0 ? v.toFixed(Number(v.toFixed(2)) === v ? 2 : 4) : "—"} mts)` }).join(" + ") + ` = S/ ${Number(pedido.total).toFixed(2)}`
                                                                 copiarAlPortapapeles(texto, "partes_total")
                                                             }}
-                                                            className="flex-1 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-green-600 hover:bg-green-50 transition-colors"
+                                                            className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border ${
+                                                                copiedField === "partes_total"
+                                                                    ? "text-blue-400 border-blue-500/50 bg-blue-500/10"
+                                                                    : "text-green-600 hover:bg-green-50 border-slate-200"
+                                                            }`}
                                                         >
                                                             {copiedField === "partes_total" ? "Copiado" : "Copiar lista"}
                                                         </button>
