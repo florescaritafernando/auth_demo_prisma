@@ -867,20 +867,21 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={handleClose} />
             <div className="relative bg-white w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-100 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
+                <div className="bg-slate-700 border-b border-slate-600 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step === 1 ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"}`}>1</div>
-                            <div className="w-8 h-px bg-slate-200" />
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step === 2 ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"}`}>2</div>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step === 1 ? "bg-slate-900 text-white" : "bg-slate-600 text-slate-200"}`}>1</div>
+                            <div className="w-8 h-px bg-slate-500" />
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step === 2 ? "bg-slate-900 text-white" : "bg-slate-600 text-slate-200"}`}>2</div>
                         </div>
                         <div>
-                            <h2 className="text-sm font-semibold text-slate-900">{pedidoEditar ? "Editar Pedido" : "Crear Pedido"}</h2>
-                            <p className="text-xs text-slate-400">{pedidoEditar ? (pedidoEditar.numeroOrden || "") : step === 1 ? "Datos del cliente" : "Artículos y total"}</p>
+                            <h2 className="text-sm font-semibold text-white">{pedidoEditar ? "Editar Pedido" : "Crear Pedido"}</h2>
+                            <p className="text-xs text-slate-300">{pedidoEditar ? (pedidoEditar.numeroOrden || "") : step === 1 ? "Datos del cliente" : "Artículos y total"}</p>
                         </div>
                     </div>
-                    <button onClick={handleClose} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                        <X className="h-4 w-4 text-slate-400" />
+                    <button onClick={handleClose} className="flex items-center gap-1.5 px-3 py-1.5 border-2 border-red-600 bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm">
+                        <X className="h-5 w-5 text-amber-400" strokeWidth={3} />
+                        <span className="text-sm font-bold text-amber-400">Cerrar</span>
                     </button>
                 </div>
 
@@ -1623,12 +1624,12 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                 </div>
 
                 {/* Sticky Footer */}
-                <div className="border-t border-slate-100 bg-white px-4 sm:px-6 py-3 pb-4 sm:pb-3 shrink-0">
+                <div className="border-t border-slate-600 bg-slate-700 px-4 sm:px-6 py-3 pb-4 sm:pb-3 shrink-0">
                     <div className="flex items-center justify-between gap-2">
                         <Button 
                             variant="outline" 
                             onClick={() => step === 1 ? handleClose() : setStep(1)} 
-                            className="text-slate-600 border-slate-200 hover:bg-slate-50 text-sm h-9 px-3"
+                            className="text-slate-200 border-slate-500 hover:bg-slate-600 text-sm h-9 px-3"
                         >
                             {step === 1 ? (
                                 "Cancelar"
@@ -1641,7 +1642,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                 <Button 
                                     onClick={crearPedido} 
                                     disabled={loading || items.length === 0} 
-                                    className="bg-slate-900 hover:bg-slate-800 text-white text-sm h-9 px-4 font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm h-9 px-4 font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     {loading ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -1656,7 +1657,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                         {step === 1 && (
                             <Button
                                 onClick={() => setStep(2)}
-                                className="bg-slate-900 hover:bg-slate-800 text-white text-sm h-9 px-4 font-medium transition-all"
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm h-9 px-4 font-medium transition-all"
                             >
                                 Siguiente <ArrowRight className="h-4 w-4 ml-1" />
                             </Button>
