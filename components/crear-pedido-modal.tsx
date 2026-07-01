@@ -347,23 +347,26 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             })
             const json = await res.json()
             if (json.success) {
+                    const dept = DEPARTAMENTOS.find(d => d.nombre.toLowerCase() === (json.departamento || "").toLowerCase())
+                    const prov = dept?.provincias.find(p => p.nombre.toLowerCase() === (json.provincia || "").toLowerCase())
+                    const distNormalized = prov?.distritos.find(d => d.toLowerCase() === (json.distrito || "").toLowerCase())
                 if (cliente.tipoDoc === "ruc") {
                     setCliente({
                         ...cliente,
                         nombre: json.razonSocial || "",
                         direccion: json.direccion || "",
-                        departamento: json.departamento || "",
-                        provincia: json.provincia || "",
-                        distrito: json.distrito || ""
+                        departamento: dept?.nombre || json.departamento || "",
+                        provincia: prov?.nombre || json.provincia || "",
+                        distrito: distNormalized || json.distrito || ""
                     })
                 } else {
                     setCliente({
                         ...cliente,
                         nombre: json.nombre || "",
                         direccion: json.direccion || "",
-                        departamento: json.departamento || "",
-                        provincia: json.provincia || "",
-                        distrito: json.distrito || ""
+                        departamento: dept?.nombre || json.departamento || "",
+                        provincia: prov?.nombre || json.provincia || "",
+                        distrito: distNormalized || json.distrito || ""
                     })
                 }
             } else {
