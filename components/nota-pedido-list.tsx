@@ -14,7 +14,27 @@ const AGENCIA_LABELS: Record<string, string> = {
     raza: "RAZA",
     rana_express: "RANA EXPRESS",
     carhuamayo: "CARHUAMAYO",
-    otros: "OTROS"
+    altiplano: "ALTIPLANO",
+    libertadores: "LIBERTADORES",
+    expreso_trujillo: "EXPRESO TRUJILLO",
+    otros: "OTRA AGENCIA"
+
+}
+
+const AGENCIA_RUC: Record<string, string> = {
+    antezana: "20219801531",
+    shalom: "20378157138",
+    flores: "20119407738",
+    marvisur: "20498189637",
+    grael: "20508074281",
+    raza: "20529930080",
+    rana_express: "20603506147",
+    carhuamayo: "20566548101",
+    altiplano: "20555954884", 
+    libertadores: "20135591042",
+    expreso_trujillo: "20507780882",
+
+
 }
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; colorTexto: string }> = {
@@ -581,33 +601,44 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         </button>
                                                     </div>
                                                 )}
-                                                {(c.direccion || pedido.direccion) && (
-                                                    <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
-                                                        <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                                                        <span className="text-slate-500 text-xs w-16 shrink-0">Dirección:</span>
-                                                        <span className="font-medium text-slate-800 flex-1">
-                                                            {(c.direccion || pedido.direccion)?.toUpperCase()}
-                                                            {(c.departamento || pedido.departamento) && (
-                                                                <span className="text-xs text-slate-400 ml-1">({(c.departamento || pedido.departamento)?.toUpperCase()} / {(c.provincia || pedido.provincia)?.toUpperCase()} / {(c.distrito || pedido.distrito)?.toUpperCase()})</span>
-                                                            )}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => copiarAlPortapapeles(c.direccion || pedido.direccion || "", "direccion")}
-                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                                                                copiedField === "direccion"
-                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
-                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
-                                                            }`}
-                                                            title="Copiar dirección"
-                                                        >
-                                                            {copiedField === "direccion" ? (
-                                                                "Copiado"
-                                                            ) : (
-                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
-                                                            )}
-                                                        </button>
+                                                {(c.direccion || pedido.direccion) && (() => {
+                                                    const deptUbicacion = (c.departamento || pedido.departamento || "").toUpperCase()
+                                                    const provUbicacion = (c.provincia || pedido.provincia || "").toUpperCase()
+                                                    const distUbicacion = (c.distrito || pedido.distrito || "").toUpperCase()
+                                                    const tieneUbicacion = deptUbicacion || provUbicacion || distUbicacion
+                                                    const textoUbicacion = [deptUbicacion && `DEP: ${deptUbicacion}`, provUbicacion && `PRO: ${provUbicacion}`, distUbicacion && `DIS: ${distUbicacion}`].filter(Boolean).join(" / ")
+                                                    return (
+                                                    <div className="bg-slate-50 rounded-lg p-2.5 space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+                                                            <span className="text-slate-500 text-xs w-16 shrink-0">Dirección:</span>
+                                                            <span className="font-medium text-slate-800 flex-1 uppercase">{(c.direccion || pedido.direccion)?.toUpperCase()}</span>
+                                                            <button
+                                                                onClick={() => copiarAlPortapapeles(c.direccion || pedido.direccion || "", "direccion")}
+                                                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                    copiedField === "direccion"
+                                                                        ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                        : "text-green-600 hover:text-green-700 border border-transparent"
+                                                                }`}
+                                                                title="Copiar dirección"
+                                                            >
+                                                                {copiedField === "direccion" ? (
+                                                                    "Copiado"
+                                                                ) : (
+                                                                    <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                        {tieneUbicacion && (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-4 shrink-0" />
+                                                                <span className="text-slate-500 text-xs w-16 shrink-0">Ubicacion:</span>
+                                                                <span className="font-medium text-slate-800 flex-1 uppercase">{textoUbicacion}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
+                                                    )
+                                                })()}
                                                 {c.telefono && (
                                                     <div className="bg-slate-50 rounded-lg p-2.5">
                                                         <div className="flex items-center gap-2">
@@ -641,25 +672,56 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 {c.agencia && (() => {
                                                     const textoAgencia = (c.agencia === "otros" ? (c.agenciaOtro || "OTROS") : (AGENCIA_LABELS[c.agencia] || c.agencia)).toUpperCase()
                                                     return (
-                                                    <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
-                                                        <Truck className="h-4 w-4 text-slate-400 shrink-0" />
-                                                        <span className="text-slate-500 text-xs w-16 shrink-0">Agencia:</span>
-                                                        <span className="font-medium text-slate-800 flex-1">{textoAgencia}</span>
-                                                        <button
-                                                            onClick={() => copiarAlPortapapeles(textoAgencia, "agencia")}
-                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                                                                copiedField === "agencia"
-                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
-                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
-                                                            }`}
-                                                            title="Copiar agencia"
-                                                        >
-                                                            {copiedField === "agencia" ? (
-                                                                "Copiado"
-                                                            ) : (
-                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
-                                                            )}
-                                                        </button>
+                                                    <div className="bg-slate-50 rounded-lg p-2.5 space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <Truck className="h-4 w-4 text-slate-400 shrink-0" />
+                                                            <span className="text-slate-500 text-xs w-16 shrink-0">Agencia:</span>
+                                                            <span className="font-medium text-slate-800 flex-1 uppercase">{textoAgencia}</span>
+                                                            <button
+                                                                onClick={() => copiarAlPortapapeles(textoAgencia, "agencia")}
+                                                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                    copiedField === "agencia"
+                                                                        ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                        : "text-green-600 hover:text-green-700 border border-transparent"
+                                                                }`}
+                                                                title="Copiar agencia"
+                                                            >
+                                                                {copiedField === "agencia" ? (
+                                                                    "Copiado"
+                                                                ) : (
+                                                                    <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                        {c.agencia && c.agencia !== "otros" && AGENCIA_RUC[c.agencia] && (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-4 shrink-0" />
+                                                                <span className="text-slate-500 text-xs w-16 shrink-0">RUC:</span>
+                                                                <span className="font-medium text-slate-800 flex-1 uppercase">{AGENCIA_RUC[c.agencia!]}</span>
+                                                                <button
+                                                                    onClick={() => copiarAlPortapapeles(AGENCIA_RUC[c.agencia!], "rucAgencia")}
+                                                                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                                        copiedField === "rucAgencia"
+                                                                            ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                                            : "text-green-600 hover:text-green-700 border border-transparent"
+                                                                    }`}
+                                                                    title="Copiar RUC"
+                                                                >
+                                                                    {copiedField === "rucAgencia" ? (
+                                                                        "Copiado"
+                                                                    ) : (
+                                                                        <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        {c.agencia === "otros" && (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-4 shrink-0" />
+                                                                <span className="text-slate-500 text-xs w-16 shrink-0">RUC:</span>
+                                                                <span className="text-xs text-amber-600 font-medium">VER RUC EN GOOGLE</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     )
                                                 })()}
@@ -921,6 +983,35 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 </div>
                                             )
                                         })()}
+                                    </div>
+
+                                    {/* Peso estimado */}
+                                    <div className="bg-slate-50 rounded-lg p-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Package className="h-4 w-4 text-slate-500" />
+                                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">PESO (KGM)</p>
+                                        </div>
+                                        <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-slate-200">
+                                            <div className="flex items-baseline gap-1.5">
+                                                <span className="text-lg font-bold text-slate-900">{Number(pedido.total / 200).toFixed(2)}</span>
+                                                <span className="text-xs text-slate-400">KGM</span>
+                                            </div>
+                                            <button
+                                                onClick={() => copiarAlPortapapeles(Number(pedido.total / 200).toFixed(2), "peso")}
+                                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                                                    copiedField === "peso"
+                                                        ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
+                                                        : "text-green-600 hover:text-green-700 border border-transparent"
+                                                }`}
+                                                title="Copiar peso"
+                                            >
+                                                {copiedField === "peso" ? (
+                                                    "Copiado"
+                                                ) : (
+                                                    <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {/* Dividir pedido en partes */}

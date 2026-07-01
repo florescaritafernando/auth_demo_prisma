@@ -59,7 +59,7 @@ export function DashboardModals({ userName, userRole }: Props) {
     const [showXmlCloseConfirm, setShowXmlCloseConfirm] = useState(false)
     const [xmlMetadata, setXmlMetadata] = useState<{ nombre: string; documento: string; total: number; tipo: string; numero: string } | null>(null)
     const [buscandoDocRecibe, setBuscandoDocRecibe] = useState(false)
-    const AGENCIA_OPTIONS = ["ANTEZANA", "SHALOM", "FLORES", "MARVISUR", "GRAEL", "RAZA", "RANA EXPRESS", "CARHUAMAYO"]
+    const AGENCIA_OPTIONS = ["ANTEZANA", "SHALOM", "FLORES", "MARVISUR", "GRAEL", "RAZA", "RANA EXPRESS", "CARHUAMAYO", "ALTIPLANO", "LIBERTADORES", "EXPRESO TRUJILLO"]
 
     const checkYapeStatus = async (batchId: string): Promise<{ status: string; results?: { nombre: string; monto: string }[]; error?: string } | null> => {
         try {
@@ -977,11 +977,11 @@ export function DashboardModals({ userName, userRole }: Props) {
                                                 }}
                                                 className="flex-1 px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                             >
-                                                <option value="">Seleccionar agencia</option>
+                                                <option value="">SELECCIONAR AGENCIA</option>
                                                 {AGENCIA_OPTIONS.map(label => (
                                                     <option key={label} value={label}>{label}</option>
                                                 ))}
-                                                <option value="OTROS">OTROS</option>
+                                                <option value="OTROS">OTRA AGENCIA</option>
                                             </select>
                                         </div>
                                         {xmlAgencia === "OTROS" && (

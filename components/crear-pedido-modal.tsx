@@ -6,9 +6,10 @@ import { createPortal } from "react-dom"
 import { 
     X, Search, Plus, Trash2, FileText, Printer, Send, Save, 
     ArrowLeft, ArrowRight, Check, Package, Ruler, Loader2,
-    Building2, CreditCard, User, MapPin, Phone, Truck, FileCheck, ClipboardList, Pencil, Filter, AlertTriangle, Ban, Copy, DollarSign
+    Building2, CreditCard, User, MapPin, Phone, Truck, FileCheck, ClipboardList, Pencil, Filter, AlertTriangle, Ban, Copy, DollarSign, Eye
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { DEPARTAMENTOS } from "@/lib/ubigeo"
 
 interface Cliente {
     id?: string
@@ -65,7 +66,10 @@ const AGENCIAS = [
     { value: "raza", label: "RAZA" },
     { value: "rana_express", label: "RANA EXPRESS" },
     { value: "carhuamayo", label: "CARHUAMAYO" },
-    { value: "otros", label: "Escribir otra agencia" }
+    { value: "altiplano", label: "ALTIPLANO" },
+    { value: "libertadores", label: "LIBERTADORES" },
+    { value: "expreso_trujillo", label: "EXPRESO TRUJILLO" },
+    { value: "otros", label: "OTRA AGENCIA" }
 ]
 
 export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borradorRestaurarId }: Props) {
@@ -93,7 +97,10 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         tipoDoc: "dni",
         numeroDoc: "",
         direccion: "",
-        telefono: ""
+        telefono: "",
+        departamento: "",
+        provincia: "",
+        distrito: "",
     })
     const [agencia, setAgencia] = useState("")
     const [agenciaOtro, setAgenciaOtro] = useState("")
@@ -862,6 +869,9 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const inputStep1 = "w-full px-3 py-2.5 border-2 border-blue-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
     const labelBase = "flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5"
 
+    const provincias = DEPARTAMENTOS.find(d => d.nombre === cliente.departamento)?.provincias || []
+    const distritos = provincias.find(p => p.nombre === cliente.provincia)?.distritos || []
+
     const modalContent = (
         <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-0 sm:p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={handleClose} />
@@ -1166,7 +1176,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                 className={inputStep1}
                                             />
                                         </div>
-                                    <div>
+                                    <div className="col-span-1 sm:col-span-2">
                                         <label className={labelBase}>Dirección</label>
                                         <input
                                             type="text"
@@ -1175,37 +1185,51 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             className={inputStep1}
                                         />
                                     </div>
-                                    {mostrarUbicacion && (
-                                        <>
+                                    <div className="col-span-1 sm:col-span-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                             <div>
                                                 <label className={labelBase}>Departamento</label>
-                                                <input
-                                                    type="text"
-                                                    value={cliente.departamento || ""}
-                                                    onChange={(e) => setCliente({ ...cliente, departamento: e.target.value })}
+                                                <select
                                                     className={inputStep1}
-                                                />
+                                                    value={cliente.departamento}
+                                                    onChange={(e) => setCliente({ ...cliente, departamento: e.target.value, provincia: "", distrito: "" })}
+                                                >
+                                                    <option value="">Seleccionar</option>
+                                                    {DEPARTAMENTOS.map(d => (
+                                                        <option key={d.nombre} value={d.nombre}>{d.nombre}</option>
+                                                    ))}
+                                                </select>
                                             </div>
                                             <div>
                                                 <label className={labelBase}>Provincia</label>
-                                                <input
-                                                    type="text"
-                                                    value={cliente.provincia || ""}
-                                                    onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })}
+                                                <select
                                                     className={inputStep1}
-                                                />
+                                                    value={cliente.provincia}
+                                                    onChange={(e) => setCliente({ ...cliente, provincia: e.target.value, distrito: "" })}
+                                                    disabled={!cliente.departamento}
+                                                >
+                                                    <option value="">Seleccionar</option>
+                                                    {provincias.map(p => (
+                                                        <option key={p.nombre} value={p.nombre}>{p.nombre}</option>
+                                                    ))}
+                                                </select>
                                             </div>
                                             <div>
                                                 <label className={labelBase}>Distrito</label>
-                                                <input
-                                                    type="text"
-                                                    value={cliente.distrito || ""}
-                                                    onChange={(e) => setCliente({ ...cliente, distrito: e.target.value })}
+                                                <select
                                                     className={inputStep1}
-                                                />
+                                                    value={cliente.distrito}
+                                                    onChange={(e) => setCliente({ ...cliente, distrito: e.target.value })}
+                                                    disabled={!cliente.provincia}
+                                                >
+                                                    <option value="">Seleccionar</option>
+                                                    {distritos.map(d => (
+                                                        <option key={d} value={d}>{d}</option>
+                                                    ))}
+                                                </select>
                                             </div>
-                                        </>
-                                    )}
+                                        </div>
+                                    </div>
                                     <div>
                                         <label className={labelBase}><Phone className="h-3.5 w-3.5" /> Teléfono</label>
                                         <div className="flex gap-2">
@@ -1219,8 +1243,8 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                     }}
                                                     className="w-full h-full px-3 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center justify-center gap-1.5"
                                                 >
-                                                    <Phone className="h-3.5 w-3.5" />
-                                                    Colaborador
+                                                    <Eye className="h-3.5 w-3.5" />
+                                                    VER TELEFONOS
                                                 </button>
                                                 {mostrarDropdownEmpleados && (
                                                     <div data-empleados-dropdown className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg min-w-[220px] max-h-48 overflow-y-auto z-50">
@@ -1266,37 +1290,39 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                         </div>
                                         {errorTel && <p className="text-xs text-red-500 mt-1">{errorTel}</p>}
                                     </div>
-                                    <div>
-                                        <label className={labelBase}>Agencia</label>
-                                        <div className="relative">
-                                            <button
-                                                type="button"
-                                                ref={agenciaToggleRef}
-                                                data-agencia-toggle
-                                                onClick={() => {
-                                                    if (!mostrarDropdownAgencia && agenciaToggleRef.current) {
-                                                        const rect = agenciaToggleRef.current.getBoundingClientRect()
-                                                        setAgenciaDropdownPos({ top: rect.top - 4, left: rect.left, width: rect.width })
-                                                    }
-                                                    setMostrarDropdownAgencia(!mostrarDropdownAgencia)
-                                                }}
-                                                className={`w-full px-3 py-2.5 border-2 rounded-lg text-sm text-left transition-all bg-white ${agencia ? "text-slate-900 border-blue-300" : "text-slate-400 border-blue-300"}`}
-                                            >
-                                                {agencia ? AGENCIAS.find(a => a.value === agencia)?.label : "Seleccionar..."}
-                                            </button>
-                                        </div>
-                                    </div>
-                                    {agencia === "otros" && (
+                                    <div className="bg-slate-200 p-4 rounded-xl space-y-3">
                                         <div>
-                                            <label className={labelBase}>Nombre de la agencia</label>
-                                            <input
-                                                type="text"
-                                                value={agenciaOtro}
-                                                onChange={(e) => setAgenciaOtro(e.target.value)}
-                                                className={inputStep1}
-                                            />
+                                            <label className={labelBase}>Agencia</label>
+                                            <div className="relative">
+                                                <button
+                                                    type="button"
+                                                    ref={agenciaToggleRef}
+                                                    data-agencia-toggle
+                                                    onClick={() => {
+                                                        if (!mostrarDropdownAgencia && agenciaToggleRef.current) {
+                                                            const rect = agenciaToggleRef.current.getBoundingClientRect()
+                                                            setAgenciaDropdownPos({ top: rect.top - 4, left: rect.left, width: rect.width })
+                                                        }
+                                                        setMostrarDropdownAgencia(!mostrarDropdownAgencia)
+                                                    }}
+                                                    className={`w-full px-3 py-2.5 border-2 rounded-lg text-sm text-left transition-all bg-white ${agencia ? "text-slate-900 border-blue-300" : "text-slate-900 border-blue-300"}`}
+                                                >
+                                                    {agencia ? AGENCIAS.find(a => a.value === agencia)?.label : "SELECCIONAR AGENCIA"}
+                                                </button>
+                                            </div>
                                         </div>
-                                    )}
+                                        {agencia === "otros" && (
+                                            <div>
+                                                <label className={labelBase}>Nombre de la agencia</label>
+                                                <input
+                                                    type="text"
+                                                    value={agenciaOtro}
+                                                    onChange={(e) => setAgenciaOtro(e.target.value)}
+                                                    className={inputStep1}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                     
                                     <div className="flex items-center gap-2 sm:col-span-2">
                                         <button
@@ -1609,6 +1635,17 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                             <Truck className="h-3 w-3" />
                                             ENVIO: A DOMICILIO
                                         </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const texto = "EN VARIAS FACTURAS"
+                                                setObservaciones(prev => prev ? `${prev}\n${texto}` : texto)
+                                            }}
+                                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors"
+                                        >
+                                            <FileText className="h-3 w-3" />
+                                            EN VARIAS FACTURAS
+                                        </button>
                                     </div>
                                     <textarea
                                         value={observaciones}
@@ -1675,9 +1712,9 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                     <button
                         type="button"
                         onClick={() => { setAgencia(""); setMostrarDropdownAgencia(false) }}
-                        className="w-full px-4 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors text-sm text-slate-400"
+                        className="w-full px-4 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors text-sm text-slate-900 font-medium"
                     >
-                        Seleccionar...
+                        SELECCIONAR AGENCIA
                     </button>
                     {AGENCIAS.map(a => (
                         <button

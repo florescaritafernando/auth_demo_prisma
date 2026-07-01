@@ -1019,9 +1019,10 @@ class FacturaXMLtoPDF:
         
         pdf.cell(info_width, 7.5, f"N° DE DOC.: {num_documento}", 1, 1, 'C', True)
         
-        pdf.set_x(info_x)
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(info_width, 7.5, f"GUÍA DE REMISIÓN: N° {guia_remision}", 1, 1, 'C', True)
+        if guia_remision.strip() not in ['', 'N/A', '-', 'None']:
+            pdf.set_x(info_x)
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(info_width, 7.5, f"GUÍA DE REMISIÓN: N° {guia_remision}", 1, 1, 'C', True)
         
         pdf.set_x(info_x)
         pdf.set_font("Arial", 'B', 12)
