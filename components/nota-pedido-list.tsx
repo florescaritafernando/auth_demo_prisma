@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList, Search, X, Copy, Divide, Calendar, SlidersHorizontal, Printer, DollarSign, CheckCircle, Loader2 } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
 import { CobrarPedidoModal } from "@/components/cobrar-pedido-modal"
@@ -14,9 +14,13 @@ const AGENCIA_LABELS: Record<string, string> = {
     raza: "RAZA",
     rana_express: "RANA EXPRESS",
     carhuamayo: "CARHUAMAYO",
+    cespedes: "CESPEDES",
     altiplano: "ALTIPLANO",
     libertadores: "LIBERTADORES",
     expreso_trujillo: "EXPRESO TRUJILLO",
+    roggers: "ROGGERS",
+    cargosur: "CARGO SUR",
+    emtrafesa: "EMTRAFESA",
     otros: "OTRA AGENCIA"
 
 }
@@ -30,9 +34,13 @@ const AGENCIA_RUC: Record<string, string> = {
     raza: "20529930080",
     rana_express: "20603506147",
     carhuamayo: "20566548101",
+    cespedes: "20489585678",
     altiplano: "20555954884", 
     libertadores: "20135591042",
     expreso_trujillo: "20507780882",
+    roggers: "20544445830",
+    cargosur: "20456042920",
+    emtrafesa: "20133605291",
 
 
 }
@@ -145,6 +153,9 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
     const [formatoXml, setFormatoXml] = useState<"ticket" | "shipping_label">("ticket")
     const [convirtiendoXml, setConvirtiendoXml] = useState(false)
     const [xmlAgencia, setXmlAgencia] = useState("")
+    const [xmlAgenciaBusqueda, setXmlAgenciaBusqueda] = useState("")
+    const [mostrarDropdownXmlAgencia, setMostrarDropdownXmlAgencia] = useState(false)
+    const xmlAgenciaToggleRef = useRef<HTMLButtonElement>(null)
     const [xmlOtraAgencia, setXmlOtraAgencia] = useState("")
     const [xmlNotas, setXmlNotas] = useState("")
     const [xmlRecojeOtraPersona, setXmlRecojeOtraPersona] = useState(false)
@@ -155,6 +166,16 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
     const [showXmlCloseConfirm, setShowXmlCloseConfirm] = useState(false)
     const [buscandoDocRecibe, setBuscandoDocRecibe] = useState(false)
 
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (mostrarDropdownXmlAgencia && !(e.target as HTMLElement).closest('[data-xml-agencia-dropdown]') && !(e.target as HTMLElement).closest('[data-xml-agencia-toggle]')) {
+                setMostrarDropdownXmlAgencia(false)
+            }
+        }
+        document.addEventListener("click", handleClick)
+        return () => document.removeEventListener("click", handleClick)
+    }, [mostrarDropdownXmlAgencia])
+
     const handleCloseXmlModal = () => {
         if (xmlFile) {
             setShowXmlCloseConfirm(true)
@@ -162,12 +183,14 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
         }
         setXmlFile(null)
         setShowModalXml(null)
+        setXmlAgenciaBusqueda("")
     }
 
     const handleConfirmExitXml = () => {
         setXmlFile(null)
         setShowModalXml(null)
         setShowXmlCloseConfirm(false)
+        setXmlAgenciaBusqueda("")
     }
 
     const buscarDocRecibe = async () => {
@@ -1278,23 +1301,57 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                 {formatoXml === "shipping_label" && (
                                     <>
                                         {/* Agencia */}
-                                        <div>
+                                        <div className="relative">
                                             <label className="block text-sm font-medium text-slate-700 mb-1.5">Agencia</label>
-                                            <div className="flex gap-2">
-                                                <select
-                                                    value={xmlAgencia}
-                                                    onChange={(e) => {
-                                                        setXmlAgencia(e.target.value)
-                                                        if (e.target.value !== "OTROS") setXmlOtraAgencia("")
-                                                    }}
-                                                    className="flex-1 px-3 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                            <button
+                                                type="button"
+                                                ref={xmlAgenciaToggleRef}
+                                                data-xml-agencia-toggle
+                                                onClick={() => setMostrarDropdownXmlAgencia(!mostrarDropdownXmlAgencia)}
+                                                className="w-full px-3 py-2 rounded-lg text-sm text-left border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                            >
+                                                {xmlAgencia || "SELECCIONAR AGENCIA"}
+                                            </button>
+                                            {mostrarDropdownXmlAgencia && (
+                                                <div
+                                                    data-xml-agencia-dropdown
+                                                    className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg"
+                                                    onClick={(e) => e.stopPropagation()}
                                                 >
-                                                    <option value="">Seleccionar agencia</option>
-                                                    {Object.values(AGENCIA_LABELS).map((label) => (
-                                                        <option key={label} value={label}>{label}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                                    <div className="p-2 border-b border-slate-100">
+                                                        <input
+                                                            type="text"
+                                                            value={xmlAgenciaBusqueda}
+                                                            onChange={(e) => setXmlAgenciaBusqueda(e.target.value)}
+                                                            placeholder="Buscar agencia..."
+                                                            className="w-full px-3 py-1.5 border border-slate-200 rounded-md text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                                            autoFocus
+                                                        />
+                                                    </div>
+                                                    <div className="max-h-[280px] overflow-y-auto">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setXmlAgencia(""); setMostrarDropdownXmlAgencia(false); setXmlAgenciaBusqueda("") }}
+                                                            className="w-full px-4 py-2 text-left hover:bg-slate-50 border-b border-slate-50 transition-colors text-sm text-slate-700"
+                                                        >
+                                                            SELECCIONAR AGENCIA
+                                                        </button>
+                                                        {Object.values(AGENCIA_LABELS).filter(v => v !== "OTRA AGENCIA").map(v => ({ value: v, label: v })).concat({ value: "OTROS", label: "OTRA AGENCIA" }).filter(o => o.label.toLowerCase().includes(xmlAgenciaBusqueda.toLowerCase())).map(opt => (
+                                                            <button
+                                                                key={opt.value}
+                                                                type="button"
+                                                                onClick={() => { setXmlAgencia(opt.value); if (opt.value !== "OTROS") setXmlOtraAgencia(""); setMostrarDropdownXmlAgencia(false); setXmlAgenciaBusqueda("") }}
+                                                                className={`w-full px-4 py-2 text-left hover:bg-slate-50 border-b border-slate-50 transition-colors text-sm ${xmlAgencia === opt.value ? "bg-slate-50 font-medium text-slate-900" : "text-slate-700"}`}
+                                                            >
+                                                                {opt.label}
+                                                            </button>
+                                                        ))}
+                                                        {Object.values(AGENCIA_LABELS).filter(v => v !== "OTRA AGENCIA").map(v => ({ value: v, label: v })).concat({ value: "OTROS", label: "OTRA AGENCIA" }).filter(o => o.label.toLowerCase().includes(xmlAgenciaBusqueda.toLowerCase())).length === 0 && (
+                                                            <p className="px-4 py-3 text-sm text-slate-400 text-center">Sin resultados</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                             {xmlAgencia === "OTROS" && (
                                                 <input
                                                     type="text"

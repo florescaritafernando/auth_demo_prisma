@@ -66,9 +66,13 @@ const AGENCIAS = [
     { value: "raza", label: "RAZA" },
     { value: "rana_express", label: "RANA EXPRESS" },
     { value: "carhuamayo", label: "CARHUAMAYO" },
+    { value: "cespedes", label: "CESPEDES" },
     { value: "altiplano", label: "ALTIPLANO" },
     { value: "libertadores", label: "LIBERTADORES" },
     { value: "expreso_trujillo", label: "EXPRESO TRUJILLO" },
+    { value: "roggers", label: "ROGGERS" },
+    { value: "cargosur", label: "CARGO SUR" },
+    { value: "emtrafesa", label: "EMTRAFESA" },
     { value: "otros", label: "OTRA AGENCIA" }
 ]
 
@@ -106,6 +110,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const [agenciaOtro, setAgenciaOtro] = useState("")
     const [mostrarDropdownAgencia, setMostrarDropdownAgencia] = useState(false)
     const [agenciaDropdownPos, setAgenciaDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null)
+    const [agenciaBusqueda, setAgenciaBusqueda] = useState("")
     const agenciaToggleRef = useRef<HTMLButtonElement>(null)
     const [guiaRemision, setGuiaRemision] = useState(false)
     const [mostrarRecibe, setMostrarRecibe] = useState(false)
@@ -770,6 +775,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setErrorTel("")
         setAgencia("")
         setAgenciaOtro("")
+        setAgenciaBusqueda("")
         setGuiaRemision(false)
         setMostrarRecibe(false)
         setNombreRecibe("")
@@ -1704,26 +1710,41 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             {mostrarDropdownAgencia && agenciaDropdownPos && (
                 <div
                     data-agencia-dropdown
-                    className="bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-[10001] min-w-[200px]"
+                    className="bg-white border border-slate-200 rounded-lg shadow-lg z-[10001] min-w-[200px]"
                     style={{ position: "fixed", top: agenciaDropdownPos.top, left: agenciaDropdownPos.left, width: agenciaDropdownPos.width, transform: "translateY(-100%)" }}
                 >
-                    <button
-                        type="button"
-                        onClick={() => { setAgencia(""); setMostrarDropdownAgencia(false) }}
-                        className="w-full px-4 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors text-sm text-slate-900 font-medium"
-                    >
-                        SELECCIONAR AGENCIA
-                    </button>
-                    {AGENCIAS.map(a => (
+                    <div className="p-2 border-b border-slate-100">
+                        <input
+                            type="text"
+                            value={agenciaBusqueda}
+                            onChange={(e) => setAgenciaBusqueda(e.target.value)}
+                            placeholder="Buscar agencia..."
+                            className="w-full px-3 py-1.5 border border-slate-200 rounded-md text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="max-h-[280px] overflow-y-auto">
                         <button
-                            key={a.value}
                             type="button"
-                                onClick={() => { setAgencia(a.value); setGuiaRemision(true); setMostrarDropdownAgencia(false) }}
-                            className={`w-full px-4 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors text-sm ${agencia === a.value ? "bg-slate-50 font-medium text-slate-900" : "text-slate-700"}`}
+                            onClick={() => { setAgencia(""); setMostrarDropdownAgencia(false); setAgenciaBusqueda("") }}
+                            className="w-full px-4 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors text-sm text-slate-900 font-medium"
                         >
-                            {a.label}
+                            SELECCIONAR AGENCIA
                         </button>
-                    ))}
+                        {AGENCIAS.filter(a => a.label.toLowerCase().includes(agenciaBusqueda.toLowerCase())).map(a => (
+                            <button
+                                key={a.value}
+                                type="button"
+                                    onClick={() => { setAgencia(a.value); setGuiaRemision(true); setMostrarDropdownAgencia(false); setAgenciaBusqueda("") }}
+                                className={`w-full px-4 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors text-sm ${agencia === a.value ? "bg-slate-50 font-medium text-slate-900" : "text-slate-700"}`}
+                            >
+                                {a.label}
+                            </button>
+                        ))}
+                        {AGENCIAS.filter(a => a.label.toLowerCase().includes(agenciaBusqueda.toLowerCase())).length === 0 && (
+                            <p className="px-4 py-3 text-sm text-slate-400 text-center">Sin resultados</p>
+                        )}
+                    </div>
                 </div>
             )}
 
