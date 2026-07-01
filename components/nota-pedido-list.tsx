@@ -606,7 +606,6 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     const provUbicacion = (c.provincia || pedido.provincia || "").toUpperCase()
                                                     const distUbicacion = (c.distrito || pedido.distrito || "").toUpperCase()
                                                     const tieneUbicacion = deptUbicacion || provUbicacion || distUbicacion
-                                                    const textoUbicacion = [deptUbicacion && `DEP: ${deptUbicacion}`, provUbicacion && `PRO: ${provUbicacion}`, distUbicacion && `DIS: ${distUbicacion}`].filter(Boolean).join(" / ")
                                                     return (
                                                     <div className="bg-slate-50 rounded-lg p-2.5 space-y-1.5">
                                                         <div className="flex items-center gap-2">
@@ -630,10 +629,17 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                             </button>
                                                         </div>
                                                         {tieneUbicacion && (
-                                                            <div className="flex items-center gap-2">
+                                                            <div className="flex items-start gap-2">
                                                                 <div className="w-4 shrink-0" />
-                                                                <span className="text-slate-500 text-xs w-16 shrink-0">Ubicacion:</span>
-                                                                <span className="font-medium text-slate-800 flex-1 uppercase">{textoUbicacion}</span>
+                                                                <span className="text-slate-500 text-xs w-16 shrink-0">Ubicación:</span>
+                                                                <div className="flex-1 grid grid-cols-3 gap-1">
+                                                                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">Departamento</span>
+                                                                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">Provincia</span>
+                                                                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">Distrito</span>
+                                                                    <span className="font-medium text-slate-800 uppercase">{deptUbicacion}</span>
+                                                                    <span className="font-medium text-slate-800 uppercase">{provUbicacion}</span>
+                                                                    <span className="font-medium text-slate-800 uppercase">{distUbicacion}</span>
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
