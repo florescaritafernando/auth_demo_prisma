@@ -119,7 +119,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
     const [cargandoEmpleados, setCargandoEmpleados] = useState(false)
     const [buscandoDoc, setBuscandoDoc] = useState(false)
     const [buscandoDocRecibe, setBuscandoDocRecibe] = useState(false)
-    const [mostrarUbicacion, setMostrarUbicacion] = useState(false)
     const clienteSeleccionadoRef = useRef(false)
     const productoSeleccionadoRef = useRef(false)
     const [clientePedidoId, setClientePedidoId] = useState("")
@@ -219,8 +218,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
             setEnvioComprobante(p.pedidoEmpleadoInfo?.envioComprobante || "Imprimir")
             setCostoEnvio(String(p.costoEnvio || 0))
             setObservaciones(p.notas || "")
-            if (p.departamento) setMostrarUbicacion(true)
-
             const itemsEdit = (p.pedidoDetalle || []).map((d: any) => ({
                 id: d.id || Date.now().toString() + Math.random(),
                 productoId: d.productoId,
@@ -257,7 +254,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                         setObservaciones(b.observaciones || "")
                         setItems(b.items || [])
                         setStep(b.step || 1)
-                        if (b.cliente?.departamento) setMostrarUbicacion(true)
                     }
                 } catch (e) {
                     console.error("Error cargando borrador por id:", e)
@@ -360,11 +356,14 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                         provincia: json.provincia || "",
                         distrito: json.distrito || ""
                     })
-                    if (json.departamento) setMostrarUbicacion(true)
                 } else {
                     setCliente({
                         ...cliente,
-                        nombre: json.nombre || ""
+                        nombre: json.nombre || "",
+                        direccion: json.direccion || "",
+                        departamento: json.departamento || "",
+                        provincia: json.provincia || "",
+                        distrito: json.distrito || ""
                     })
                 }
             } else {
@@ -483,7 +482,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setAgencia(c.agencia || "")
         setAgenciaOtro(c.agenciaOtro || "")
         setGuiaRemision(c.guiaRemision || false)
-        if (c.departamento) setMostrarUbicacion(true)
         setMostrarDropdown(false)
         if (c.id) {
             setClientePedidoId(c.id)
@@ -777,7 +775,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setItems([])
         setCostoEnvio("0")
         setObservaciones("")
-        setMostrarUbicacion(false)
         setBorradorGuardado(false)
         setCategoriaFiltro("")
         setShowAgregarArticulo(false)
@@ -830,7 +827,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                 setObservaciones(b.observaciones || "")
                 setItems(b.items || [])
                 setStep(b.step || 1)
-                if (b.cliente?.departamento) setMostrarUbicacion(true)
                 setBorradorGuardado(true)
             }
         } catch (e) {
@@ -1087,7 +1083,6 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                                 setAgenciaOtro("")
                                                 setGuiaRemision(false)
                                                 setEnvioComprobante("Imprimir")
-                                                setMostrarUbicacion(false)
                                                 setClientePedidoId("")
                                                 setSaldoCartera(null)
                                                 setAdjuntarDeuda(false)
