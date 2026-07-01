@@ -579,28 +579,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         )}
                                                     </button>
                                                 </div>
-                                                {c.razonSocial && c.razonSocial !== c.nombre && (
-                                                    <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
-                                                        <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
-                                                        <span className="text-slate-500 text-xs w-16 shrink-0">R. Social:</span>
-                                                        <span className="font-medium text-slate-800 flex-1">{c.razonSocial?.toUpperCase()}</span>
-                                                        <button
-                                                            onClick={() => copiarAlPortapapeles(c.razonSocial || "", "razonSocial")}
-                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                                                                copiedField === "razonSocial"
-                                                                    ? "text-blue-400 border border-blue-500/50 bg-blue-500/10"
-                                                                    : "text-green-600 hover:text-green-700 border border-transparent"
-                                                            }`}
-                                                            title="Copiar razón social"
-                                                        >
-                                                            {copiedField === "razonSocial" ? (
-                                                                "Copiado"
-                                                            ) : (
-                                                                <><Copy className="h-3 w-3" /><span className="hidden sm:inline">Copiar</span></>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                )}
+
                                                 {(c.direccion || pedido.direccion) && (() => {
                                                     const deptUbicacion = (c.departamento || pedido.departamento || "").toUpperCase()
                                                     const provUbicacion = (c.provincia || pedido.provincia || "").toUpperCase()
