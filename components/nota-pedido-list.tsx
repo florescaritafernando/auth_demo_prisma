@@ -31,7 +31,7 @@ const AGENCIA_RUC: Record<string, string> = {
     flores: "20119407738",
     marvisur: "20498189637",
     grael: "20508074281",
-    raza: "20529930080",
+    raza: "20615403998",
     rana_express: "20603506147",
     carhuamayo: "20566548101",
     cespedes: "20489585678",
