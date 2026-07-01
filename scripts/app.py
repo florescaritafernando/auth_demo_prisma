@@ -1022,7 +1022,7 @@ class FacturaXMLtoPDF:
         if guia_remision.strip() not in ['', 'N/A', '-', 'None']:
             pdf.set_x(info_x)
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(info_width, 7.5, f"GUÍA DE REMISIÓN: N° {guia_remision}", 1, 1, 'C', True)
+            pdf.cell(info_width, 7.5, f"GUÍA DE REMISIÓN: {guia_remision}", 1, 1, 'C', True)
         
         pdf.set_x(info_x)
         pdf.set_font("Arial", 'B', 12)
@@ -1177,7 +1177,7 @@ class FacturaXMLtoPDF:
         if guia and guia not in ['', 'N/A', '-']:
             pdf.cell(35, 4, "GUÍA DE REMISIÓN: ", 0, 0)
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(37, 4, f"N° {guia}", 0, 1)
+            pdf.cell(37, 4, f"{guia}", 0, 1)
             pdf.ln(1)
         
         # Forma de pago
