@@ -1,6 +1,6 @@
 "use client"
 
 // Cartera DESHABILITADA
-export function NuevoMovimientoModal() {
+export function NuevoMovimientoModal(_props: Record<string, unknown>) {
     return null
 }
