@@ -2059,6 +2059,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                 <FileText className="h-4 w-4 mr-2" />
                                 Ver pedido
                             </Button>
+                            {successOverlay.action === "creado" && (
                             <Button
                                 onClick={() => {
                                     setSuccessOverlay({ show: false, numeroOrden: "", action: "creado" })
@@ -2070,6 +2071,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
                                 <Plus className="h-4 w-4 mr-2" />
                                 Crear otro pedido
                             </Button>
+                            )}
                         </div>
                     </div>
                 </div>
