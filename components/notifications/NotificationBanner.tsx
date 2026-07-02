@@ -9,10 +9,3 @@ export function NotificationBanner() {
 export function NotificationBadge() {
     return null
 }
-    return null
-}
-
-export function NotificationBadge() {
-    // Notificaciones DESHABILITADAS
-    return null
-}

@@ -142,73 +142,63 @@ export function CobrarPedidoModal({ pedido, isOpen, onClose, onSuccess, estadoAl
                                 <p className="text-sm font-medium text-slate-700 mb-2">
                                     {tipoPago === "completo" ? "Detalle del pago" : tipoPago === "parcial" ? "Monto del pago parcial" : "Montos"}
                                 </p>
-                                {tipoPago === "completo" && carteraActiva && saldoCartera >= faltaPagar ? (
-                                    <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 text-blue-800 text-sm font-medium">
-                                        <CheckCircle className="h-4 w-4 inline mr-1" /> Cubierto por saldo cartera
-                                    </div>
-                                ) : tipoPago === "completo" && carteraActiva && saldoCartera < faltaPagar ? (
-                                    <div className="p-3 rounded-lg border bg-amber-50 border-amber-300 text-amber-800 text-sm font-medium">
-                                        <AlertTriangle className="h-4 w-4 inline mr-1" /> Saldo no cubre el pago completo, selecciona otra opción
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {(tipoPago === "completo" || tipoPago === "parcial"
-                                            ? [{ monto: tipoPago === "completo" ? faltaPagarEfectiva.toFixed(2) : detallesPago[0]?.monto || "", empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
-                                            : detallesPago
-                                        ).map((det, idx) => (
-                                            <div key={idx} className="flex items-center gap-2">
-                                                <span className="text-sm font-medium text-slate-500">S/</span>
-                                                <input
-                                                    type="text" inputMode="decimal"
-                                                    value={det.monto}
-                                                    onChange={(e) => {
-                                                        if (tipoPago === "dividido" || tipoPago === "parcial") {
-                                                            const val = e.target.value
-                                                            if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
-                                                                const nuevo = [...detallesPago]
-                                                                nuevo[idx] = { ...nuevo[idx], monto: val }
-                                                                setDetallesPago(nuevo)
-                                                            }
-                                                        }
-                                                    }}
-                                                    readOnly={tipoPago === "completo"}
-                                                    placeholder="0.00"
-                                                    className={`w-24 px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white ${tipoPago === "completo" ? "border-blue-300 bg-blue-50" : tipoPago === "parcial" ? "border-amber-300" : "border-slate-200"}`}
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        if (det.empresa || det.metodoPago) {
+                                <div className="space-y-2">
+                                    {(tipoPago === "completo" || tipoPago === "parcial"
+                                        ? [{ monto: tipoPago === "completo" ? faltaPagar.toFixed(2) : detallesPago[0]?.monto || "", empresa: detallesPago[0]?.empresa || "", metodoPago: detallesPago[0]?.metodoPago || "" }]
+                                        : detallesPago
+                                    ).map((det, idx) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                            <span className="text-sm font-medium text-slate-500">S/</span>
+                                            <input
+                                                type="text" inputMode="decimal"
+                                                value={det.monto}
+                                                onChange={(e) => {
+                                                    if (tipoPago === "dividido" || tipoPago === "parcial") {
+                                                        const val = e.target.value
+                                                        if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
                                                             const nuevo = [...detallesPago]
-                                                            nuevo[idx] = { ...nuevo[idx], empresa: "", metodoPago: "" }
+                                                            nuevo[idx] = { ...nuevo[idx], monto: val }
                                                             setDetallesPago(nuevo)
-                                                        } else {
-                                                            setDetalleEditandoIdx(idx); setShowDetallePagoModal(true)
                                                         }
-                                                    }}
-                                                    className={`px-2 py-1.5 text-xs font-bold border-2 rounded-lg transition-all uppercase ${
-                                                        det.empresa || det.metodoPago
-                                                            ? "bg-blue-600 border-blue-600 text-white"
-                                                            : "bg-red-600 border-red-600 text-white"
-                                                    }`}
-                                                >
-                                                    {det.empresa
-                                                        ? `${det.empresa} / ${det.metodoPago}`
-                                                        : det.metodoPago || "Seleccionar Detalle"
                                                     }
+                                                }}
+                                                readOnly={tipoPago === "completo"}
+                                                placeholder="0.00"
+                                                className={`w-24 px-3 py-2 border-2 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white ${tipoPago === "completo" ? "border-blue-300 bg-blue-50" : tipoPago === "parcial" ? "border-amber-300" : "border-slate-200"}`}
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    if (det.empresa || det.metodoPago) {
+                                                        const nuevo = [...detallesPago]
+                                                        nuevo[idx] = { ...nuevo[idx], empresa: "", metodoPago: "" }
+                                                        setDetallesPago(nuevo)
+                                                    } else {
+                                                        setDetalleEditandoIdx(idx); setShowDetallePagoModal(true)
+                                                    }
+                                                }}
+                                                className={`px-2 py-1.5 text-xs font-bold border-2 rounded-lg transition-all uppercase ${
+                                                    det.empresa || det.metodoPago
+                                                        ? "bg-blue-600 border-blue-600 text-white"
+                                                        : "bg-red-600 border-red-600 text-white"
+                                                }`}
+                                            >
+                                                {det.empresa
+                                                    ? `${det.empresa} / ${det.metodoPago}`
+                                                    : det.metodoPago || "Seleccionar Detalle"
+                                                }
+                                            </button>
+                                            {tipoPago === "dividido" && (
+                                                <button
+                                                    onClick={() => { if (detallesPago.length > 2) setDetallesPago(detallesPago.filter((_, i) => i !== idx)) }}
+                                                    disabled={detallesPago.length <= 2}
+                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                >
+                                                    <X className="h-4 w-4 text-red-900" />
                                                 </button>
-                                                {tipoPago === "dividido" && (
-                                                    <button
-                                                        onClick={() => { if (detallesPago.length > (usarSaldoCartera ? 1 : 2)) setDetallesPago(detallesPago.filter((_, i) => i !== idx)) }}
-                                                        disabled={detallesPago.length <= (usarSaldoCartera ? 1 : 2)}
-                                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                                    >
-                                                        <X className="h-4 w-4 text-red-900" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                                 {tipoPago === "dividido" && (
                                     <button
                                         onClick={() => setDetallesPago([...detallesPago, { monto: "", empresa: "", metodoPago: "" }])}
@@ -234,21 +224,17 @@ export function CobrarPedidoModal({ pedido, isOpen, onClose, onSuccess, estadoAl
                         {tipoPago === "dividido" && (
                             (() => {
                                 const suma = detallesPago.reduce((acc, d) => acc + (Number(d.monto) || 0), 0)
-                                const totalConCartera = suma + carteraUsada
-                                const coincide = Math.abs(totalConCartera - faltaPagar) < 0.01
+                                const coincide = Math.abs(suma - faltaPagar) < 0.01
                                 return (
                                     <div className={`p-3 rounded-lg border text-sm font-medium ${coincide ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-red-50 border-red-200 text-red-700"}`}>
                                         <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                             <span>Total: <strong>S/ {faltaPagar.toFixed(2)}</strong></span>
-                                            {carteraActiva && carteraUsada > 0 && (
-                                                <span>| Saldo a usar: <strong>S/ {carteraUsada.toFixed(2)}</strong></span>
-                                            )}
-                                            <span>| {carteraActiva ? `Restan S/ ` : `Total ingresado: S/ `}<strong>{carteraActiva ? Math.max(0, faltaPagarEfectiva - suma).toFixed(2) : suma.toFixed(2)}</strong></span>
+                                            <span>| Total ingresado: <strong>S/ {suma.toFixed(2)}</strong></span>
                                             {coincide ? (
-                                                <span className="inline-flex items-center gap-1 text-blue-700"><CheckCircle className="h-4 w-4" /> Coincide con la deuda</span>
+                                                <span className="inline-flex items-center gap-1 text-blue-700">✓ Coincide con la deuda</span>
                                             ) : (
                                                 suma > 0 && (
-                                                    <span className="text-red-600">(Diferencia: S/ {Math.abs(faltaPagar - totalConCartera).toFixed(2)})</span>
+                                                    <span className="text-red-600">(Diferencia: S/ {Math.abs(faltaPagar - suma).toFixed(2)})</span>
                                                 )
                                             )}
                                         </p>
@@ -259,12 +245,11 @@ export function CobrarPedidoModal({ pedido, isOpen, onClose, onSuccess, estadoAl
                         {tipoPago === "parcial" && (
                             (() => {
                                 const montoLinea = Number(detallesPago[0]?.monto) || 0
-                                const totalPagando = montoLinea + (carteraActiva ? carteraUsada : 0)
-                                const saldoPorPagar = Math.max(0, faltaPagar - totalPagando)
-                                return totalPagando > 0 ? (
+                                const saldoPorPagar = Math.max(0, faltaPagar - montoLinea)
+                                return montoLinea > 0 ? (
                                     <div className="p-3 rounded-lg border text-sm font-medium bg-amber-50 border-amber-200 text-amber-800">
                                         <p>
-                                            Pago parcial{carteraActiva && carteraUsada > 0 ? ` (Cartera: S/ ${carteraUsada.toFixed(2)}${montoLinea > 0 ? ` + S/ ${montoLinea.toFixed(2)}` : ""})` : ""}: <span className="font-bold">S/ {totalPagando.toFixed(2)}</span>
+                                            Pago parcial: <span className="font-bold">S/ {montoLinea.toFixed(2)}</span>
                                             {" | "}Saldo por pagar: <span className="font-bold">S/ {saldoPorPagar.toFixed(2)}</span>
                                         </p>
                                     </div>
