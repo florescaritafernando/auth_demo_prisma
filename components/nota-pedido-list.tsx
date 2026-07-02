@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect, useRef, type ReactNode } from "react"
 import { ChevronDown, ChevronUp, FileText, Building2, CreditCard, User, Phone, MapPin, Truck, Package, FileCheck, ClipboardList, Search, X, Copy, Divide, Calendar, SlidersHorizontal, Printer, DollarSign, CheckCircle, Loader2 } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
 import { CobrarPedidoModal } from "@/components/cobrar-pedido-modal"
@@ -488,7 +488,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                 console.error(e)
                                                             }
                                                         }}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg text-xs font-semibold text-white hover:from-slate-800 hover:to-slate-900 shadow-sm transition-all active:scale-[0.97]"
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-800 rounded-lg text-xs font-semibold text-white"
                                                     >
                                                         <CheckCircle className="h-3.5 w-3.5" />
                                                         MARCAR COMPLETADO
@@ -639,13 +639,10 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                             <div className="flex items-center gap-2">
                                                                 <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                                                                 <span className="text-slate-500 text-xs w-16 shrink-0">Ubicación:</span>
-                                                                <div className="flex-1 grid grid-cols-3 gap-1">
-                                                                    <span className="text-[10px] text-amber-600 uppercase tracking-wider">Departamento</span>
-                                                                    <span className="text-[10px] text-amber-600 uppercase tracking-wider">Provincia</span>
-                                                                    <span className="text-[10px] text-amber-600 uppercase tracking-wider">Distrito</span>
-                                                                    <span className="font-medium text-slate-800 uppercase">{deptUbicacion}</span>
-                                                                    <span className="font-medium text-slate-800 uppercase">{provUbicacion}</span>
-                                                                    <span className="font-medium text-slate-800 uppercase">{distUbicacion}</span>
+                                                                <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-1">
+                                                                    <div><span className="text-[10px] text-amber-600 uppercase tracking-wider block">Departamento</span><span className="font-medium text-slate-800 uppercase block sm:mt-0">{deptUbicacion}</span></div>
+                                                                    <div><span className="text-[10px] text-amber-600 uppercase tracking-wider block">Provincia</span><span className="font-medium text-slate-800 uppercase block sm:mt-0">{provUbicacion}</span></div>
+                                                                    <div><span className="text-[10px] text-amber-600 uppercase tracking-wider block">Distrito</span><span className="font-medium text-slate-800 uppercase block sm:mt-0">{distUbicacion}</span></div>
                                                                 </div>
                                                             </div>
                                                         
@@ -881,15 +878,27 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     </div>
 
                                     {/* Observaciones */}
-                                    {pedido.notas && (
+                                    {pedido.notas && (() => {
+                                        const resaltar = (texto: string): ReactNode => {
+                                            const partes = texto.split(/(DIVIDIR ENTRE\s*\d+|[¿]?ENVÍO:\s*A DOMICILIO|ENVIO:\s*A DOMICILIO|EN VARIAS FACTURAS)/gi)
+                                            return partes.map((parte, i) => {
+                                                const p = parte.toUpperCase().trim()
+                                                if (p.startsWith("DIVIDIR ENTRE")) return <span key={i} className="text-blue-700 font-semibold">{parte}</span>
+                                                if (p.includes("A DOMICILIO")) return <span key={i} className="text-amber-700 font-semibold">{parte}</span>
+                                                if (p === "EN VARIAS FACTURAS") return <span key={i} className="text-red-700 font-semibold">{parte}</span>
+                                                return <span key={i}>{parte}</span>
+                                            })
+                                        }
+                                        return (
                                         <div>
                                             <div className="flex items-center gap-2 mb-2">
                                                 <ClipboardList className="h-4 w-4 text-slate-400" />
                                                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Observaciones</p>
                                             </div>
-                                            <p className="text-sm text-slate-700 bg-amber-50 border border-amber-100 rounded-lg p-3">{pedido.notas}</p>
+                                            <p className="text-sm text-slate-700 bg-amber-50 border border-amber-100 rounded-lg p-3 whitespace-pre-wrap">{resaltar(pedido.notas)}</p>
                                         </div>
-                                    )}
+                                        )
+                                    })()}
                                     <div className="border-t border-slate-100 my-2" />
 
                                     {/* Convertir XML + Cobrar */}
@@ -926,12 +935,12 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     </div>
                                     <div className="border-t border-slate-100 my-2" />
 
-                                    <div className="sm:grid sm:grid-cols-2 sm:gap-4">
+                                    <div className="sm:grid sm:grid-cols-2 sm:gap-4 space-y-3 sm:space-y-0">
                                     {/* Dividir entre */}
                                     <div className="bg-slate-200 rounded-lg p-3">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <Divide className="h-4 w-4 text-slate-500" />
-                                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dividir entre</p>
+                                            <Divide className="h-4 w-4 text-blue-600" />
+                                            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Dividir entre</p>
                                         </div>
                                         <div className="grid grid-cols-3 gap-2 mb-2">
                                             {["18.00", "20.00"].map((num) => (
@@ -1001,10 +1010,10 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     {/* Peso estimado */}
                                     <div className="bg-slate-200 rounded-lg p-3">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <Package className="h-4 w-4 text-slate-500" />
-                                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">PESO (KGM)</p>
+                                            <Package className="h-4 w-4 text-amber-600" />
+                                            <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">PESO (KGM)</p>
                                         </div>
-                                        <div className="flex items-center justify-between bg-amber-50 rounded-lg p-3 border border-amber-200">
+                                        <div className="flex items-center justify-between bg-slate-50 rounded-lg p-3 border border-slate-200">
                                             <div className="flex items-baseline gap-1.5">
                                                 <span className="text-lg font-bold text-slate-900">{Number(pedido.total / 200).toFixed(2)}</span>
                                                 <span className="text-ms text-slate-800">KGM</span>
@@ -1031,8 +1040,8 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                      <div className="bg-slate-200 rounded-lg p-3">
                                         <div className="w-full flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
-                                                <Divide className="h-4 w-4 text-slate-500" />
-                                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dividir pedido en partes</p>
+                                                <Divide className="h-4 w-4 text-red-500" />
+                                                <p className="text-xs font-semibold text-red-500 uppercase tracking-wider">Dividir en varias facturas</p>
                                             </div>
                                             <button
                                                 type="button"
