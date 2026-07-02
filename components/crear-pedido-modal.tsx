@@ -493,13 +493,7 @@ export function CrearPedidoModal({ isOpen, onClose, userName, pedidoEditar, borr
         setMostrarDropdown(false)
         if (c.id) {
             setClientePedidoId(c.id)
-            fetch(`/api/clientes-pedido/${c.id}/cartera`, { credentials: "include" })
-                .then(r => r.json())
-                .then(data => {
-                    const saldo = Math.round((data.cartera?.saldo || 0) * 100) / 100
-                    setSaldoCartera(saldo)
-                })
-                .catch(() => setSaldoCartera(null))
+            // Cartera DESHABILITADA
         } else {
             setClientePedidoId("")
             setSaldoCartera(null)

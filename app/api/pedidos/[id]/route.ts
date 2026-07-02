@@ -460,187 +460,16 @@ export async function PATCH(
                 mensajePago = `El cliente del pedido ${pedido.numeroOrden} ha completado el pago. Número de operación: ${numeroOperacion}. Por favor, verifica el pago.`
             }
 
-            // Notificar a los empleados asignados si existen
-            const delegados = await prisma.pedidoDelegado.findMany({
-                where: { pedidoId: id },
-                select: { userId: true }
-            })
-
-            for (const deleg of delegados) {
-                console.log("Notificando al empleado:", deleg.userId)
-                await prisma.notificacion.create({
-                    data: {
-                        userId: deleg.userId,
-                        tipo: "pedido_pago",
-                        titulo: "Pago en revisión",
-                        mensaje: mensajePago,
-                        pedidoId: id
-                    }
-                })
-            }
-
-            // Notificar a todos los administradores
-            const admins = await prisma.user.findMany({
-                where: { role: "admin" },
-                select: { id: true }
-            })
-            console.log("Administradores encontrados:", admins.length)
-
-            for (const admin of admins) {
-                console.log("Notificando al admin:", admin.id)
-                await prisma.notificacion.create({
-                    data: {
-                        userId: admin.id,
-                        tipo: "pedido_pago",
-                        titulo: "Pago en revisión",
-                        mensaje: mensajePago,
-                        pedidoId: id
-                    }
-                })
-            }
-            console.log("=== FIN NOTIFICACION PAGO ===")
-
-            // Marcar notificaciones anteriores del cliente como leídas al realizar el pago
-            await prisma.notificacion.updateMany({
-                where: {
-                    userId: pedido.userId,
-                    pedidoId: id,
-                    leida: false
-                },
-                data: { leida: true }
-            })
+            // Notificaciones DESHABILITADAS
         }
 
         if (estado === "confirmado") {
-            // Abonar deuda en cartera si el pedido incluye cargoDeuda
-            const pedidoActual = await prisma.pedido.findUnique({
-                where: { id },
-                select: { cargoDeuda: true, clientePedidoId: true, numeroOrden: true, userId: true }
-            })
-            if (pedidoActual && pedidoActual.cargoDeuda > 0 && pedidoActual.clientePedidoId) {
-                const cartera = await prisma.cartera.upsert({
-                    where: { clientePedidoId: pedidoActual.clientePedidoId },
-                    create: { clientePedidoId: pedidoActual.clientePedidoId, saldo: 0, userId: pedidoActual.userId },
-                    update: {}
-                })
-                const saldoAnterior = cartera.saldo
-                const saldoNuevo = saldoAnterior + pedidoActual.cargoDeuda
-                await prisma.carteraMovimiento.create({
-                    data: {
-                        carteraId: cartera.id,
-                        tipo: "abono",
-                        monto: pedidoActual.cargoDeuda,
-                        saldoAnterior,
-                        saldoNuevo,
-                        concepto: `Pago de deuda incluido en pedido ${pedidoActual.numeroOrden}`,
-                        pedidoId: id,
-                        creadoPorId: session.user.id
-                    }
-                })
-                await prisma.cartera.update({
-                    where: { id: cartera.id },
-                    data: { saldo: { increment: pedidoActual.cargoDeuda } }
-                })
-            }
-
-            await prisma.notificacion.create({
-                data: {
-                    userId: pedido.userId,
-                    tipo: "pedido_estado",
-                    titulo: "Pago confirmado",
-                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido confirmado. Estamos preparando tu pedido para el envío y te avisaremos cuando esté en camino.`,
-                    pedidoId: id
-                }
-            })
-
-            await prisma.notificacion.updateMany({
-                where: {
-                    pedidoId: id,
-                    tipo: "pedido_pago",
-                    leida: false
-                },
-                data: { leida: true }
-            })
-
-            const delegados = await prisma.pedidoDelegado.findMany({
-                where: { pedidoId: id },
-                select: { userId: true }
-            })
-
-            for (const deleg of delegados) {
-                await prisma.notificacion.create({
-                    data: {
-                        userId: deleg.userId,
-                        tipo: "pedido_estado",
-                        titulo: "Pago confirmado",
-                        mensaje: `El pedido ${pedido.numeroOrden} ha sido confirmado. El pago ha sido verificado exitosamente.`,
-                        pedidoId: id
-                    }
-                })
-            }
+            // Cartera y Notificaciones DESHABILITADAS
         }
         }
 
-        // Liquidar cargos de cartera vinculados a este pedido al confirmar pago (todos los pedidos)
-        if (estado === "confirmado") {
-            const cargosCartera = await prisma.carteraMovimiento.findMany({
-                where: { pedidoId: id, tipo: "cargo" },
-                select: { carteraId: true, monto: true }
-            })
-
-            if (cargosCartera.length > 0) {
-                const porCartera = new Map<string, number>()
-                for (const c of cargosCartera) {
-                    porCartera.set(c.carteraId, (porCartera.get(c.carteraId) || 0) + c.monto)
-                }
-
-                for (const [carteraId, totalCargo] of porCartera) {
-                    const cartera = await prisma.cartera.findUnique({ where: { id: carteraId } })
-                    if (cartera) {
-                        await prisma.carteraMovimiento.create({
-                            data: {
-                                carteraId,
-                                tipo: "abono",
-                                monto: totalCargo,
-                                saldoAnterior: cartera.saldo,
-                                saldoNuevo: cartera.saldo + totalCargo,
-                                concepto: `Cargo liquidado por pago de pedido`,
-                                pedidoId: id,
-                                creadoPorId: session.user.id
-                            }
-                        })
-
-                        await prisma.cartera.update({
-                            where: { id: carteraId },
-                            data: { saldo: { increment: totalCargo } }
-                        })
-                    }
-                }
-
-                await prisma.carteraMovimiento.deleteMany({
-                    where: { pedidoId: id, tipo: "cargo" }
-                })
-            }
-        }
-
-        // Notificar a administradores cuando un pedido de empleado cambia a confirmado
         if (esPedidoDeStaff && estado === "confirmado") {
-            const empleadoNombre = session.user.name || session.user.email || "Empleado"
-            const admins = await prisma.user.findMany({
-                where: { role: "admin" },
-                select: { id: true }
-            })
-            for (const admin of admins) {
-                await prisma.notificacion.create({
-                    data: {
-                        userId: admin.id,
-                        tipo: "pedido_estado",
-                        titulo: "Pago confirmado",
-                        mensaje: `Pedido ${pedido.numeroOrden} confirmado por ${empleadoNombre}.`,
-                        pedidoId: id
-                    }
-                })
-            }
+            // Notificaciones DESHABILITADAS
         }
 
         if (metrajeItemsArray && Array.isArray(metrajeItemsArray)) {
@@ -747,17 +576,7 @@ export async function PATCH(
                         }
                     })
 
-                    if (!esPedidoDeStaff) {
-                        await prisma.notificacion.create({
-                            data: {
-                                userId: pedido.userId,
-                                tipo: "metraje_confirmado",
-                                titulo: "Metraje confirmado",
-                                mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado. Puedes continuar con el pago.`,
-                                pedidoId: id
-                            }
-                        })
-                    }
+                    // Notificaciones DESHABILITADAS
 
                 }
             }
@@ -805,90 +624,20 @@ export async function PATCH(
 
                 const pedidoActualizado = await prisma.pedido.findUnique({ where: { id } })
 
-                if (!esPedidoDeStaff) {
-                    await prisma.notificacion.create({
-                        data: {
-                            userId: pedido.userId,
-                            tipo: "metraje_confirmado",
-                            titulo: "Metraje confirmado",
-                            mensaje: `Tu pedido ${pedido.numeroOrden} ha sido actualizado. El metraje ha sido confirmado. Puedes continuar con el pago.`,
-                            pedidoId: id
-                        }
-                    })
-                }
+                // Notificaciones DESHABILITADAS
             }
         }
 
         if (estado === "pedido_enviado") {
-            await prisma.notificacion.create({
-                data: {
-                    userId: pedido.userId,
-                    tipo: "pedido_estado",
-                    titulo: "Pedido enviado",
-                    mensaje: `Tu pedido ${pedido.numeroOrden} ha sido enviado. Por favor, confirma cuando lo recibas.`,
-                    pedidoId: id
-                }
-            })
+            // Notificaciones DESHABILITADAS
         }
 
         if (estado === "completado") {
-            const cargos = await prisma.carteraMovimiento.findMany({
-                where: { pedidoId: id, tipo: "cargo" },
-                select: { carteraId: true, monto: true }
-            })
-
-            if (cargos.length > 0) {
-                const porCartera = new Map<string, number>()
-                for (const c of cargos) {
-                    porCartera.set(c.carteraId, (porCartera.get(c.carteraId) || 0) + c.monto)
-                }
-
-                for (const [carteraId, totalCargo] of porCartera) {
-                    const cartera = await prisma.cartera.findUnique({ where: { id: carteraId } })
-                    if (cartera) {
-                        const saldoAnterior = cartera.saldo
-                        const saldoNuevo = saldoAnterior + totalCargo
-
-                        await prisma.carteraMovimiento.create({
-                            data: {
-                                carteraId,
-                                tipo: "abono",
-                                monto: totalCargo,
-                                saldoAnterior,
-                                saldoNuevo,
-                                concepto: `Cargo liquidado por completación de pedido`,
-                                pedidoId: id,
-                                creadoPorId: session.user.id
-                            }
-                        })
-
-                        await prisma.cartera.update({
-                            where: { id: carteraId },
-                            data: { saldo: { increment: totalCargo } }
-                        })
-                    }
-                }
-
-                await prisma.carteraMovimiento.deleteMany({
-                    where: { pedidoId: id, tipo: "cargo" }
-                })
-            }
+            // Cartera DESHABILITADA
         }
 
         if (estado === "rechazado") {
-            const mensajeRechazo = pedido.motivoRechazo
-                ? `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Motivo: ${pedido.motivoRechazo}`
-                : `Tu pedido ${pedido.numeroOrden} ha sido rechazado. Por favor, contacta con nuestro equipo al WhatsApp para más información.`
-
-            await prisma.notificacion.create({
-                data: {
-                    userId: pedido.userId,
-                    tipo: "pedido_estado",
-                    titulo: "Pedido rechazado",
-                    mensaje: mensajeRechazo,
-                    pedidoId: id
-                }
-            })
+            // Notificaciones DESHABILITADAS
 
             const usuario = await prisma.user.findUnique({
                 where: { id: pedido.userId },

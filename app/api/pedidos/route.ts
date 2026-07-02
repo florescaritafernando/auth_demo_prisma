@@ -217,22 +217,7 @@ export async function POST(request: NextRequest) {
 
         console.log("=== PEDIDO CREADO EXITOSAMENTE ===")
 
-        // Notificar a staff - solo si el pedido fue creado por un cliente (no empleado/admin)
-        if (role === "cliente") {
-            const staff = await prisma.user.findMany({
-                where: { role: { in: ["admin", "empleado"] } }
-            })
-
-            await prisma.notificacion.createMany({
-                data: staff.map(user => ({
-                    userId: user.id,
-                    titulo: "Nueva orden",
-                    mensaje: `Nueva orden ${numeroOrden} por ${session.user.name || session.user.email}`,
-                    tipo: "pedido",
-                    pedidoId: pedido.id
-                }))
-            })
-        }
+        // Notificaciones DESHABILITADAS
 
         return NextResponse.json({
             success: true,

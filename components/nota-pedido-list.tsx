@@ -562,7 +562,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 <p className="font-semibold text-slate-700 text-sm">Datos del Cliente</p>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                                                <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
+                                                <div className="flex items-center gap-2 bg-sky-50 rounded-lg p-2.5">
                                                     <User className="h-4 w-4 text-slate-400 shrink-0" />
                                                     <span className="text-slate-500 text-xs w-16 shrink-0">Cliente:</span>
                                                     <span className="font-medium text-slate-800 flex-1">{c.nombre?.toUpperCase()}</span>
@@ -582,7 +582,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         )}
                                                     </button>
                                                 </div>
-                                                <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2.5">
+                                                <div className="flex items-center gap-2 bg-sky-50 rounded-lg p-2.5">
                                                     <FileText className="h-4 w-4 text-slate-400 shrink-0" />
                                                     <span className="text-slate-500 text-xs w-16 shrink-0">{c.tipoDoc?.toUpperCase() || "DOC"}:</span>
                                                     <span className="font-medium text-slate-800 flex-1">{c.numeroDoc?.toUpperCase()}</span>
@@ -603,13 +603,13 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     </button>
                                                 </div>
 
-                                                {(c.direccion || pedido.direccion) && (() => {
+                                                    {(c.direccion || pedido.direccion) && (() => {
                                                     const deptUbicacion = (c.departamento || pedido.departamento || "").toUpperCase()
                                                     const provUbicacion = (c.provincia || pedido.provincia || "").toUpperCase()
                                                     const distUbicacion = (c.distrito || pedido.distrito || "").toUpperCase()
                                                     const tieneUbicacion = deptUbicacion || provUbicacion || distUbicacion
-                                                    return (
-                                                    <div className="bg-slate-50 rounded-lg p-2.5 space-y-1.5">
+                                                    return (<>
+                                                    <div className="bg-sky-50 rounded-lg p-2.5 space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                                                             <span className="text-slate-500 text-xs w-16 shrink-0">Dirección:</span>
@@ -630,25 +630,30 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                 )}
                                                             </button>
                                                         </div>
-                                                        {tieneUbicacion && (
-                                                            <div className="flex items-start gap-2">
-                                                                <div className="w-4 shrink-0" />
+                                                    </div>
+                                                    
+                                                    {tieneUbicacion && (
+
+                                                    <div className="bg-sky-50 rounded-lg p-2.5 space-y-1.5">
+
+                                                            <div className="flex items-center gap-2">
+                                                                <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                                                                 <span className="text-slate-500 text-xs w-16 shrink-0">Ubicación:</span>
                                                                 <div className="flex-1 grid grid-cols-3 gap-1">
-                                                                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">Departamento</span>
-                                                                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">Provincia</span>
-                                                                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">Distrito</span>
+                                                                    <span className="text-[10px] text-amber-600 uppercase tracking-wider">Departamento</span>
+                                                                    <span className="text-[10px] text-amber-600 uppercase tracking-wider">Provincia</span>
+                                                                    <span className="text-[10px] text-amber-600 uppercase tracking-wider">Distrito</span>
                                                                     <span className="font-medium text-slate-800 uppercase">{deptUbicacion}</span>
                                                                     <span className="font-medium text-slate-800 uppercase">{provUbicacion}</span>
                                                                     <span className="font-medium text-slate-800 uppercase">{distUbicacion}</span>
                                                                 </div>
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                    )
+                                                        
+                                                    </div>)}
+                                                    </>)
                                                 })()}
                                                 {c.telefono && (
-                                                    <div className="bg-slate-50 rounded-lg p-2.5">
+                                                    <div className="bg-sky-50 rounded-lg p-2.5">
                                                         <div className="flex items-center gap-2">
                                                             <Phone className="h-4 w-4 text-slate-400 shrink-0" />
                                                             <span className="text-slate-500 text-xs w-16 shrink-0">Teléfono:</span>
@@ -680,7 +685,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 {c.agencia && (() => {
                                                     const textoAgencia = (c.agencia === "otros" ? (c.agenciaOtro || "OTROS") : (AGENCIA_LABELS[c.agencia] || c.agencia)).toUpperCase()
                                                     return (
-                                                    <div className="bg-slate-50 rounded-lg p-2.5 space-y-1.5">
+                                                    <div className="bg-amber-50 rounded-lg p-2.5 space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <Truck className="h-4 w-4 text-slate-400 shrink-0" />
                                                             <span className="text-slate-500 text-xs w-16 shrink-0">Agencia:</span>
@@ -904,7 +909,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                 setXmlRecojeDireccion(pedido.direccion || "")
                                                 setXmlRecojeOtraPersona(!!(pedido.dniRecibe || pedido.nombreRecibe))
                                             }}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 min-h-[44px] bg-gradient-to-r from-violet-700 to-indigo-800 rounded-lg text-sm font-semibold text-white hover:from-violet-800 hover:to-indigo-900 shadow-md shadow-violet-300 transition-all"
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 min-h-[44px] bg-gray-700 rounded-lg text-sm font-semibold text-white"
                                         >
                                             <Printer className="h-4 w-4" />
                                             Convertir XML a Ticket o etiqueta envios
@@ -923,7 +928,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
 
                                     <div className="sm:grid sm:grid-cols-2 sm:gap-4">
                                     {/* Dividir entre */}
-                                    <div className="bg-slate-50 rounded-lg p-3">
+                                    <div className="bg-slate-200 rounded-lg p-3">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Divide className="h-4 w-4 text-slate-500" />
                                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dividir entre</p>
@@ -936,7 +941,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                         setDivisor(num)
                                                         setDivisorPersonalizado("")
                                                     }}
-                                                    className={`w-full px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${divisor === num ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
+                                                    className={`w-full px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${divisor === num ? "bg-blue-600 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
                                                 >
                                                     S/ {num}
                                                 </button>
@@ -960,7 +965,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                             const resultado = Number(pedido.total) / Number(valorDivisor)
                                             const decimales = Number(resultado.toFixed(2)) === resultado ? 2 : 4
                                             return (
-                                                <div className="flex items-center justify-between bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+                                                <div className="flex items-center justify-between bg-sky-50 rounded-lg p-3 border border-sky-200">
                                                     <div className="flex items-baseline gap-1.5">
                                                         <span className="text-sm font-semibold text-indigo-900">
                                                             S/ <span className="text-lg">{Number(pedido.total).toFixed(2)}</span>
@@ -971,7 +976,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-bold text-slate-900 text-lg">{resultado.toFixed(decimales)}</span>
-                                                        <span className="text-xs text-slate-400">mts</span>
+                                                        <span className="text-ms text-slate-800">MTS</span>
                                                         <button
                                                             onClick={() => copiarAlPortapapeles(resultado.toFixed(decimales), `dividir_${valorDivisor}`)}
                                                             className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-200 ${
@@ -994,15 +999,15 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     </div>
 
                                     {/* Peso estimado */}
-                                    <div className="bg-slate-50 rounded-lg p-3">
+                                    <div className="bg-slate-200 rounded-lg p-3">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Package className="h-4 w-4 text-slate-500" />
                                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">PESO (KGM)</p>
                                         </div>
-                                        <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-slate-200">
+                                        <div className="flex items-center justify-between bg-amber-50 rounded-lg p-3 border border-amber-200">
                                             <div className="flex items-baseline gap-1.5">
                                                 <span className="text-lg font-bold text-slate-900">{Number(pedido.total / 200).toFixed(2)}</span>
-                                                <span className="text-xs text-slate-400">KGM</span>
+                                                <span className="text-ms text-slate-800">KGM</span>
                                             </div>
                                             <button
                                                 onClick={() => copiarAlPortapapeles(Number(pedido.total / 200).toFixed(2), "peso")}
@@ -1023,7 +1028,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                     </div>
 
                                     {/* Dividir pedido en partes */}
-                                     <div className="bg-slate-50 rounded-lg p-3">
+                                     <div className="bg-slate-200 rounded-lg p-3">
                                         <div className="w-full flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
                                                 <Divide className="h-4 w-4 text-slate-500" />
@@ -1047,7 +1052,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                 setPrecioPartes(num)
                                                                 setPrecioPersonalizado("")
                                                             }}
-                                                            className={`w-full px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${precioPartes === num ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
+                                                            className={`w-full px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${precioPartes === num ? "bg-blue-600 text-white" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"}`}
                                                         >
                                                             S/ {num}
                                                         </button>
@@ -1120,7 +1125,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                                 setNuevoMonto("")
                                                             }
                                                         }}
-                                                        placeholder="0.00"
+                                                        placeholder="Ingresar montos"
                                                         className="flex-1 px-3 py-1.5 rounded-lg text-sm border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                                     />
                                                     <button
@@ -1131,7 +1136,7 @@ export default function NotaPedidoList({ pedidos, userRole }: Props) {
                                                             }
                                                         }}
                                                         disabled={!nuevoMonto || isNaN(parseFloat(nuevoMonto)) || parseFloat(nuevoMonto) <= 0}
-                                                        className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                                     >
                                                         +
                                                     </button>

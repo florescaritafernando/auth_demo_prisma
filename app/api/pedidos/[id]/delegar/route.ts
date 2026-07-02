@@ -59,16 +59,7 @@ export async function POST(
             }
         })
 
-        // Marcar como leídas las notificaciones de este pedido para otros empleados y admins
-        await prisma.notificacion.updateMany({
-            where: {
-                pedidoId: id,
-                tipo: { in: ["pedido", "pedido_pago"] },
-                leida: false,
-                userId: { not: session.user.id }
-            },
-            data: { leida: true }
-        })
+        // Notificaciones DESHABILITADAS
 
         return NextResponse.json({ success: true, delegacion })
 

@@ -9,23 +9,7 @@ export function NotificationBadge() {
     const [count, setCount] = useState(0)
     const pathname = usePathname()
 
-    useEffect(() => {
-        fetchCount()
-        const interval = setInterval(fetchCount, 30000)
-        return () => clearInterval(interval)
-    }, [])
-
-    const fetchCount = async () => {
-        try {
-            const res = await fetch("/api/notificaciones", { credentials: "include" })
-            const json = await res.json()
-            if (json.success) {
-                setCount(json.sinLeer)
-            }
-        } catch (e) {
-            console.error("Error fetching count:", e)
-        }
-    }
+    // Notificaciones DESHABILITADAS
 
     const isActive = pathname === "/dashboard/notificaciones"
 

@@ -65,34 +65,7 @@ export function AppSidebar({ role = "cliente", userName = "Usuario", userImage =
     const items = role === "admin" ? adminItems : role === "empleado" ? empleadoItems : clienteItems
     const [notificacionesNoLeidas, setNotificacionesNoLeidas] = useState(0)
 
-    // Fetch notifications count — only on mount and when tab becomes visible
-    useEffect(() => {
-        const fetchCount = async () => {
-            try {
-                const res = await fetch("/api/notificaciones", { credentials: "include" })
-                const json = await res.json()
-                if (json.success) {
-                    const noLeidas = json.notificaciones?.filter((n: any) => !n.leida).length || 0
-                    setNotificacionesNoLeidas(noLeidas)
-                }
-            } catch (e) {
-                console.error("Error fetching notificaciones:", e)
-            }
-        }
-
-        fetchCount()
-
-        const onVisible = () => { if (document.visibilityState === "visible") fetchCount() }
-        document.addEventListener("visibilitychange", onVisible)
-
-        const channel = new BroadcastChannel("notificaciones")
-        channel.onmessage = () => fetchCount()
-
-        return () => {
-            document.removeEventListener("visibilitychange", onVisible)
-            channel.close()
-        }
-    }, [])
+    // Notificaciones DESHABILITADAS
 
     return (
         <TooltipProvider>
